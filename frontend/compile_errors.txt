@@ -1,0 +1,122 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+Reusing configuration cache.
+> Task :composeApp:preBuild UP-TO-DATE
+> Task :composeApp:preDebugBuild UP-TO-DATE
+> Task :composeApp:convertXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :composeApp:convertXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :composeApp:copyNonXmlValueResourcesForAndroidMain NO-SOURCE
+> Task :composeApp:copyNonXmlValueResourcesForAndroidDebug NO-SOURCE
+> Task :composeApp:prepareComposeResourcesTaskForAndroidMain NO-SOURCE
+> Task :composeApp:prepareComposeResourcesTaskForAndroidDebug NO-SOURCE
+> Task :composeApp:generateResourceAccessorsForAndroidDebug NO-SOURCE
+> Task :composeApp:kmpPartiallyResolvedDependenciesChecker
+> Task :composeApp:generateResourceAccessorsForAndroidMain NO-SOURCE
+> Task :composeApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :composeApp:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :composeApp:copyNonXmlValueResourcesForCommonMain UP-TO-DATE
+> Task :composeApp:generateDebugResValues UP-TO-DATE
+> Task :composeApp:generateComposeResClass UP-TO-DATE
+> Task :composeApp:generateExpectResourceCollectorsForCommonMain UP-TO-DATE
+> Task :composeApp:processDebugGoogleServices UP-TO-DATE
+> Task :composeApp:convertXmlValueResourcesForCommonMain NO-SOURCE
+> Task :composeApp:extractDeepLinksDebug UP-TO-DATE
+> Task :composeApp:generateDebugResources UP-TO-DATE
+> Task :composeApp:prepareComposeResourcesTaskForCommonMain UP-TO-DATE
+> Task :composeApp:generateResourceAccessorsForCommonMain UP-TO-DATE
+> Task :composeApp:generateActualResourceCollectorsForAndroidMain UP-TO-DATE
+> Task :composeApp:packageDebugResources UP-TO-DATE
+> Task :composeApp:parseDebugLocalResources UP-TO-DATE
+> Task :composeApp:mergeDebugResources UP-TO-DATE
+> Task :composeApp:mapDebugSourceSetPaths UP-TO-DATE
+> Task :composeApp:checkDebugAarMetadata UP-TO-DATE
+> Task :composeApp:processDebugMainManifest UP-TO-DATE
+> Task :composeApp:processDebugManifest UP-TO-DATE
+> Task :composeApp:processDebugManifestForPackage UP-TO-DATE
+> Task :composeApp:processDebugResources UP-TO-DATE
+
+> Task :composeApp:compileDebugKotlinAndroid FAILED
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/localization/EnumLocalization.kt:263:5 Unresolved reference 'ModerationAppealStatus'.
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/localization/EnumLocalization.kt:264:12 'when' expression must be exhaustive. Add an 'else' branch.
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/localization/EnumLocalization.kt:264:18 Unresolved reference 'ModerationAppealStatus'.
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/localization/EnumLocalization.kt:265:9 Unresolved reference 'ModerationAppealStatus'.
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/localization/EnumLocalization.kt:266:9 Unresolved reference 'ModerationAppealStatus'.
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/localization/EnumLocalization.kt:267:9 Unresolved reference 'ModerationAppealStatus'.
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/localization/EnumLocalization.kt:268:9 Unresolved reference 'ModerationAppealStatus'.
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/components/ReportDialog.kt:50:117 Overload resolution ambiguity between candidates:
+fun ReportedEntityType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/components/ReportDialog.kt:95:47 Overload resolution ambiguity between candidates:
+fun ReportReason.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/BookingDetailScreen.kt:293:47 Overload resolution ambiguity between candidates:
+fun BookingStatus.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/CreatePostScreen.kt:506:61 Overload resolution ambiguity between candidates:
+fun PostType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/CreatePostScreen.kt:550:67 Overload resolution ambiguity between candidates:
+fun PostVisibility.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/CreatePostScreen.kt:726:125 Overload resolution ambiguity between candidates:
+fun PostMediaType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/CreatePostScreen.kt:779:114 Overload resolution ambiguity between candidates:
+fun PostMediaType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/CreatePostScreen.kt:798:86 Overload resolution ambiguity between candidates:
+fun PostMediaType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/CreateServiceScreen.kt:87:33 Overload resolution ambiguity between candidates:
+fun ServiceCategory.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/CreateStaffScreen.kt:88:33 Overload resolution ambiguity between candidates:
+fun ServiceCategory.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/HomeScreen.kt:397:61 Overload resolution ambiguity between candidates:
+fun ServiceCategory.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/ReportScreen.kt:306:43 Overload resolution ambiguity between candidates:
+fun ReportedEntityType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/ReportScreen.kt:453:35 Overload resolution ambiguity between candidates:
+fun ReportReason.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/RequestVerificationScreen.kt:141:53 Overload resolution ambiguity between candidates:
+fun VerificationType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/SalonPostsScreen.kt:477:43 Overload resolution ambiguity between candidates:
+fun PostType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/SearchScreen.kt:271:59 Overload resolution ambiguity between candidates:
+fun PostType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/SearchScreen.kt:642:77 Overload resolution ambiguity between candidates:
+fun PostType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/SocialFeedScreen.kt:566:65 Overload resolution ambiguity between candidates:
+fun PostType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/screens/UltraPremiumPostCard.kt:492:63 Overload resolution ambiguity between candidates:
+fun PostMediaType.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+e: file:///C:/projet_coiffure/frontend/composeApp/src/commonMain/kotlin/com/frollot/mobile/ui/utils/BookingUtils.kt:84:31 Overload resolution ambiguity between candidates:
+fun BookingStatus.getLocalizedDisplayName(): String
+fun <ERROR TYPE REF: Symbol not found for ModerationAppealStatus>.getLocalizedDisplayName(): String
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':composeApp:compileDebugKotlinAndroid'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 35s
+22 actionable tasks: 2 executed, 20 up-to-date
+Configuration cache entry reused.

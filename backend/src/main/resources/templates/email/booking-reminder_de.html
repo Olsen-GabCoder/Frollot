@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buchungserinnerung</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #FF9800;
+            border-bottom: 3px solid #FF9800;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-left: 4px solid #FF9800;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .highlight {
+            background-color: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Erinnerung: Ihre Buchung morgen</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hallo <strong th:text="${clientName}">Kunde</strong>,</p>
+            
+            <p>Wir erinnern Sie daran, dass Sie <strong>morgen</strong> eine Buchung haben!</p>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label">Salon:</span>
+                    <span class="info-value" th:text="${salonName}">Salon</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Dienstleistung:</span>
+                    <span class="info-value" th:text="${serviceName}">Dienstleistung</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Friseur:</span>
+                    <span class="info-value" th:text="${staffName}">Friseur</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Datum und Uhrzeit:</span>
+                    <span class="info-value" th:text="${bookingDate}">Datum</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Dauer:</span>
+                    <span class="info-value" th:text="${duration}">Dauer</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Preis:</span>
+                    <span class="info-value" th:text="${price}">Preis</span>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <p><strong>📍 Adresse:</strong> <span th:text="${salonAddress}">Adresse</span></p>
+                <p><strong>📞 Telefon:</strong> <span th:text="${salonPhone}">Telefon</span></p>
+            </div>
+            
+            <p>Wir freuen uns auf Ihren Besuch! Wenn Sie nicht erscheinen können, bitte informieren Sie uns so schnell wie möglich.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Diese E-Mail wurde automatisch gesendet, bitte antworten Sie nicht.</p>
+            <p>&copy; 2024 Frollot - Alle Rechte vorbehalten</p>
+        </div>
+    </div>
+</body>
+</html>
+

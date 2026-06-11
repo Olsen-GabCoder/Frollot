@@ -1,0 +1,66 @@
+# ========================================
+# Configuration de test pour Spring Boot
+# ========================================
+# Utilisé pour les tests d'intégration avec H2
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  
+  flyway:
+    enabled: false  # Désactiver Flyway pour les tests (utiliser JPA ddl-auto)
+  
+  sql:
+    init:
+      mode: never  # Désactiver l'exécution de schema.sql pour les tests (incompatible H2)
+  
+  h2:
+    console:
+      enabled: false
+
+# ========================================
+# Configuration JWT pour les tests
+# ========================================
+app:
+  security:
+    jwt:
+      secret: "this-is-a-test-secret-key-with-32-characters-minimum"
+      expiration-hours: 24
+      expiration-minutes: 15
+    rate-limit:
+      enabled: false  # Désactiver le rate limiting pour les tests
+
+# ========================================
+# Désactiver les services externes
+# ========================================
+firebase:
+  enabled: false
+
+email:
+  enabled: false
+
+stripe:
+  enabled: false
+
+# ========================================
+# Logging minimal pour les tests
+# ========================================
+logging:
+  level:
+    root: WARN
+    com.frollot: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+

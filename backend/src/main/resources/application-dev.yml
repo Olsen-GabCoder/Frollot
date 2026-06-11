@@ -1,0 +1,30 @@
+# ============================================================
+# CONFIGURATION DÉVELOPPEMENT
+# ============================================================
+# Profil activé automatiquement en développement
+# Permet plus de flexibilité pour le développement
+
+spring:
+  flyway:
+    # Configuration DÉVELOPPEMENT - FLEXIBILITÉ ACCRUE
+    baseline-on-migrate: true  # Permis en dev pour faciliter les tests
+    validate-on-migrate: true
+    out-of-order: true  # Permis pour faciliter le développement
+    ignore-missing-migrations: false
+    ignore-ignored-migrations: true  # Ignore les migrations marquées comme ignorées
+    # Validation des noms de migrations
+    validate-migration-naming: true
+    # Callbacks pour logging détaillé en dev
+    callbacks: com.frollot.flyway.FlywayDevCallback
+
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Validation stricte même en dev
+    properties:
+      hibernate:
+        format_sql: true  # Formatage SQL en dev
+    show-sql: true  # Affichage SQL en dev pour debug
+
+logging:
+  level:
+    org.flywaydb: DEBUG  # Logs Flyway détaillés en dev

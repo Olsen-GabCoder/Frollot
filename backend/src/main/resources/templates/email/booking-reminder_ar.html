@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تذكير الحجز</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+            direction: rtl;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #FF9800;
+            border-bottom: 3px solid #FF9800;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-right: 4px solid #FF9800;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .highlight {
+            background-color: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ تذكير: حجزك غداً</h1>
+        </div>
+        
+        <div class="content">
+            <p>مرحباً <strong th:text="${clientName}">العميل</strong>,</p>
+            
+            <p>نذكرك بأن لديك حجز <strong>غداً</strong>!</p>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label">الصالون:</span>
+                    <span class="info-value" th:text="${salonName}">الصالون</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">الخدمة:</span>
+                    <span class="info-value" th:text="${serviceName}">الخدمة</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">مصفف الشعر:</span>
+                    <span class="info-value" th:text="${staffName}">مصفف الشعر</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">التاريخ والوقت:</span>
+                    <span class="info-value" th:text="${bookingDate}">التاريخ</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">المدة:</span>
+                    <span class="info-value" th:text="${duration}">المدة</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">السعر:</span>
+                    <span class="info-value" th:text="${price}">السعر</span>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <p><strong>📍 العنوان:</strong> <span th:text="${salonAddress}">العنوان</span></p>
+                <p><strong>📞 الهاتف:</strong> <span th:text="${salonPhone}">الهاتف</span></p>
+            </div>
+            
+            <p>ننتظرك! إذا لم تتمكن من الحضور، يرجى إعلامنا في أقرب وقت ممكن.</p>
+        </div>
+        
+        <div class="footer">
+            <p>تم إرسال هذا البريد الإلكتروني تلقائياً، يرجى عدم الرد.</p>
+            <p>&copy; 2024 Frollot - جميع الحقوق محفوظة</p>
+        </div>
+    </div>
+</body>
+</html>
+

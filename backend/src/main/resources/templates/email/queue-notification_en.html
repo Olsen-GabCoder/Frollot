@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #9C27B0;
+            border-bottom: 3px solid #9C27B0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .alert-box {
+            background-color: #f3e5f5;
+            padding: 20px;
+            border-left: 4px solid #9C27B0;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .wait-time {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #9C27B0;
+        }
+        .position {
+            font-size: 1.2em;
+            color: #666;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #9C27B0;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏳ Your turn is coming</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello <strong th:text="${clientName}">Client</strong>,</p>
+            
+            <p>You are in the queue at <strong th:text="${salonName}">Salon</strong>.</p>
+            
+            <div class="alert-box">
+                <p class="position">Position in queue: <strong th:text="${position}">Position</strong></p>
+                <p class="wait-time">Estimated wait time: <strong th:text="${estimatedWaitTime}">Time</strong></p>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label">Salon:</span>
+                    <span class="info-value" th:text="${salonName}">Salon</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Service:</span>
+                    <span class="info-value" th:text="${serviceName}">Service</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Address:</span>
+                    <span class="info-value" th:text="${salonAddress}">Address</span>
+                </div>
+            </div>
+            
+            <p>Get ready, your turn is coming soon!</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent automatically, please do not reply.</p>
+            <p>&copy; 2024 Frollot - All rights reserved</p>
+        </div>
+    </div>
+</body>
+</html>
+

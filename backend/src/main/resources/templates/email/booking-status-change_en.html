@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Update</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #2196F3;
+            border-bottom: 3px solid #2196F3;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .status-change {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .old-status {
+            color: #666;
+            text-decoration: line-through;
+        }
+        .new-status {
+            color: #2196F3;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Booking Update</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello <strong th:text="${clientName}">Client</strong>,</p>
+            
+            <p>The status of your booking has been changed:</p>
+            
+            <div class="status-change">
+                <p><span class="old-status" th:text="${oldStatus}">Old status</span> → <span class="new-status" th:text="${newStatus}">New status</span></p>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label">Salon:</span>
+                    <span class="info-value" th:text="${salonName}">Salon</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Service:</span>
+                    <span class="info-value" th:text="${serviceName}">Service</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date and time:</span>
+                    <span class="info-value" th:text="${bookingDate}">Date</span>
+                </div>
+            </div>
+            
+            <p>If you have any questions, please do not hesitate to contact us.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent automatically, please do not reply.</p>
+            <p>&copy; 2024 Frollot - All rights reserved</p>
+        </div>
+    </div>
+</body>
+</html>
+

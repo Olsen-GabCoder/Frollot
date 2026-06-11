@@ -1,0 +1,43 @@
+# Build artifacts
+build/
+.gradle/
+out/
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Local configuration
+local.properties
+env-config.txt
+*.env
+
+# Uploads (data)
+uploads/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Tests
+src/test/
+
+# Gradle wrapper (rebuild in Docker)
+gradle/wrapper/gradle-wrapper.jar
+

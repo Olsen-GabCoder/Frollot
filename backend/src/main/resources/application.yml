@@ -1,0 +1,223 @@
+spring:
+  application:
+    name: frollot-backend
+
+  # =========================================================
+  # 🔒 STABILISATION DU PORT (ANTI RESTART / ANTI PID FANTÔME)
+  # =========================================================
+  devtools:
+    restart:
+      enabled: false
+    livereload:
+      enabled: false
+    add-properties: false
+
+  # =========================================================
+  # 🧭 GESTION DES PROFILS
+  # =========================================================
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:}
+
+  docker:
+    compose:
+      enabled: false
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3307/coiffure_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:coiffure_user}
+    password: "${DB_PASSWORD:changeme}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+  
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
+    validate-on-migrate: true
+    # Protection stricte contre les modifications
+    validate-migration-naming: true
+    ignore-missing-migrations: false
+    ignore-ignored-migrations: false
+    # Gestion des échecs
+    out-of-order: ${FLYWAY_OUT_OF_ORDER:false}
+    # Callbacks pour logging avancé
+    callbacks: com.frollot.flyway.FlywayLoggingCallback
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: ${JPA_FORMAT_SQL:true}
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        query:
+          fail_on_pagination_over_collection_fetch: true
+        default_batch_fetch_size: 20
+    show-sql: ${JPA_SHOW_SQL:true}
+    open-in-view: false
+
+  # ========================================
+  # 🔥 CONFIGURATION MULTIPART
+  # ========================================
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 15MB
+      file-size-threshold: 2MB
+      location: ${java.io.tmpdir}
+
+  jackson:
+    date-format: "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+    time-zone: "Europe/Paris"
+    default-property-inclusion: non_null
+
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+  web:
+    resources:
+      add-mappings: false
+
+  messages:
+    basename: messages/validation
+    encoding: UTF-8
+
+  # ========================================
+  # 📧 CONFIGURATION EMAIL (SMTP)
+  # ========================================
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+server:
+  port: 9090
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+    min-response-size: 1024
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param
+    include-exception: true
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.frollot: ${LOG_LEVEL_FROLLOT:DEBUG}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:DEBUG}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BINDER:TRACE}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:DEBUG}
+    org.springdoc: ${LOG_LEVEL_SPRINGDOC:DEBUG}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/application.log
+    max-size: 10MB
+    max-history: 30
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+    try-it-out-enabled: true
+  show-actuator: false
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+app:
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:9090}
+  service:
+    default-page-size: 20
+    max-page-size: 100
+    cache-duration-minutes: 30
+
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-jwt-secret-key-change-in-production}
+      expiration-hours: ${JWT_EXPIRATION_HOURS:24}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+      issuer: frollot-backend
+
+  upload:
+    max-file-size: 10MB
+    allowed-extensions: jpg,jpeg,png,gif
+    directory: uploads
+
+  email:
+    from: ${EMAIL_FROM:no-reply@frollot.com}
+    enabled: ${EMAIL_ENABLED:true}
+    verification:
+      enabled: ${EMAIL_VERIFICATION_ENABLED:true}
+      dev:
+        mode: ${EMAIL_DEV_MODE:send}
+        redirect-email: ${EMAIL_DEV_REDIRECT:test@frollot.com}
+    smtp:
+      fallback: ${EMAIL_SMTP_FALLBACK:true}
+
+firebase:
+  enabled: ${FIREBASE_ENABLED:false}
+  service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:firebase/service-account-key.json}
+
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_your_stripe_secret_key_here}
+  publishable-key: ${STRIPE_PUBLISHABLE_KEY:pk_test_your_stripe_publishable_key_here}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_your_webhook_secret_here}
+
+cors:
+  allowed-origins: "http://localhost:3000,http://localhost:9090,http://10.0.2.2:9090"
+  allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+  allowed-headers: "*"
+  exposed-headers: "Authorization,Content-Type,X-User-Id"
+  allow-credentials: true
+  max-age: 3600
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,metrics"
+      base-path: /manage
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

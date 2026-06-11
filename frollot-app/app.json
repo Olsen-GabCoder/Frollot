@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Frollot",
+    "slug": "frollot-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "frollot",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.olsen.frollot"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#6B4E78",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.olsen.frollot",
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      "expo-image-picker",
+      "expo-font"
+    ]
+  }
+}

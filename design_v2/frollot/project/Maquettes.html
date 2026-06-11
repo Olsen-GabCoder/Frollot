@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frollot — Maquettes haute-fidélité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #EDE8EC; font-family: "Manrope", system-ui, sans-serif; color: #221A26; }
+  .page-head { padding: 48px 48px 8px; }
+  .page-head .eyebrow { font-family: "Manrope"; font-weight: 800; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #A4677F; }
+  .page-head h1 { font-family: "Cormorant Garamond", serif; font-weight: 600; font-size: 52px; line-height: 1; letter-spacing: -1px; margin: 8px 0 0; }
+  .page-head p { color: #6C5F6E; max-width: 70ch; font-size: 15px; line-height: 1.6; margin: 14px 0 0; }
+  .rail { display: flex; gap: 40px; padding: 36px 48px 64px; overflow-x: auto; align-items: flex-start; }
+  .frame { flex-shrink: 0; }
+  .frame .label { margin-bottom: 16px; }
+  .frame .label .n { font-family: "Manrope"; font-weight: 800; font-size: 12px; letter-spacing: 1px; color: #A4677F; }
+  .frame .label .t { font-family: "Cormorant Garamond", serif; font-weight: 600; font-size: 26px; line-height: 1; margin-top: 2px; }
+  .frame .label .d { color: #6C5F6E; font-size: 13px; margin-top: 6px; max-width: 380px; line-height: 1.5; }
+  .material-symbols-outlined { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; line-height: 1; }
+</style>
+</head>
+<body>
+  <div class="page-head">
+    <div class="eyebrow">Frollot · Étape 2</div>
+    <h1>Maquettes haute-fidélité</h1>
+    <p>Cinq écrans phares en application du système « Éditorial premium chaleureux », dans des cadres Android (Material 3, mobile-first). Toutes les couleurs, typographies et formes proviennent des tokens de la charte. Light mode — le dark mode suivra après validation.</p>
+  </div>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="android-frame.jsx"></script>
+  <script type="text/babel" src="screen-shared.jsx"></script>
+  <script type="text/babel" src="screen-login.jsx"></script>
+  <script type="text/babel" src="screen-home.jsx"></script>
+  <script type="text/babel" src="screen-feed.jsx"></script>
+  <script type="text/babel" src="screen-salon.jsx"></script>
+  <script type="text/babel" src="screen-booking.jsx"></script>
+  <script type="text/babel">
+    const { AndroidDevice } = window;
+    const SCREENS = [
+      { n: '01', t: 'Connexion', d: "Hero éditorial plein cadre, marque en verre dépoli, formulaire clair.", C: LoginScreen },
+      { n: '02', t: 'Accueil', d: "Recherche, catégories, salons récents et file d'attente en direct.", C: HomeScreen },
+      { n: '03', t: 'Fil social', d: "Posts premium, avant/après côte à côte, barre d'engagement.", C: FeedScreen },
+      { n: '04', t: 'Détail salon', d: "Couverture, note, onglets, prestations et action flottante.", C: SalonScreen },
+      { n: '05', t: 'Réservation', d: "Flux par étapes, calendrier et créneaux, récap permanent.", C: BookingScreen },
+    ];
+    function Gallery() {
+      return (
+        <div className="rail">
+          {SCREENS.map(s => (
+            <div className="frame" key={s.n}>
+              <div className="label" data-screen-label={`Maquette ${s.n} — ${s.t}`}>
+                <div className="n">{s.n}</div>
+                <div className="t">{s.t}</div>
+                <div className="d">{s.d}</div>
+              </div>
+              <AndroidDevice>
+                <s.C />
+              </AndroidDevice>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Gallery />);
+  </script>
+</body>
+</html>

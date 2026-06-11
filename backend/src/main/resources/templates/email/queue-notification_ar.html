@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إشعار قائمة الانتظار</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+            direction: rtl;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #9C27B0;
+            border-bottom: 3px solid #9C27B0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .alert-box {
+            background-color: #f3e5f5;
+            padding: 20px;
+            border-right: 4px solid #9C27B0;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .wait-time {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #9C27B0;
+        }
+        .position {
+            font-size: 1.2em;
+            color: #666;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-right: 4px solid #9C27B0;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏳ دورك يقترب</h1>
+        </div>
+        
+        <div class="content">
+            <p>مرحباً <strong th:text="${clientName}">العميل</strong>,</p>
+            
+            <p>أنت في قائمة الانتظار لصالون <strong th:text="${salonName}">الصالون</strong>.</p>
+            
+            <div class="alert-box">
+                <p class="position">الموضع في قائمة الانتظار: <strong th:text="${position}">الموضع</strong></p>
+                <p class="wait-time">وقت الانتظار المتوقع: <strong th:text="${estimatedWaitTime}">الوقت</strong></p>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label">الصالون:</span>
+                    <span class="info-value" th:text="${salonName}">الصالون</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">الخدمة:</span>
+                    <span class="info-value" th:text="${serviceName}">الخدمة</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">العنوان:</span>
+                    <span class="info-value" th:text="${salonAddress}">العنوان</span>
+                </div>
+            </div>
+            
+            <p>استعد، دورك يقترب قريباً!</p>
+        </div>
+        
+        <div class="footer">
+            <p>تم إرسال هذا البريد الإلكتروني تلقائياً، يرجى عدم الرد.</p>
+            <p>&copy; 2024 Frollot - جميع الحقوق محفوظة</p>
+        </div>
+    </div>
+</body>
+</html>
+

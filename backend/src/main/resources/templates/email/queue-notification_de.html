@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warteschlangenbenachrichtigung</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #9C27B0;
+            border-bottom: 3px solid #9C27B0;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .alert-box {
+            background-color: #f3e5f5;
+            padding: 20px;
+            border-left: 4px solid #9C27B0;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .wait-time {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #9C27B0;
+        }
+        .position {
+            font-size: 1.2em;
+            color: #666;
+        }
+        .info-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #9C27B0;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏳ Ihr Termin rückt näher</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hallo <strong th:text="${clientName}">Kunde</strong>,</p>
+            
+            <p>Sie befinden sich in der Warteschlange des Salons <strong th:text="${salonName}">Salon</strong>.</p>
+            
+            <div class="alert-box">
+                <p class="position">Position in der Warteschlange: <strong th:text="${position}">Position</strong></p>
+                <p class="wait-time">Geschätzte Wartezeit: <strong th:text="${estimatedWaitTime}">Zeit</strong></p>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label">Salon:</span>
+                    <span class="info-value" th:text="${salonName}">Salon</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Dienstleistung:</span>
+                    <span class="info-value" th:text="${serviceName}">Dienstleistung</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Adresse:</span>
+                    <span class="info-value" th:text="${salonAddress}">Adresse</span>
+                </div>
+            </div>
+            
+            <p>Machen Sie sich bereit, Ihr Termin kommt bald!</p>
+        </div>
+        
+        <div class="footer">
+            <p>Diese E-Mail wurde automatisch gesendet, bitte antworten Sie nicht.</p>
+            <p>&copy; 2024 Frollot - Alle Rechte vorbehalten</p>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,73 @@
+# ============================================================
+# CONFIGURATION PRODUCTION
+# ============================================================
+# Ce profil est activé automatiquement en production
+# via SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  datasource:
+    # En production, les credentials DOIVENT être fournis via variables d'environnement
+    # Pas de valeurs par défaut pour forcer la configuration explicite
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+app:
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:https://frollot.com}
+  security:
+    jwt:
+      # En production, JWT_SECRET DOIT être fourni via variable d'environnement
+      # Pas de valeur par défaut pour forcer la configuration explicite
+      # Le secret doit faire au minimum 32 caractères (256 bits)
+      # Génération recommandée : openssl rand -base64 32
+      secret: ${JWT_SECRET}
+      expiration-hours: ${JWT_EXPIRATION_HOURS:24}
+      expiration-minutes: ${JWT_EXPIRATION_MINUTES:15}
+
+  flyway:
+    # Configuration PRODUCTION - MAXIMUM DE SÉCURITÉ
+    baseline-on-migrate: false  # Interdit en production
+    validate-on-migrate: true
+    out-of-order: false  # Migrations doivent être dans l'ordre
+    ignore-missing-migrations: false
+    ignore-ignored-migrations: false
+    # Protection contre les migrations répétées
+    repeatable-sql-migration-prefix: R
+    # Validation stricte des checksums
+    validate-migration-naming: true
+
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Ne jamais modifier le schéma en production
+    properties:
+      hibernate:
+        format_sql: false
+    show-sql: false  # Ne jamais afficher les requêtes SQL en production
+
+  # Désactiver Swagger en production
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+logging:
+  level:
+    root: WARN
+    com.frollot: INFO
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+    org.springframework.web: WARN
+    org.springdoc: WARN
+    org.springframework.security: WARN
+
+springdoc:
+  api-docs:
+    enabled: false  # Désactiver Swagger en production
+  swagger-ui:
+    enabled: false
+
+server:
+  error:
+    include-stacktrace: never  # Ne jamais exposer les stack traces en production
+    include-exception: false
+

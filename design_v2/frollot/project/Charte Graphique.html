@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frollot — Charte graphique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--background);
+    color: var(--on-background);
+    -webkit-font-smoothing: antialiased;
+  }
+  .material-symbols-outlined { font-family: "Material Symbols Outlined"; font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal; display: inline-block; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--sp-8); }
+  section { padding: var(--sp-16) 0; border-top: 1px solid var(--outline-variant); }
+  section:first-of-type { border-top: none; }
+
+  .eyebrow { color: var(--secondary); margin-bottom: var(--sp-3); }
+  .sec-title { font-family: var(--font-display); font-weight: 600; font-size: 40px; line-height: 1.05; letter-spacing: -.5px; color: var(--on-surface); }
+  .sec-intro { max-width: 60ch; margin-top: var(--sp-4); color: var(--on-surface-variant); font-size: 16px; line-height: 1.6; }
+
+  /* ---------- HERO ---------- */
+  .hero { min-height: 78vh; display: flex; flex-direction: column; justify-content: center; padding: var(--sp-16) 0 var(--sp-12); border: none; }
+  .hero-mark { display: flex; align-items: center; gap: var(--sp-5); margin-bottom: var(--sp-10); }
+  .logo-f {
+    width: 76px; height: 76px; border-radius: var(--radius-lg);
+    background: linear-gradient(150deg, var(--primary), #4f3a5b);
+    color: var(--on-primary); display: grid; place-items: center;
+    font-family: var(--font-display); font-weight: 600; font-size: 52px; line-height: 1;
+    box-shadow: var(--elev-4);
+  }
+  .logo-f span { transform: translateY(-2px); }
+  .hero h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(56px, 11vw, 132px); line-height: .92; letter-spacing: -2px; color: var(--on-surface); }
+  .hero h1 em { font-style: italic; color: var(--primary); font-weight: 500; }
+  .hero-sub { margin-top: var(--sp-6); max-width: 56ch; font-size: 20px; line-height: 1.55; color: var(--on-surface-variant); }
+  .hero-meta { margin-top: var(--sp-10); display: flex; flex-wrap: wrap; gap: var(--sp-3); }
+  .pill { padding: 8px 16px; border-radius: var(--radius-full); border: 1px solid var(--outline-variant); background: var(--surface); color: var(--on-surface-variant); font-size: 13px; font-weight: 600; }
+
+  /* ---------- COLOR ---------- */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-4); margin-top: var(--sp-8); }
+  .swatch { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--outline-variant); background: var(--surface); }
+  .swatch .chip { height: 92px; display: flex; align-items: flex-end; padding: var(--sp-3); }
+  .swatch .chip .on { font-size: 12px; font-weight: 700; opacity: .9; }
+  .swatch .meta { padding: var(--sp-3) var(--sp-4) var(--sp-4); }
+  .swatch .role { font-weight: 700; font-size: 14px; color: var(--on-surface); }
+  .swatch .hex { font-family: var(--font-sans); font-size: 12px; color: var(--on-surface-variant); letter-spacing: .4px; margin-top: 2px; }
+  .swatch .token { font-size: 11px; color: var(--outline); margin-top: 6px; font-weight: 600; }
+
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+  .pair > div { height: 56px; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+
+  .surfaces { display: grid; grid-template-columns: repeat(5,1fr); gap: 2px; margin-top: var(--sp-8); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--outline-variant); }
+  .surfaces > div { padding: var(--sp-6) var(--sp-3); min-height: 120px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .surfaces .nm { font-size: 11px; font-weight: 700; color: var(--on-surface); }
+  .surfaces .hx { font-size: 10px; color: var(--on-surface-variant); }
+
+  /* dark preview block */
+  .dark-demo { margin-top: var(--sp-8); border-radius: var(--radius-lg); padding: var(--sp-8); }
+  .dark-demo .swatch-grid { margin-top: 0; }
+
+  /* ---------- TYPE ---------- */
+  .type-row { display: grid; grid-template-columns: 130px 1fr; gap: var(--sp-6); padding: var(--sp-5) 0; border-bottom: 1px solid var(--outline-variant); align-items: baseline; }
+  .type-row:last-child { border-bottom: none; }
+  .type-spec { color: var(--on-surface-variant); font-size: 12px; font-weight: 600; line-height: 1.5; }
+  .type-spec b { color: var(--on-surface); display: block; font-size: 13px; }
+  .type-sample { color: var(--on-surface); }
+
+  /* ---------- SPACING ---------- */
+  .space-row { display: flex; align-items: center; gap: var(--sp-5); padding: var(--sp-2) 0; }
+  .space-bar { background: var(--secondary-container); border-radius: var(--radius-xs); height: 22px; }
+  .space-label { font-size: 13px; color: var(--on-surface-variant); font-weight: 600; min-width: 130px; }
+  .space-label b { color: var(--on-surface); }
+
+  /* ---------- SHAPES ---------- */
+  .shape-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: var(--sp-4); margin-top: var(--sp-8); }
+  .shape-card { text-align: center; }
+  .shape-box { height: 110px; background: var(--primary-container); border: 1px solid var(--primary); }
+  .shape-card .nm { margin-top: var(--sp-3); font-weight: 700; font-size: 13px; }
+  .shape-card .vl { font-size: 12px; color: var(--on-surface-variant); }
+
+  /* ---------- ELEVATION ---------- */
+  .elev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: var(--sp-6); margin-top: var(--sp-8); }
+  .elev-card { background: var(--surface); border-radius: var(--radius-md); height: 110px; display: grid; place-items: center; }
+  .elev-grid .lbl { text-align: center; font-size: 12px; color: var(--on-surface-variant); margin-top: var(--sp-3); font-weight: 600; }
+
+  /* ---------- ICONS ---------- */
+  .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px,1fr)); gap: var(--sp-3); margin-top: var(--sp-8); }
+  .icon-cell { border: 1px solid var(--outline-variant); border-radius: var(--radius-md); padding: var(--sp-4) var(--sp-2); text-align: center; background: var(--surface); }
+  .icon-cell .material-symbols-outlined { font-size: 28px; color: var(--primary); }
+  .icon-cell .nm { font-size: 10px; color: var(--on-surface-variant); margin-top: var(--sp-2); }
+
+  /* ---------- COMPONENT PREVIEW ---------- */
+  .comp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: var(--sp-6); margin-top: var(--sp-8); }
+  .comp-card { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: var(--radius-lg); padding: var(--sp-6); box-shadow: var(--elev-1); }
+  .comp-card h4 { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--on-surface-variant); margin-bottom: var(--sp-5); font-weight: 700; }
+  .btn { border: none; border-radius: var(--radius-full); font-family: var(--font-sans); font-weight: 700; font-size: 14px; padding: 12px 22px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-primary { background: var(--primary); color: var(--on-primary); }
+  .btn-secondary { background: var(--secondary-container); color: var(--on-secondary-container); }
+  .btn-text { background: none; color: var(--primary); padding: 12px 8px; }
+  .btn-row { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; }
+  .chip-ui { padding: 8px 14px; border-radius: var(--radius-full); font-size: 13px; font-weight: 600; border: 1px solid var(--outline-variant); color: var(--on-surface-variant); background: var(--surface); }
+  .chip-ui.sel { background: var(--primary-container); color: var(--on-primary-container); border-color: transparent; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: var(--radius-full); }
+  .field { border: 1px solid var(--outline); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; gap: 12px; color: var(--on-surface-variant); }
+  .field .material-symbols-outlined { font-size: 20px; }
+
+  .footer { padding: var(--sp-16) 0; color: var(--on-surface-variant); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<!-- ========== HERO ========== -->
+<header class="hero wrap" data-screen-label="Charte — Couverture">
+  <div class="hero-mark">
+    <div class="logo-f"><span>F</span></div>
+    <div>
+      <div class="t-overline" style="color:var(--secondary)">Système de design</div>
+      <div style="font-family:var(--font-display); font-size:24px; font-weight:600; letter-spacing:.5px;">Frollot</div>
+    </div>
+  </div>
+  <h1>La beauté,<br><em>raffinée.</em></h1>
+  <p class="hero-sub">Charte graphique de la plateforme Frollot — coiffure &amp; beauté. Un langage visuel premium et chaleureux : prune raffinée, rose poudré et champagne, porté par une serif éditoriale et une sans-serif d'interface impeccable.</p>
+  <div class="hero-meta">
+    <span class="pill">Material Design 3</span>
+    <span class="pill">Light &amp; Dark</span>
+    <span class="pill">Compose Multiplatform</span>
+    <span class="pill">WCAG AA</span>
+    <span class="pill">RTL ready</span>
+  </div>
+</header>
+
+<!-- ========== LOGO ========== -->
+<section class="wrap" data-screen-label="Charte — Logo">
+  <p class="eyebrow t-overline">01 — Identité</p>
+  <h2 class="sec-title">Logo &amp; monogramme</h2>
+  <p class="sec-intro">Le mot-symbole « Frollot » s'écrit en Cormorant Garamond — une serif à fort contraste qui évoque le soin et l'élégance. Le monogramme « F » sert d'avatar d'application, de favicon et de marqueur compact dans les en-têtes.</p>
+
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--sp-6); margin-top:var(--sp-8);">
+    <div class="comp-card" style="display:flex; flex-direction:column; gap:var(--sp-6); justify-content:center; align-items:center; padding:var(--sp-12);">
+      <div style="font-family:var(--font-display); font-size:64px; font-weight:600; letter-spacing:-1px;">Frollot</div>
+      <div style="font-family:var(--font-display); font-size:64px; font-weight:500; font-style:italic; color:var(--primary);">Frollot</div>
+    </div>
+    <div class="comp-card" style="display:flex; gap:var(--sp-6); justify-content:center; align-items:center; flex-wrap:wrap; padding:var(--sp-12);">
+      <div class="logo-f" style="width:96px;height:96px;font-size:66px;border-radius:var(--radius-xl);"><span>F</span></div>
+      <div class="logo-f" style="width:72px;height:72px;font-size:50px;background:var(--surface);color:var(--primary);border:2px solid var(--primary);box-shadow:none;"><span>F</span></div>
+      <div class="logo-f" style="width:56px;height:56px;font-size:38px;background:var(--secondary-container);color:var(--secondary);box-shadow:none;"><span>F</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== COLOR ========== -->
+<section class="wrap" data-screen-label="Charte — Couleurs">
+  <p class="eyebrow t-overline">02 — Couleur</p>
+  <h2 class="sec-title">Palette principale</h2>
+  <p class="sec-intro">Trois familles chromatiques accordées en luminosité et chroma faible pour un rendu sobre et premium. La prune remplace le violet criard d'origine ; le rose poudré et le champagne apportent chaleur et accents.</p>
+
+  <div class="swatch-grid">
+    <!-- Primary -->
+    <div class="swatch">
+      <div class="chip" style="background:var(--primary)"><span class="on" style="color:var(--on-primary)">On Primary</span></div>
+      <div class="pair">
+        <div style="background:var(--primary-container);color:var(--on-primary-container)">Container</div>
+        <div style="background:var(--on-primary-container);color:var(--primary-container)">On Cont.</div>
+      </div>
+      <div class="meta"><div class="role">Primary — Prune</div><div class="hex">#6B4E78</div><div class="token">colorScheme.primary</div></div>
+    </div>
+    <!-- Secondary -->
+    <div class="swatch">
+      <div class="chip" style="background:var(--secondary)"><span class="on" style="color:var(--on-secondary)">On Secondary</span></div>
+      <div class="pair">
+        <div style="background:var(--secondary-container);color:var(--on-secondary-container)">Container</div>
+        <div style="background:var(--on-secondary-container);color:var(--secondary-container)">On Cont.</div>
+      </div>
+      <div class="meta"><div class="role">Secondary — Rose poudré</div><div class="hex">#A4677F</div><div class="token">colorScheme.secondary</div></div>
+    </div>
+    <!-- Tertiary -->
+    <div class="swatch">
+      <div class="chip" style="background:var(--tertiary)"><span class="on" style="color:var(--on-tertiary)">On Tertiary</span></div>
+      <div class="pair">
+        <div style="background:var(--tertiary-container);color:var(--on-tertiary-container)">Container</div>
+        <div style="background:var(--on-tertiary-container);color:var(--tertiary-container)">On Cont.</div>
+      </div>
+      <div class="meta"><div class="role">Tertiary — Champagne</div><div class="hex">#A98750</div><div class="token">colorScheme.tertiary</div></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:var(--sp-12); font-family:var(--font-sans); font-weight:700; font-size:18px;">Couleurs d'état</h3>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="chip" style="background:var(--success)"><span class="on" style="color:var(--on-success)">Success</span></div>
+      <div class="meta"><div class="role">Succès</div><div class="hex">#4C7A57</div><div class="token">+ successContainer</div></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:var(--error)"><span class="on" style="color:var(--on-error)">Error</span></div>
+      <div class="meta"><div class="role">Erreur</div><div class="hex">#B3261E</div><div class="token">colorScheme.error</div></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:var(--warning)"><span class="on" style="color:var(--on-warning)">Warning</span></div>
+      <div class="meta"><div class="role">Avertissement</div><div class="hex">#946A1A</div><div class="token">+ warningContainer</div></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background:var(--info)"><span class="on" style="color:var(--on-info)">Info</span></div>
+      <div class="meta"><div class="role">Information</div><div class="hex">#3C6A8A</div><div class="token">+ infoContainer</div></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:var(--sp-12); font-family:var(--font-sans); font-weight:700; font-size:18px;">Surfaces &amp; neutres</h3>
+  <p class="sec-intro" style="margin-top:var(--sp-2)">Blancs tiédis d'un sous-ton prune presque imperceptible (saturation &lt; 0.02) — jamais de blanc pur clinique. Échelle de conteneurs pour stratifier la profondeur.</p>
+  <div class="surfaces">
+    <div style="background:var(--surface-container-lowest)"><span class="nm">Lowest</span><span class="hx">#FFFFFF</span></div>
+    <div style="background:var(--surface-container-low)"><span class="nm">Low</span><span class="hx">#FBF6F9</span></div>
+    <div style="background:var(--surface-container)"><span class="nm">Container</span><span class="hx">#F6F0F4</span></div>
+    <div style="background:var(--surface-container-high)"><span class="nm">High</span><span class="hx">#F0E9EE</span></div>
+    <div style="background:var(--surface-container-highest)"><span class="nm">Highest</span><span class="hx">#EAE1E8</span></div>
+  </div>
+</section>
+
+<!-- ========== DARK ========== -->
+<section class="wrap" data-screen-label="Charte — Dark mode">
+  <p class="eyebrow t-overline">03 — Couleur</p>
+  <h2 class="sec-title">Mode sombre</h2>
+  <p class="sec-intro">Le fond bascule sur un aubergine très profond (#15111A) plutôt qu'un noir pur. Les teintes s'éclaircissent et se désaturent pour préserver le contraste AA tout en gardant l'âme chaleureuse de la marque.</p>
+  <div class="dark-demo theme-dark" style="background:var(--background); border:1px solid var(--outline-variant);">
+    <div class="swatch-grid">
+      <div class="swatch" style="background:var(--surface-container); border-color:var(--outline-variant)">
+        <div class="chip" style="background:var(--primary)"><span class="on" style="color:var(--on-primary)">Primary</span></div>
+        <div class="meta"><div class="role" style="color:var(--on-surface)">Primary</div><div class="hex" style="color:var(--on-surface-variant)">#D9BBE2</div></div>
+      </div>
+      <div class="swatch" style="background:var(--surface-container); border-color:var(--outline-variant)">
+        <div class="chip" style="background:var(--secondary)"><span class="on" style="color:var(--on-secondary)">Secondary</span></div>
+        <div class="meta"><div class="role" style="color:var(--on-surface)">Secondary</div><div class="hex" style="color:var(--on-surface-variant)">#E8B6C8</div></div>
+      </div>
+      <div class="swatch" style="background:var(--surface-container); border-color:var(--outline-variant)">
+        <div class="chip" style="background:var(--tertiary)"><span class="on" style="color:var(--on-tertiary)">Tertiary</span></div>
+        <div class="meta"><div class="role" style="color:var(--on-surface)">Tertiary</div><div class="hex" style="color:var(--on-surface-variant)">#E0C28A</div></div>
+      </div>
+      <div class="swatch" style="background:var(--surface-container); border-color:var(--outline-variant)">
+        <div class="chip" style="background:var(--surface-container-highest)"><span class="on" style="color:var(--on-surface)">Surface</span></div>
+        <div class="meta"><div class="role" style="color:var(--on-surface)">Background</div><div class="hex" style="color:var(--on-surface-variant)">#15111A</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== TYPE ========== -->
+<section class="wrap" data-screen-label="Charte — Typographie">
+  <p class="eyebrow t-overline">04 — Typographie</p>
+  <h2 class="sec-title">Échelle typographique</h2>
+  <p class="sec-intro"><b style="color:var(--on-surface)">Cormorant Garamond</b> pour les Display &amp; Headline (caractère éditorial) · <b style="color:var(--on-surface)">Manrope</b> pour Title, Body &amp; Label (lisibilité d'interface). Tous deux disponibles via Google Fonts dans Compose Multiplatform.</p>
+
+  <div style="margin-top:var(--sp-8)">
+    <div class="type-row"><div class="type-spec"><b>Display L</b>Cormorant · 57/60 · -1</div><div class="type-sample t-display-lg">Coiffure d'exception</div></div>
+    <div class="type-row"><div class="type-spec"><b>Headline M</b>Cormorant · 28/34</div><div class="type-sample t-headline-md">Trouvez votre salon idéal</div></div>
+    <div class="type-row"><div class="type-spec"><b>Title L</b>Manrope 600 · 22/28</div><div class="type-sample t-title-lg">Salon Lumière — Paris 9e</div></div>
+    <div class="type-row"><div class="type-spec"><b>Title M</b>Manrope 600 · 16/24</div><div class="type-sample t-title-md">Coupe &amp; brushing femme</div></div>
+    <div class="type-row"><div class="type-spec"><b>Body L</b>Manrope 400 · 16/24</div><div class="type-sample t-body-lg">Une expérience beauté pensée dans le moindre détail, du premier rendez-vous au résultat final.</div></div>
+    <div class="type-row"><div class="type-spec"><b>Body M</b>Manrope 400 · 14/20</div><div class="type-sample t-body-md">Réservez en quelques secondes et suivez votre file d'attente en temps réel.</div></div>
+    <div class="type-row"><div class="type-spec"><b>Label L</b>Manrope 600 · 14/20</div><div class="type-sample t-label-lg">Réserver maintenant</div></div>
+    <div class="type-row"><div class="type-spec"><b>Overline</b>Manrope 700 · 11 · 2px caps</div><div class="type-sample t-overline">Tendances de la semaine</div></div>
+  </div>
+</section>
+
+<!-- ========== SPACING ========== -->
+<section class="wrap" data-screen-label="Charte — Espacement">
+  <p class="eyebrow t-overline">05 — Espacement</p>
+  <h2 class="sec-title">Grille de 4&nbsp;dp</h2>
+  <p class="sec-intro">Toutes les marges et paddings dérivent d'une base de 4&nbsp;dp. Les pas courants sont nommés pour garantir la cohérence d'un écran à l'autre.</p>
+  <div style="margin-top:var(--sp-8)">
+    <div class="space-row"><span class="space-label"><b>4</b> · xs</span><div class="space-bar" style="width:4px"></div><span class="type-spec">séparations fines, icône↔texte</span></div>
+    <div class="space-row"><span class="space-label"><b>8</b> · sm</span><div class="space-bar" style="width:8px"></div><span class="type-spec">gap entre chips, padding compact</span></div>
+    <div class="space-row"><span class="space-label"><b>12</b> · md</span><div class="space-bar" style="width:12px"></div><span class="type-spec">padding interne de carte</span></div>
+    <div class="space-row"><span class="space-label"><b>16</b> · lg</span><div class="space-bar" style="width:16px"></div><span class="type-spec">marge d'écran standard</span></div>
+    <div class="space-row"><span class="space-label"><b>24</b> · xl</span><div class="space-bar" style="width:24px"></div><span class="type-spec">entre sections</span></div>
+    <div class="space-row"><span class="space-label"><b>32</b> · 2xl</span><div class="space-bar" style="width:32px"></div><span class="type-spec">respirations majeures</span></div>
+    <div class="space-row"><span class="space-label"><b>48</b> · 3xl</span><div class="space-bar" style="width:48px"></div><span class="type-spec">blocs héros, vides éditoriaux</span></div>
+  </div>
+</section>
+
+<!-- ========== SHAPES ========== -->
+<section class="wrap" data-screen-label="Charte — Formes">
+  <p class="eyebrow t-overline">06 — Formes</p>
+  <h2 class="sec-title">Coins arrondis</h2>
+  <p class="sec-intro">Une douceur constante, jamais anguleuse. Les boutons et chips sont entièrement arrondis (full) ; les cartes et feuilles adoptent des rayons larges et accueillants.</p>
+  <div class="shape-grid">
+    <div class="shape-card"><div class="shape-box" style="border-radius:var(--radius-xs)"></div><div class="nm">Extra small</div><div class="vl">4 dp · puces, tags</div></div>
+    <div class="shape-card"><div class="shape-box" style="border-radius:var(--radius-sm)"></div><div class="nm">Small</div><div class="vl">8 dp · champs</div></div>
+    <div class="shape-card"><div class="shape-box" style="border-radius:var(--radius-md)"></div><div class="nm">Medium</div><div class="vl">12 dp · cartes</div></div>
+    <div class="shape-card"><div class="shape-box" style="border-radius:var(--radius-lg)"></div><div class="nm">Large</div><div class="vl">16 dp · grandes cartes</div></div>
+    <div class="shape-card"><div class="shape-box" style="border-radius:var(--radius-xl)"></div><div class="nm">Extra large</div><div class="vl">28 dp · feuilles, dialogues</div></div>
+    <div class="shape-card"><div class="shape-box" style="border-radius:var(--radius-full)"></div><div class="nm">Full</div><div class="vl">∞ · boutons, chips</div></div>
+  </div>
+</section>
+
+<!-- ========== ELEVATION ========== -->
+<section class="wrap" data-screen-label="Charte — Élévation">
+  <p class="eyebrow t-overline">07 — Élévation</p>
+  <h2 class="sec-title">Ombres douces</h2>
+  <p class="sec-intro">Des ombres teintées de prune, basses et diffuses, pour une profondeur subtile. On évite les ombres dures ou noires pures.</p>
+  <div class="elev-grid">
+    <div><div class="elev-card" style="box-shadow:var(--elev-0); border:1px solid var(--outline-variant)">0</div><div class="lbl">Niveau 0 · à plat</div></div>
+    <div><div class="elev-card" style="box-shadow:var(--elev-1)">1</div><div class="lbl">Cartes au repos</div></div>
+    <div><div class="elev-card" style="box-shadow:var(--elev-2)">2</div><div class="lbl">Cartes au survol</div></div>
+    <div><div class="elev-card" style="box-shadow:var(--elev-3)">3</div><div class="lbl">Barres, menus</div></div>
+    <div><div class="elev-card" style="box-shadow:var(--elev-4)">4</div><div class="lbl">FAB, dialogues</div></div>
+    <div><div class="elev-card" style="box-shadow:var(--elev-5)">5</div><div class="lbl">Feuilles modales</div></div>
+  </div>
+</section>
+
+<!-- ========== ICONS ========== -->
+<section class="wrap" data-screen-label="Charte — Iconographie">
+  <p class="eyebrow t-overline">08 — Iconographie</p>
+  <h2 class="sec-title">Material Symbols, ligne fine</h2>
+  <p class="sec-intro">Fin des 258 faux-icônes en emoji. On adopte <b style="color:var(--on-surface)">Material Symbols (Outlined)</b> — graisse 400, style ligne — pour une cohérence totale et un rendu premium. Taille de base 24 dp, cible tactile 48 dp.</p>
+  <div class="icon-grid">
+    <div class="icon-cell"><span class="material-symbols-outlined">content_cut</span><div class="nm">Prestation</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">favorite</span><div class="nm">Favori</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">star</span><div class="nm">Note</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">calendar_month</span><div class="nm">Réserver</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">chat_bubble</span><div class="nm">Commenter</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">verified</span><div class="nm">Vérifié</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">place</span><div class="nm">Lieu</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">schedule</span><div class="nm">Horaire</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">groups</span><div class="nm">File</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">share</span><div class="nm">Partager</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">bookmark</span><div class="nm">Collection</div></div>
+    <div class="icon-cell"><span class="material-symbols-outlined">search</span><div class="nm">Rechercher</div></div>
+  </div>
+</section>
+
+<!-- ========== COMPONENTS PREVIEW ========== -->
+<section class="wrap" data-screen-label="Charte — Composants">
+  <p class="eyebrow t-overline">09 — Composants</p>
+  <h2 class="sec-title">Aperçu des composants</h2>
+  <p class="sec-intro">Premiers atomes du système, construits exclusivement sur les tokens ci-dessus. La bibliothèque complète (41 composants) sera détaillée dans les maquettes.</p>
+  <div class="comp-grid">
+    <div class="comp-card">
+      <h4>Boutons</h4>
+      <div class="btn-row" style="flex-direction:column; align-items:stretch;">
+        <button class="btn btn-primary" style="justify-content:center"><span class="material-symbols-outlined" style="font-size:20px">calendar_month</span>Réserver</button>
+        <button class="btn btn-secondary" style="justify-content:center">Suivre</button>
+        <button class="btn btn-text" style="justify-content:center">Mot de passe oublié ?</button>
+      </div>
+    </div>
+    <div class="comp-card">
+      <h4>Chips de filtre</h4>
+      <div class="btn-row">
+        <span class="chip-ui sel">Tous</span>
+        <span class="chip-ui">Suivis</span>
+        <span class="chip-ui">Tendances</span>
+        <span class="chip-ui">Coupe</span>
+        <span class="chip-ui">Coloration</span>
+      </div>
+    </div>
+    <div class="comp-card">
+      <h4>Badges &amp; états</h4>
+      <div class="btn-row">
+        <span class="badge" style="background:var(--success-container);color:var(--on-success-container)"><span class="material-symbols-outlined" style="font-size:14px">check_circle</span>Confirmé</span>
+        <span class="badge" style="background:var(--warning-container);color:var(--on-warning-container)">En attente</span>
+        <span class="badge" style="background:var(--error-container);color:var(--on-error-container)">Annulé</span>
+        <span class="badge" style="background:var(--primary-container);color:var(--on-primary-container)"><span class="material-symbols-outlined" style="font-size:14px">verified</span>Vérifié</span>
+      </div>
+    </div>
+    <div class="comp-card">
+      <h4>Champ de saisie</h4>
+      <div style="display:flex;flex-direction:column;gap:var(--sp-3)">
+        <div class="field"><span class="material-symbols-outlined">mail</span>Adresse email</div>
+        <div class="field" style="border-color:var(--primary);color:var(--on-surface)"><span class="material-symbols-outlined" style="color:var(--primary)">lock</span>••••••••<span class="material-symbols-outlined" style="margin-left:auto">visibility</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap footer">
+  Frollot · Charte graphique v1 — système « Éditorial premium chaleureux ». Prochaine étape : maquettes haute-fidélité des écrans clés dans des cadres Android.
+</footer>
+
+<script>
+  // Rendu des icônes par codepoint (fiable navigateur + captures + exports)
+  var MS = {
+    content_cut:'e14e', favorite:'e87e', star:'e838', calendar_month:'ebcc',
+    chat_bubble:'e0cb', verified:'ef76', place:'e55f', schedule:'e8b5', groups:'f233',
+    share:'e80d', bookmark:'e8e7', search:'e8b6', check_circle:'f0be',
+    mail:'e159', lock:'e899', visibility:'e8f4'
+  };
+  document.querySelectorAll('.material-symbols-outlined').forEach(function(el){
+    var n = el.textContent.trim();
+    if (MS[n]) el.textContent = String.fromCodePoint(parseInt(MS[n], 16));
+  });
+</script>
+
+</body>
+</html>

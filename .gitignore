@@ -1,0 +1,103 @@
+# ╔════════════════════════════════════════════════════════════════════════════╗
+# ║                         FROLLOT - .gitignore                                ║
+# ╚════════════════════════════════════════════════════════════════════════════╝
+
+# =========================
+# 🔐 SECRETS & ENVIRONNEMENT (CRITIQUE)
+# =========================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+firebase-*.json
+service-account*.json
+env-config.txt
+google-services.json
+GoogleService-Info.plist
+
+# =========================
+# 🗄️ Données locales & dumps SQL (jamais committer)
+# =========================
+backup*.sql
+*_dump.sql
+login_test.json
+backend/uploads/
+
+# =========================
+# 💥 Crash dumps JVM
+# =========================
+hs_err_pid*.log
+replay_pid*.log
+
+# =========================
+# 📦 Dépendances & Build
+# =========================
+node_modules/
+build/
+dist/
+out/
+target/
+*.jar
+*.war
+
+# =========================
+# 🗂️ IDE & Éditeurs
+# =========================
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# =========================
+# 📝 Logs & Cache
+# =========================
+logs/
+*.log
+.cache/
+.tmp/
+tmp/
+
+# =========================
+# 🧪 Tests & Coverage
+# =========================
+coverage/
+*.lcov
+.nyc_output/
+
+# =========================
+# 🐘 Gradle
+# =========================
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# =========================
+# 🎯 Kotlin/JVM
+# =========================
+.kotlin/
+*.class
+
+# =========================
+# 📱 Mobile (Kotlin Multiplatform)
+# =========================
+# iOS
+*.xcuserstate
+xcuserdata/
+DerivedData/
+Pods/
+
+# Android
+*.apk
+*.aab
+.cxx/
+local.properties
+

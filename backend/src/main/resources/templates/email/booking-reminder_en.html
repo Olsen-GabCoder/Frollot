@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Reminder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #FF9800;
+            border-bottom: 3px solid #FF9800;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .info-box {
+            background-color: #fff3e0;
+            padding: 15px;
+            border-left: 4px solid #FF9800;
+            margin: 15px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .highlight {
+            background-color: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Reminder: Your booking tomorrow</h1>
+        </div>
+        
+        <div class="content">
+            <p>Hello <strong th:text="${clientName}">Client</strong>,</p>
+            
+            <p>We remind you that you have a booking <strong>tomorrow</strong>!</p>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="info-label">Salon:</span>
+                    <span class="info-value" th:text="${salonName}">Salon</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Service:</span>
+                    <span class="info-value" th:text="${serviceName}">Service</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Hairstylist:</span>
+                    <span class="info-value" th:text="${staffName}">Hairstylist</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Date and time:</span>
+                    <span class="info-value" th:text="${bookingDate}">Date</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Duration:</span>
+                    <span class="info-value" th:text="${duration}">Duration</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Price:</span>
+                    <span class="info-value" th:text="${price}">Price</span>
+                </div>
+            </div>
+            
+            <div class="highlight">
+                <p><strong>📍 Address:</strong> <span th:text="${salonAddress}">Address</span></p>
+                <p><strong>📞 Phone:</strong> <span th:text="${salonPhone}">Phone</span></p>
+            </div>
+            
+            <p>We look forward to seeing you! If you cannot attend, please let us know as soon as possible.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This email was sent automatically, please do not reply.</p>
+            <p>&copy; 2024 Frollot - All rights reserved</p>
+        </div>
+    </div>
+</body>
+</html>
+

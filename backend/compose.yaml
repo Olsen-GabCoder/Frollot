@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: 'mysql:latest'
+    environment:
+      # Configuration alignée avec Spring Boot (application.yml)
+      # Source de vérité : Spring Boot définit la logique métier et mappings JPA
+      - 'MYSQL_DATABASE=coiffure_db'
+      - 'MYSQL_USER=coiffure_user'
+      # Mots de passe injectés depuis le fichier .env (jamais en dur ici)
+      - 'MYSQL_PASSWORD=${MYSQL_PASSWORD}'
+      - 'MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}'
+    ports:
+      - '3306'
+    # Configuration MySQL pour la compatibilité UTF8MB4
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
