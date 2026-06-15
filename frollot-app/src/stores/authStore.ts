@@ -9,10 +9,15 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isInitialized: boolean;
+  // S9d-2 — jeton de défi 2fa_pending (5 min). EN MÉMOIRE UNIQUEMENT : jamais écrit dans
+  // SecureStore/AsyncStorage (secret éphémère, un refresh web le perd volontairement).
+  pendingTwoFactorToken: string | null;
 
   // Actions
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<AuthResponse>;
+  loginTwoFactor: (twoFactorToken: string, code: string) => Promise<AuthResponse>;
+  clearTwoFactorChallenge: () => void;
   register: (email: string, password: string, firstName: string, lastName: string, userType: UserType) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -32,11 +37,33 @@ function authResponseToUser(res: AuthResponse): User {
   };
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set, get) => {
+  /**
+   * S9d-2 — UNIQUE point d'entrée en état authentifié (login normal ET succès 2FA).
+   *
+   * GARDE DÉFENSIVE anti-session-zombie : refuse de stocker quoi que ce soit si les
+   * tokens sont absents/vides (cas historique : la réponse de défi 2FA contenait
+   * accessToken="" que l'ancien login stockait aveuglément -> isAuthenticated=true
+   * avec tous les /me/* en 401). Toute réponse malformée future lève une erreur
+   * visible au lieu de créer une session cassée.
+   */
+  const finalizeSession = async (response: AuthResponse): Promise<void> => {
+    if (!response.accessToken || !response.refreshToken) {
+      throw new Error(
+        "Réponse d'authentification invalide (tokens absents) : session refusée."
+      );
+    }
+    await tokenManager.setTokens(response.accessToken, response.refreshToken);
+    const user = authResponseToUser(response);
+    set({ user, isAuthenticated: true, pendingTwoFactorToken: null });
+  };
+
+  return {
   user: null,
   isAuthenticated: false,
   isLoading: false,
   isInitialized: false,
+  pendingTwoFactorToken: null,
 
   initialize: async () => {
     try {
@@ -58,15 +85,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const response = await authApi.login({ email, password });
-      await tokenManager.setTokens(response.accessToken, response.refreshToken);
-      const user = authResponseToUser(response);
-      set({ user, isAuthenticated: true, isLoading: false });
+
+      // S9d-2 — défi 2FA TESTÉ AVANT TOUT STOCKAGE : la réponse de défi ne contient
+      // AUCUN vrai token (accessToken=""). On garde le jeton en mémoire et on rend
+      // le sentinel au caller (login.tsx navigue vers l'écran de défi).
+      if (response.requiresTwoFactor) {
+        if (!response.twoFactorToken) {
+          throw new Error('Défi 2FA reçu sans jeton de vérification. Réessayez.');
+        }
+        set({ pendingTwoFactorToken: response.twoFactorToken, isLoading: false });
+        return response;
+      }
+
+      await finalizeSession(response);
+      set({ isLoading: false });
       return response;
     } catch (error) {
       set({ isLoading: false });
       throw error;
     }
   },
+
+  // S9d-2 — étape 2 : transforme le défi en vraie session, par la MÊME finalisation
+  // que le login normal (état final strictement identique).
+  loginTwoFactor: async (twoFactorToken, code) => {
+    set({ isLoading: true });
+    try {
+      const response = await authApi.loginTwoFactor({ twoFactorToken, code });
+      await finalizeSession(response);
+      set({ isLoading: false });
+      return response;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  // Abandon du défi (annuler / jeton mort) : on jette le jeton, rien n'a été stocké.
+  clearTwoFactorChallenge: () => set({ pendingTwoFactorToken: null }),
 
   register: async (email, password, firstName, lastName, userType) => {
     set({ isLoading: true });
@@ -82,7 +138,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     await tokenManager.clearTokens();
-    set({ user: null, isAuthenticated: false });
+    set({ user: null, isAuthenticated: false, pendingTwoFactorToken: null });
   },
 
   refreshUser: async () => {
@@ -95,4 +151,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setUser: (user) => set({ user }),
-}));
+  };
+});

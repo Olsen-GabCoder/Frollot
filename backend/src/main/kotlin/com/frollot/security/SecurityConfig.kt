@@ -90,7 +90,7 @@ class SecurityConfig(
                     // ========== ENDPOINTS PUBLICS (sans authentification) ==========
 
                     // Authentification
-                    .requestMatchers("/api/users/login", "/api/users/register", "/api/users/refresh", "/api/users/complete-registration", "/api/users/forgot-password", "/api/users/reset-password").permitAll()
+                    .requestMatchers("/api/users/login", "/api/users/login/2fa", "/api/users/register", "/api/users/refresh", "/api/users/complete-registration", "/api/users/forgot-password", "/api/users/reset-password").permitAll()
                     
                     // Webhook Stripe (doit être public mais protégé par signature)
                     .requestMatchers("/api/payments/webhook").permitAll()
@@ -241,7 +241,8 @@ class SecurityConfig(
             "Accept",
             "Origin",
             "Access-Control-Request-Method",
-            "Access-Control-Request-Headers"
+            "Access-Control-Request-Headers",
+            "X-Refresh-Token" // S8 : identification de la session courante (GET/DELETE /me/sessions)
         )
 
         // Headers exposés au frontend

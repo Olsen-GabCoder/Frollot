@@ -70,6 +70,9 @@ data class SalonStaff(
     @JsonIgnore
     var user: User? = null,
 
+    @Column(name = "role", nullable = false)
+    var role: String = "hairstylist",
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
         name = "salon_staff_specialties",

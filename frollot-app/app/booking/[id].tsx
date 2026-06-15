@@ -7,11 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme';
+import { formatDateTime } from '../../src/utils/formatDate';
 import { bookingsApi } from '../../src/api/bookings';
 import { BookingResponse, BookingStatus, PaymentStatus } from '../../src/types';
 
@@ -42,7 +44,7 @@ export default function BookingDetailScreen() {
       const b = await bookingsApi.getBookingById(id);
       setBooking(b);
     } catch (e: any) {
-      setError(e?.message || t('common.error'));
+      setError(e?.message || t('common.states.error'));
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +59,7 @@ export default function BookingDetailScreen() {
       t('booking.cancelBooking'),
       t('booking.cancelConfirm'),
       [
-        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.actions.cancel'), style: 'cancel' },
         {
           text: t('booking.cancelBooking'),
           style: 'destructive',
@@ -68,7 +70,7 @@ export default function BookingDetailScreen() {
               await bookingsApi.cancelBooking(id);
               await loadBooking();
             } catch (e: any) {
-              Alert.alert(t('common.error'), e?.response?.data?.message || t('common.error'));
+              Alert.alert(t('common.states.error'), e?.response?.data?.message || t('common.states.error'));
             } finally {
               setIsCancelling(false);
             }
@@ -89,9 +91,9 @@ export default function BookingDetailScreen() {
   if (error || !booking) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[typo.bodyLarge, { color: colors.error }]}>{error || t('common.error')}</Text>
+        <Text style={[typo.bodyLarge, { color: colors.error }]}>{error || t('common.states.error')}</Text>
         <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={loadBooking}>
-          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>{t('common.retry')}</Text>
+          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>{t('common.actions.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -104,9 +106,9 @@ export default function BookingDetailScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? "arrow-forward" : "arrow-back"} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>
           {t('booking.myBookings')}
         </Text>
       </View>
@@ -128,13 +130,13 @@ export default function BookingDetailScreen() {
           <View style={[styles.iconCircle, { backgroundColor: colors.primaryContainer }]}>
             <MaterialIcons name="store" size={24} color={colors.onPrimaryContainer} />
           </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={{ flex: 1, marginStart: 12 }}>
             <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{booking.salonName}</Text>
             <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>
-              {t('common.seeAll')}
+              {t('common.actions.seeAll')}
             </Text>
           </View>
-          <MaterialIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+          <MaterialIcons name={I18nManager.isRTL ? "chevron-left" : "chevron-right"} size={24} color={colors.onSurfaceVariant} />
         </TouchableOpacity>
 
         {/* Service card */}
@@ -142,7 +144,7 @@ export default function BookingDetailScreen() {
           <View style={[styles.iconCircle, { backgroundColor: colors.secondaryContainer }]}>
             <MaterialIcons name="content-cut" size={24} color={colors.onSecondaryContainer} />
           </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
+          <View style={{ flex: 1, marginStart: 12 }}>
             <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{booking.serviceName}</Text>
             <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>
               {booking.serviceCategory} - {booking.formattedDuration}
@@ -154,21 +156,21 @@ export default function BookingDetailScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.detailRow}>
             <MaterialIcons name="event" size={20} color={colors.onSurfaceVariant} />
-            <Text style={[typo.bodyLarge, { color: colors.onSurface, marginLeft: 12 }]}>
-              {date.toLocaleDateString()} - {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <Text style={[typo.bodyLarge, { color: colors.onSurface, marginStart: 12 }]}>
+              {formatDateTime(date)}
             </Text>
           </View>
           {booking.staffName && (
             <View style={[styles.detailRow, { marginTop: 12 }]}>
               <MaterialIcons name="person" size={20} color={colors.onSurfaceVariant} />
-              <Text style={[typo.bodyLarge, { color: colors.onSurface, marginLeft: 12 }]}>
+              <Text style={[typo.bodyLarge, { color: colors.onSurface, marginStart: 12 }]}>
                 {booking.staffName}
               </Text>
             </View>
           )}
           <View style={[styles.detailRow, { marginTop: 12 }]}>
             <MaterialIcons name="access-time" size={20} color={colors.onSurfaceVariant} />
-            <Text style={[typo.bodyLarge, { color: colors.onSurface, marginLeft: 12 }]}>
+            <Text style={[typo.bodyLarge, { color: colors.onSurface, marginStart: 12 }]}>
               {booking.formattedDuration}
             </Text>
           </View>
@@ -178,7 +180,7 @@ export default function BookingDetailScreen() {
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
           <View style={styles.detailRow}>
             <MaterialIcons name="payment" size={20} color={colors.onSurfaceVariant} />
-            <Text style={[typo.headlineSmall, { color: colors.onSurface, marginLeft: 12 }]}>
+            <Text style={[typo.headlineSmall, { color: colors.onSurface, marginStart: 12 }]}>
               {booking.formattedPrice || '-'}
             </Text>
           </View>

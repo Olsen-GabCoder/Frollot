@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +44,7 @@ export default function SalonOwnerProfileScreen() {
         if (salonsData.status === 'fulfilled') setSalons(salonsData.value);
         if (collectionsData.status === 'fulfilled') setCollections(collectionsData.value);
       } catch (e: any) {
-        setError(e?.message || t('common.error'));
+        setError(e?.message || t('common.states.error'));
       } finally {
         setIsLoading(false);
       }
@@ -60,17 +61,17 @@ export default function SalonOwnerProfileScreen() {
   }
 
   const stats = [
-    { label: 'Salons', value: profile.salonsCount },
-    { label: t('profile.followers'), value: profile.totalFollowers },
+    { label: t('profile.stats.salons'), value: profile.statistics.salonsCount },
+    { label: t('profile.followers'), value: profile.statistics.followersCount },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>{t('profile.profile')}</Text>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{t('profile.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -91,7 +92,7 @@ export default function SalonOwnerProfileScreen() {
           {profile.isVerified && (
             <View style={styles.verifiedRow}>
               <MaterialIcons name="verified" size={16} color={colors.primary} />
-              <Text style={[typo.labelSmall, { color: colors.primary, marginLeft: 4 }]}>{t('verification.verified')}</Text>
+              <Text style={[typo.labelSmall, { color: colors.primary, marginStart: 4 }]}>{t('verification.verified')}</Text>
             </View>
           )}
 
@@ -109,7 +110,7 @@ export default function SalonOwnerProfileScreen() {
         {salons.length > 0 && (
           <>
             <Text style={[typo.titleMedium, { color: colors.onBackground, marginTop: 8, marginBottom: 8 }]}>
-              Salons
+              {t('profile.stats.salons')}
             </Text>
             {salons.map((salon) => (
               <TouchableOpacity
@@ -122,11 +123,11 @@ export default function SalonOwnerProfileScreen() {
                     <Image source={{ uri: resolveMediaUrl(salon.coverPhotoUrl) }} style={styles.salonThumb} contentFit="cover" />
                   )}
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, marginStart: 12 }}>
                   <View style={styles.salonNameRow}>
                     <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{salon.name}</Text>
                     {salon.isVerified && (
-                      <MaterialIcons name="verified" size={14} color={colors.primary} style={{ marginLeft: 4 }} />
+                      <MaterialIcons name="verified" size={14} color={colors.primary} style={{ marginStart: 4 }} />
                     )}
                   </View>
                   <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{salon.city}</Text>
@@ -134,7 +135,7 @@ export default function SalonOwnerProfileScreen() {
                     {t('profile.followersCount', { count: salon.followersCount ?? 0 })}
                   </Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+                <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={24} color={colors.onSurfaceVariant} />
               </TouchableOpacity>
             ))}
           </>
@@ -153,9 +154,9 @@ export default function SalonOwnerProfileScreen() {
                 onPress={() => router.push(`/collections/${col.id}`)}
               >
                 <MaterialIcons name="collections-bookmark" size={20} color={colors.onSurfaceVariant} />
-                <Text style={[typo.titleSmall, { color: colors.onSurface, flex: 1, marginLeft: 12 }]}>{col.name}</Text>
+                <Text style={[typo.titleSmall, { color: colors.onSurface, flex: 1, marginStart: 12 }]}>{col.name}</Text>
                 <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{col.postsCount}</Text>
-                <MaterialIcons name="chevron-right" size={20} color={colors.onSurfaceVariant} />
+                <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={20} color={colors.onSurfaceVariant} />
               </TouchableOpacity>
             ))}
           </>

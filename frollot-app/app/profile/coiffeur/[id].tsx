@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +46,7 @@ export default function CoiffeurProfileScreen() {
       }
       if (pinned.status === 'fulfilled') setPinnedPosts(pinned.value);
     } catch (e: any) {
-      setError(e?.message || t('common.error'));
+      setError(e?.message || t('common.states.error'));
     } finally {
       setIsLoading(false);
     }
@@ -73,26 +74,24 @@ export default function CoiffeurProfileScreen() {
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Text style={[typo.bodyLarge, { color: colors.error }]}>{error}</Text>
         <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={loadProfile}>
-          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>{t('common.retry')}</Text>
+          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>{t('common.actions.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const stats = [
-    { label: 'Posts', value: profile.postsCount },
-    { label: t('profile.followers'), value: profile.followersCount },
-    { label: t('profile.portfolios'), value: profile.portfoliosCount },
-    { label: t('salon.reviews'), value: profile.totalReviews ?? 0 },
+    { label: t('profile.stats.posts'), value: profile.statistics.postsCount },
+    { label: t('profile.followers'), value: profile.statistics.followersCount },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>{t('profile.profile')}</Text>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{t('profile.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -113,7 +112,7 @@ export default function CoiffeurProfileScreen() {
           {profile.isVerified && (
             <View style={styles.verifiedRow}>
               <MaterialIcons name="verified" size={16} color={colors.primary} />
-              <Text style={[typo.labelSmall, { color: colors.primary, marginLeft: 4 }]}>{t('verification.verified')}</Text>
+              <Text style={[typo.labelSmall, { color: colors.primary, marginStart: 4 }]}>{t('verification.verified')}</Text>
             </View>
           )}
           {profile.salonName && (
@@ -121,15 +120,14 @@ export default function CoiffeurProfileScreen() {
               {profile.salonName}
             </Text>
           )}
-          {profile.averageRating != null && (
+          {profile.statistics.totalReviews > 0 && (
             <View style={styles.ratingRow}>
               <MaterialIcons name="star" size={16} color={colors.tertiary} />
-              <Text style={[typo.labelMedium, { color: colors.onSurface, marginLeft: 4 }]}>
-                {profile.averageRating.toFixed(1)}
+              <Text style={[typo.labelMedium, { color: colors.onSurface, marginStart: 4 }]}>
+                {profile.statistics.averageRating.toFixed(1)} ({profile.statistics.totalReviews} {t('review.reviewsTitle').toLowerCase()})
               </Text>
             </View>
           )}
-
           {/* Stats */}
           <View style={styles.statsRow}>
             {stats.map((s, i) => (
@@ -147,16 +145,38 @@ export default function CoiffeurProfileScreen() {
               onPress={handleFollow}
             >
               <Text style={[typo.labelLarge, { color: isFollowing ? colors.onSurfaceVariant : colors.onPrimary }]}>
-                {isFollowing ? t('salon.following') : t('salon.follow')}
+                {isFollowing ? t('common.states.following') : t('common.actions.follow')}
               </Text>
             </TouchableOpacity>
           )}
         </View>
 
+        {/* Pinned posts — en tête du profil (B29) */}
+        {pinnedPosts.length > 0 && (
+          <View style={styles.sectionHeader}>
+            <Text style={[typo.titleMedium, { color: colors.onBackground }]}>{t('profile.pinnedPosts')}</Text>
+          </View>
+        )}
+        {pinnedPosts.map((post) => (
+          <TouchableOpacity
+            key={post.id}
+            style={[styles.postCard, { backgroundColor: colors.surface }]}
+            onPress={() => router.push(`/post/${post.id}`)}
+          >
+            <Text style={[typo.bodyMedium, { color: colors.onSurface }]} numberOfLines={2}>{post.content}</Text>
+            <View style={styles.postMeta}>
+              <MaterialIcons name="favorite" size={14} color={colors.onSurfaceVariant} />
+              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>{post.likesCount}</Text>
+              <MaterialIcons name="chat-bubble-outline" size={14} color={colors.onSurfaceVariant} style={{ marginStart: 12 }} />
+              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>{post.commentsCount}</Text>
+            </View>
+          </TouchableOpacity>
+        ))}
+
         {/* Bio */}
         {profile.bio && (
           <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <Text style={[typo.titleSmall, { color: colors.onSurface, marginBottom: 8 }]}>Bio</Text>
+            <Text style={[typo.titleSmall, { color: colors.onSurface, marginBottom: 8 }]}>{t('profile.bio')}</Text>
             <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant }]}>{profile.bio}</Text>
           </View>
         )}
@@ -179,32 +199,10 @@ export default function CoiffeurProfileScreen() {
         {profile.yearsExperience != null && (
           <View style={[styles.section, { backgroundColor: colors.surface }]}>
             <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant }]}>
-              {profile.yearsExperience} ans d'experience
+              {profile.yearsExperience} {t('profile.experience')}
             </Text>
           </View>
         )}
-
-        {/* Pinned posts */}
-        {pinnedPosts.length > 0 && (
-          <View style={styles.sectionHeader}>
-            <Text style={[typo.titleMedium, { color: colors.onBackground }]}>Posts epingles</Text>
-          </View>
-        )}
-        {pinnedPosts.map((post) => (
-          <TouchableOpacity
-            key={post.id}
-            style={[styles.postCard, { backgroundColor: colors.surface }]}
-            onPress={() => router.push(`/post/${post.id}`)}
-          >
-            <Text style={[typo.bodyMedium, { color: colors.onSurface }]} numberOfLines={2}>{post.content}</Text>
-            <View style={styles.postMeta}>
-              <MaterialIcons name="favorite" size={14} color={colors.onSurfaceVariant} />
-              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>{post.likesCount}</Text>
-              <MaterialIcons name="chat-bubble-outline" size={14} color={colors.onSurfaceVariant} style={{ marginLeft: 12 }} />
-              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>{post.commentsCount}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
 
         <View style={{ height: 40 }} />
       </ScrollView>

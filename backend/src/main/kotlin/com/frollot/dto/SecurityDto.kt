@@ -193,11 +193,18 @@ data class ConfirmEmailChangeRequest(
 // ========== CHANGEMENT DE TÉLÉPHONE ==========
 
 /**
- * DTO pour la requête de changement de téléphone.
+ * DTO pour la requête de changement de téléphone (durci, incrément 1).
+ *
+ * Numéro DÉCLARATIF (aucune vérification OTP/SMS — couche future).
+ * - newPhone : E.164 attendu (+XXXXXXXX). Null ou blanc = SUPPRESSION du numéro
+ *   (normalisé NULL en base, jamais '' — l'UNIQUE sur phone_number l'exige).
+ * - phonePublic : visibilité choisie (V045). false (défaut) = privé.
  */
 data class ChangePhoneRequest(
-    val newPhone: String,
-    
+    val newPhone: String? = null,
+
+    val phonePublic: Boolean = false,
+
     @field:NotBlank(message = "Le mot de passe est obligatoire")
     val password: String
 )
@@ -208,7 +215,8 @@ data class ChangePhoneRequest(
 data class ChangePhoneResponse(
     val success: Boolean,
     val message: String,
-    val newPhone: String? = null
+    val newPhone: String? = null,
+    val phonePublic: Boolean = false
 )
 
 // ========== SUPPRESSION DE COMPTE ==========

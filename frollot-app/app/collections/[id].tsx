@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, I18nManager } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/theme';
 import { collectionsApi } from '../../src/api/portfolios';
 import { CollectionResponse, CollectionPostResponse } from '../../src/types';
@@ -15,6 +16,7 @@ const PAGE_SIZE = 20;
 
 export default function CollectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t } = useTranslation();
   const { colors, typography: typo } = useTheme();
 
   const [collection, setCollection] = useState<CollectionResponse | null>(null);
@@ -41,7 +43,7 @@ export default function CollectionDetailScreen() {
       setPage(0);
       setHasMore(!postsPage.last);
     } catch (error: any) {
-      setLoadError(error?.response?.data?.message || 'Impossible de charger la collection.');
+      setLoadError(error?.response?.data?.message || t('collections.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +67,7 @@ export default function CollectionDetailScreen() {
           setHasMore(!postsPage.last);
         }
       } catch (error: any) {
-        if (!ignore) setLoadError(error?.response?.data?.message || 'Impossible de charger la collection.');
+        if (!ignore) setLoadError(error?.response?.data?.message || t('collections.loadError'));
       } finally {
         if (!ignore) setIsLoading(false);
       }
@@ -103,7 +105,7 @@ export default function CollectionDetailScreen() {
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surfaceContainerHigh }]} onPress={goBack}>
-            <MaterialIcons name="arrow-back" size={22} color={colors.onSurface} />
+            <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.onSurface} />
           </TouchableOpacity>
         </View>
         <ErrorState message={loadError} onRetry={load} />
@@ -115,7 +117,7 @@ export default function CollectionDetailScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surfaceContainerHigh }]} onPress={goBack}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.onSurface} />
         </TouchableOpacity>
       </View>
 
@@ -129,7 +131,7 @@ export default function CollectionDetailScreen() {
         ListHeaderComponent={
           collection ? (
             <View style={styles.titleBlock}>
-              <Text style={[typo.overline, { color: colors.secondary }]}>Collection</Text>
+              <Text style={[typo.overline, { color: colors.secondary }]}>{t('collections.detailOverline')}</Text>
               <Text style={[typo.headlineMedium, { color: colors.onBackground, marginTop: 4 }]}>
                 {collection.name}
               </Text>
@@ -139,7 +141,7 @@ export default function CollectionDetailScreen() {
                 </Text>
               )}
               <Text style={[typo.labelMedium, { color: colors.primary, marginTop: 8 }]}>
-                {collection.postsCount} {collection.postsCount > 1 ? 'posts' : 'post'}
+                {t('collections.postCount', { count: collection.postsCount })}
               </Text>
             </View>
           ) : null
@@ -161,15 +163,15 @@ export default function CollectionDetailScreen() {
                   {item.post.content}
                 </Text>
               </View>
-              <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+              <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={22} color={colors.onSurfaceVariant} />
             </TouchableOpacity>
           );
         }}
         ListEmptyComponent={
           <EmptyState
             icon="bookmark-multiple-outline"
-            title="Collection vide"
-            message="Les posts ajoutés à cette collection apparaîtront ici."
+            title={t('collections.detailEmpty')}
+            message={t('collections.detailEmptyMessage')}
           />
         }
       />

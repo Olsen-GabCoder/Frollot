@@ -75,6 +75,38 @@ interface ReviewRepository : JpaRepository<Review, String> {
     fun countBySalonIdAndIsVisibleTrue(salonId: String): Long
 
     /**
+     * Calcule la note moyenne des avis ciblant un ou plusieurs coiffeurs (par staffId).
+     *
+     * @param staffIds Liste des SalonStaff.id du coiffeur (multi-salon possible)
+     * @return La note moyenne (0.00 si aucun avis)
+     */
+    @Query(
+        """
+        SELECT COALESCE(AVG(r.rating), 0.0)
+        FROM Review r
+        WHERE r.staff.id IN :staffIds
+        AND r.isVisible = true
+        """
+    )
+    fun findAverageRatingByStaffIds(@Param("staffIds") staffIds: List<String>): BigDecimal
+
+    /**
+     * Compte le nombre d'avis visibles ciblant un ou plusieurs coiffeurs (par staffId).
+     *
+     * @param staffIds Liste des SalonStaff.id du coiffeur (multi-salon possible)
+     * @return Le nombre d'avis
+     */
+    @Query(
+        """
+        SELECT COUNT(r)
+        FROM Review r
+        WHERE r.staff.id IN :staffIds
+        AND r.isVisible = true
+        """
+    )
+    fun countByStaffIdsAndIsVisibleTrue(@Param("staffIds") staffIds: List<String>): Long
+
+    /**
      * Trouve tous les avis d'un salon avec leurs relations chargées.
      */
     @Query(

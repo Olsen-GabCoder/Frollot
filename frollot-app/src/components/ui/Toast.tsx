@@ -60,8 +60,8 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: 50,
-    left: 16,
-    right: 16,
+    start: 16,
+    end: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

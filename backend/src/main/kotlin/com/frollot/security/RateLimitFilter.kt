@@ -54,6 +54,8 @@ class RateLimitFilter(
     // Configuration des limites par endpoint
     private val endpointLimits = mapOf(
         "/api/users/login" to Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(1))),
+        // S9b : l'étape 2 du login 2FA est couverte par le même profil IP que le login
+        "/api/users/login/2fa" to Bandwidth.classic(5, Refill.intervally(5, Duration.ofMinutes(1))),
         "/api/users/register" to Bandwidth.classic(3, Refill.intervally(3, Duration.ofMinutes(1))),
         "/api/auth/refresh" to Bandwidth.classic(10, Refill.intervally(10, Duration.ofMinutes(1))),
         "/api/payments/webhook" to Bandwidth.classic(50, Refill.intervally(50, Duration.ofMinutes(1)))
@@ -172,6 +174,60 @@ class RateLimitFilter(
      */
     fun clearLoginFailures(clientIp: String) {
         loginFailures.remove(clientIp)
+    }
+
+    // ========== S9b : compteur de tentatives 2FA par jti ==========
+
+    companion object {
+        /** Tentatives max de code 2FA par jeton de défi (jti). 5 essais sur 10^6 codes = négligeable. */
+        const val MAX_TWO_FACTOR_ATTEMPTS = 5
+
+        /** TTL des entrées = durée de vie du jeton 2fa_pending (5 min) + marge. */
+        private val TWO_FACTOR_ENTRY_TTL: Duration = Duration.ofMinutes(6)
+    }
+
+    private data class TwoFactorAttemptRecord(
+        var attempts: Int = 0,
+        var exhausted: Boolean = false,
+        val createdAt: Instant = Instant.now()
+    )
+
+    // Compteur par jti du jeton 2fa_pending (façon loginFailures, TTL via purge paresseuse)
+    private val twoFactorAttempts = ConcurrentHashMap<String, TwoFactorAttemptRecord>()
+
+    /**
+     * Enregistre une tentative de code 2FA pour un jeton de défi (S9b).
+     *
+     * @return false si le jeton est épuisé (>= 5 tentatives) ou déjà consommé —
+     *         l'appelant doit alors refuser et forcer un retour au login mot de passe
+     */
+    fun registerTwoFactorAttempt(jti: String): Boolean {
+        purgeExpiredTwoFactorRecords()
+        val record = twoFactorAttempts.computeIfAbsent(jti) { TwoFactorAttemptRecord() }
+        synchronized(record) {
+            if (record.exhausted) return false
+            record.attempts++
+            if (record.attempts > MAX_TWO_FACTOR_ATTEMPTS) {
+                record.exhausted = true
+                return false
+            }
+        }
+        return true
+    }
+
+    /**
+     * Consomme définitivement un jeton de défi 2FA après un code valide (usage unique) :
+     * le même twoFactorToken rejoué après succès sera refusé.
+     */
+    fun consumeTwoFactorChallenge(jti: String) {
+        val record = twoFactorAttempts.computeIfAbsent(jti) { TwoFactorAttemptRecord() }
+        synchronized(record) { record.exhausted = true }
+    }
+
+    /** Purge paresseuse des compteurs 2FA plus vieux que le TTL (jetons expirés de toute façon). */
+    private fun purgeExpiredTwoFactorRecords() {
+        val cutoff = Instant.now().minus(TWO_FACTOR_ENTRY_TTL)
+        twoFactorAttempts.entries.removeIf { it.value.createdAt.isBefore(cutoff) }
     }
 
     /**

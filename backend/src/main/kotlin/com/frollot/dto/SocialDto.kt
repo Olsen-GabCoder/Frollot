@@ -1,5 +1,6 @@
 package com.frollot.dto
 
+import java.math.BigDecimal
 import com.frollot.model.Comment
 import com.frollot.model.HairHashtag
 import com.frollot.model.HairHashtagCategory
@@ -619,7 +620,9 @@ data class CoiffeurProfileStatistics(
     val postsCount: Long = 0,
     val totalLikes: Long = 0,
     val followersCount: Long = 0,
-    val followingCount: Long = 0
+    val followingCount: Long = 0,
+    val averageRating: BigDecimal = BigDecimal.ZERO,
+    val totalReviews: Int = 0
 )
 
 /**
@@ -887,7 +890,9 @@ data class UpdateSalonSocialProfileRequest(
 data class SalonSocialProfileStatistics(
     val postsCount: Long = 0,
     val totalLikes: Long = 0,
-    val followersCount: Long = 0
+    val followersCount: Long = 0,
+    val averageRating: BigDecimal = BigDecimal.ZERO,
+    val totalReviews: Int = 0
 )
 
 /**

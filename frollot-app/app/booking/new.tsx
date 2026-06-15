@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, FlatList, I18nManager } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,12 +11,9 @@ import { PrimaryButton, OutlineButton } from '../../src/components/ui';
 import { Avatar } from '../../src/components/common';
 import { SalonService, StaffMember, TimeSlot, AvailableSlotsResponse } from '../../src/types';
 import { useTheme } from '../../src/theme';
-
-const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const DAYS_SHORT = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
+import { formatMonthYear, formatDayShort, formatMonthName } from '../../src/utils/formatDate';
 
 type BookingStep = 'service' | 'staff' | 'date' | 'summary' | 'success';
-const STEP_LABELS = ['Service', 'Coiffeur', 'Date', 'Récap'];
 
 function getWeekDays(date: Date): Date[] {
   const d = new Date(date);
@@ -56,6 +53,7 @@ export default function BookingScreen() {
   const [bookingId, setBookingId] = useState<string | null>(null);
 
   const stepIndex = step === 'service' ? 0 : step === 'staff' ? 1 : step === 'date' ? 2 : 3;
+  const stepLabels = [t('booking.steps.service'), t('booking.steps.stylist'), t('booking.steps.date'), t('booking.steps.summary')];
 
   // Load services on mount
   useEffect(() => {
@@ -121,7 +119,7 @@ export default function BookingScreen() {
 
   const weekDays = useMemo(() => getWeekDays(currentWeekStart), [currentWeekStart]);
   const today = new Date(); today.setHours(0,0,0,0);
-  const monthLabel = `${MONTHS[currentWeekStart.getMonth()]} ${currentWeekStart.getFullYear()}`;
+  const monthLabel = formatMonthYear(currentWeekStart);
 
   // Navigation helpers
   const goToStaff = (service: SalonService) => { setSelectedService(service); setStep('staff'); };
@@ -148,7 +146,7 @@ export default function BookingScreen() {
       setBookingId(booking.id);
       setStep('success');
     } catch (e: any) {
-      setBookingError(e?.response?.data?.message || 'Erreur lors de la réservation. Veuillez réessayer.');
+      setBookingError(e?.response?.data?.message || t('booking.bookingError'));
     } finally { setIsBooking(false); }
   };
 
@@ -162,21 +160,21 @@ export default function BookingScreen() {
           <View style={[s.successIcon, { backgroundColor: colors.successContainer }]}>
             <MaterialCommunityIcons name="check-circle" size={64} color={colors.success} />
           </View>
-          <Text style={[s.successTitle, { color: colors.onSurface }]}>Réservation confirmée !</Text>
+          <Text style={[s.successTitle, { color: colors.onSurface }]}>{t('booking.success.title')}</Text>
           <Text style={[s.successMessage, { color: colors.onSurfaceVariant }]}>
-            Votre rendez-vous a été enregistré. Vous recevrez une confirmation.
+            {t('booking.success.message')}
           </Text>
           {selectedService && (
             <View style={[s.successCard, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
               <Text style={[s.successServiceName, { color: colors.onSurface }]}>{selectedService.name}</Text>
               {selectedDate && selectedTime && (
                 <Text style={[s.successDetail, { color: colors.onSurfaceVariant }]}>
-                  {DAYS_SHORT[selectedDate.getDay()]}. {selectedDate.getDate()} {MONTHS[selectedDate.getMonth()].toLowerCase()} · {selectedTime}
+                  {formatDayShort(selectedDate)}. {selectedDate.getDate()} {formatMonthName(selectedDate)} · {selectedTime}
                 </Text>
               )}
               {selectedStaff && (
                 <Text style={[s.successDetail, { color: colors.onSurfaceVariant }]}>
-                  Avec {selectedStaff.userFirstName} {selectedStaff.userLastName}
+                  {t('booking.success.withStaff', { name: `${selectedStaff.userFirstName} ${selectedStaff.userLastName}` })}
                 </Text>
               )}
               <Text style={[s.successPrice, { color: colors.primary }]}>{selectedService.price} €</Text>
@@ -184,10 +182,10 @@ export default function BookingScreen() {
           )}
           <View style={s.successActions}>
             <PrimaryButton icon="calendar-check" full onPress={() => router.replace(`/booking/${bookingId}`)}>
-              Voir ma réservation
+              {t('booking.success.viewBooking')}
             </PrimaryButton>
             <OutlineButton full onPress={() => router.replace('/(tabs)')}>
-              Retour à l'accueil
+              {t('booking.success.backHome')}
             </OutlineButton>
           </View>
         </View>
@@ -201,17 +199,17 @@ export default function BookingScreen() {
       <View style={[s.header, { backgroundColor: colors.surface }]}>
         <View style={s.headerRow}>
           <TouchableOpacity style={s.iconBtn} onPress={goBack}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={colors.onSurface} />
+            <MaterialCommunityIcons name={I18nManager.isRTL ? "arrow-right" : "arrow-left"} size={24} color={colors.onSurface} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
-            <Text style={[s.headerTitle, { color: colors.onSurface }]}>Réserver</Text>
-            <Text style={[s.headerSub, { color: colors.onSurfaceVariant }]}>Salon</Text>
+            <Text style={[s.headerTitle, { color: colors.onSurface }]}>{t('booking.title')}</Text>
+            <Text style={[s.headerSub, { color: colors.onSurfaceVariant }]}>{t('booking.salonLabel')}</Text>
           </View>
           <TouchableOpacity style={s.iconBtn} onPress={() => router.back()}>
             <MaterialCommunityIcons name="close" size={24} color={colors.onSurface} />
           </TouchableOpacity>
         </View>
-        <BookingStepper steps={STEP_LABELS} currentStep={stepIndex} />
+        <BookingStepper steps={stepLabels} currentStep={stepIndex} />
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
@@ -229,7 +227,7 @@ export default function BookingScreen() {
                 <Text style={[s.serviceItemPrice, { color: colors.onSurface }]}>{svc.price} €</Text>
               </View>
             </View>
-            <View style={[s.reserveBtn, { borderColor: colors.primary }]}><Text style={[s.reserveBtnText, { color: colors.primary }]}>Choisir</Text></View>
+            <View style={[s.reserveBtn, { borderColor: colors.primary }]}><Text style={[s.reserveBtnText, { color: colors.primary }]}>{t('booking.choose')}</Text></View>
           </TouchableOpacity>
         ))}
 
@@ -245,7 +243,7 @@ export default function BookingScreen() {
               </View>
             </View>
 
-            <Text style={[s.sectionTitle, { color: colors.onSurface }]}>Choisir un coiffeur</Text>
+            <Text style={[s.sectionTitle, { color: colors.onSurface }]}>{t('booking.selectStaff')}</Text>
 
             {isLoadingStaff ? (
               <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
@@ -260,10 +258,10 @@ export default function BookingScreen() {
                     <MaterialCommunityIcons name="account-group" size={24} color={colors.onSurfaceVariant} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[s.staffName, { color: colors.onSurface }]}>N'importe qui</Text>
-                    <Text style={[s.staffSpecialty, { color: colors.onSurfaceVariant }]}>Premier coiffeur disponible</Text>
+                    <Text style={[s.staffName, { color: colors.onSurface }]}>{t('booking.anyStaff')}</Text>
+                    <Text style={[s.staffSpecialty, { color: colors.onSurfaceVariant }]}>{t('booking.anyStaffHint')}</Text>
                   </View>
-                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name={I18nManager.isRTL ? "chevron-left" : "chevron-right"} size={22} color={colors.onSurfaceVariant} />
                 </TouchableOpacity>
 
                 {staff.map((m) => (
@@ -277,12 +275,12 @@ export default function BookingScreen() {
                       <Text style={[s.staffName, { color: colors.onSurface }]}>{m.userFirstName} {m.userLastName}</Text>
                       <Text style={[s.staffSpecialty, { color: colors.onSurfaceVariant }]}>{m.specialtyLabels?.join(', ') || m.specialties?.join(', ')}</Text>
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+                    <MaterialCommunityIcons name={I18nManager.isRTL ? "chevron-left" : "chevron-right"} size={22} color={colors.onSurfaceVariant} />
                   </TouchableOpacity>
                 ))}
 
                 {staff.length === 0 && !isLoadingStaff && (
-                  <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>Aucun coiffeur spécialisé trouvé. Choisissez « N'importe qui ».</Text>
+                  <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>{t('booking.noStaffFound')}</Text>
                 )}
               </>
             )}
@@ -298,7 +296,7 @@ export default function BookingScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[s.serviceName, { color: colors.onPrimaryContainer }]}>{selectedService.name}</Text>
                 <Text style={[s.serviceMeta, { color: colors.onPrimaryContainer, opacity: 0.8 }]}>
-                  {selectedService.durationMinutes} min · {selectedService.price} € · {selectedStaff ? `${selectedStaff.userFirstName}` : 'N\'importe qui'}
+                  {selectedService.durationMinutes} min · {selectedService.price} € · {selectedStaff ? `${selectedStaff.userFirstName}` : t('booking.anyStaff')}
                 </Text>
               </View>
             </View>
@@ -311,13 +309,13 @@ export default function BookingScreen() {
                   const d = new Date(currentWeekStart); d.setDate(d.getDate() - 7);
                   setCurrentWeekStart(d); setSelectedDate(null); setSelectedTime(null); setSelectedSlotDatetime(null);
                 }}>
-                  <MaterialCommunityIcons name="chevron-left" size={22} color={colors.onSurface} />
+                  <MaterialCommunityIcons name={I18nManager.isRTL ? "chevron-right" : "chevron-left"} size={22} color={colors.onSurface} />
                 </TouchableOpacity>
                 <TouchableOpacity style={s.navBtn} onPress={() => {
                   const d = new Date(currentWeekStart); d.setDate(d.getDate() + 7);
                   setCurrentWeekStart(d); setSelectedDate(null); setSelectedTime(null); setSelectedSlotDatetime(null);
                 }}>
-                  <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurface} />
+                  <MaterialCommunityIcons name={I18nManager.isRTL ? "chevron-left" : "chevron-right"} size={22} color={colors.onSurface} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -343,7 +341,7 @@ export default function BookingScreen() {
                       (isPast || isOff) && { opacity: 0.5 },
                     ]}
                   >
-                    <Text style={[s.dayAbbr, { color: isSel ? colors.onPrimary : colors.onSurfaceVariant }]}>{DAYS_SHORT[day.getDay()]}</Text>
+                    <Text style={[s.dayAbbr, { color: isSel ? colors.onPrimary : colors.onSurfaceVariant }]}>{formatDayShort(day)}</Text>
                     <Text style={[s.dayNum, { color: isSel ? colors.onPrimary : colors.onSurface }]}>{day.getDate()}</Text>
                   </TouchableOpacity>
                 );
@@ -354,12 +352,12 @@ export default function BookingScreen() {
             {selectedDate && (
               <>
                 <Text style={[s.slotsOverline, { color: colors.onSurfaceVariant }]}>
-                  Créneaux disponibles · {DAYS_SHORT[selectedDate.getDay()]} {selectedDate.getDate()}
+                  {t('booking.availableSlots')} · {formatDayShort(selectedDate)} {selectedDate.getDate()}
                 </Text>
                 {isLoadingSlots ? (
                   <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 12 }} />
                 ) : availableSlots.length === 0 ? (
-                  <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>Aucun créneau disponible pour cette date.</Text>
+                  <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>{t('booking.noSlots')}</Text>
                 ) : (
                   <View style={s.slotsGrid}>
                     {availableSlots.map((slot, i) => {
@@ -385,40 +383,40 @@ export default function BookingScreen() {
         {/* === STEP: SUMMARY === */}
         {step === 'summary' && selectedService && selectedDate && selectedTime && (
           <>
-            <Text style={[s.sectionTitle, { color: colors.onSurface }]}>Récapitulatif</Text>
+            <Text style={[s.sectionTitle, { color: colors.onSurface }]}>{t('booking.summary')}</Text>
 
             <View style={[s.summaryCard, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
               <View style={s.summaryRow}>
                 <MaterialCommunityIcons name="content-cut" size={18} color={colors.primary} />
-                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>Service</Text>
+                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>{t('booking.summaryLabel.service')}</Text>
                 <Text style={[s.summaryValue, { color: colors.onSurface }]}>{selectedService.name}</Text>
               </View>
               <View style={[s.summaryDivider, { backgroundColor: colors.outlineVariant }]} />
               <View style={s.summaryRow}>
                 <MaterialCommunityIcons name="account" size={18} color={colors.primary} />
-                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>Coiffeur</Text>
+                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>{t('booking.summaryLabel.stylist')}</Text>
                 <Text style={[s.summaryValue, { color: colors.onSurface }]}>
-                  {selectedStaff ? `${selectedStaff.userFirstName} ${selectedStaff.userLastName}` : 'N\'importe qui'}
+                  {selectedStaff ? `${selectedStaff.userFirstName} ${selectedStaff.userLastName}` : t('booking.anyStaff')}
                 </Text>
               </View>
               <View style={[s.summaryDivider, { backgroundColor: colors.outlineVariant }]} />
               <View style={s.summaryRow}>
                 <MaterialCommunityIcons name="calendar" size={18} color={colors.primary} />
-                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>Date</Text>
+                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>{t('booking.summaryLabel.date')}</Text>
                 <Text style={[s.summaryValue, { color: colors.onSurface }]}>
-                  {DAYS_SHORT[selectedDate.getDay()]}. {selectedDate.getDate()} {MONTHS[selectedDate.getMonth()].toLowerCase()} · {selectedTime}
+                  {formatDayShort(selectedDate)}. {selectedDate.getDate()} {formatMonthName(selectedDate)} · {selectedTime}
                 </Text>
               </View>
               <View style={[s.summaryDivider, { backgroundColor: colors.outlineVariant }]} />
               <View style={s.summaryRow}>
                 <MaterialCommunityIcons name="clock-outline" size={18} color={colors.primary} />
-                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>Durée</Text>
-                <Text style={[s.summaryValue, { color: colors.onSurface }]}>{selectedService.durationMinutes} min</Text>
+                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>{t('booking.summaryLabel.duration')}</Text>
+                <Text style={[s.summaryValue, { color: colors.onSurface }]}>{t('service.minutes', { count: selectedService.durationMinutes })}</Text>
               </View>
               <View style={[s.summaryDivider, { backgroundColor: colors.outlineVariant }]} />
               <View style={s.summaryRow}>
                 <MaterialCommunityIcons name="cash" size={18} color={colors.primary} />
-                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>Prix</Text>
+                <Text style={[s.summaryLabel, { color: colors.onSurfaceVariant }]}>{t('booking.summaryLabel.price')}</Text>
                 <Text style={[s.summaryValue, { color: colors.primary }]}>{selectedService.price} €</Text>
               </View>
             </View>
@@ -432,10 +430,10 @@ export default function BookingScreen() {
             )}
 
             {/* Notes */}
-            <Text style={[s.notesLabel, { color: colors.onSurface }]}>Notes ou demandes spéciales</Text>
+            <Text style={[s.notesLabel, { color: colors.onSurface }]}>{t('booking.notesLabel')}</Text>
             <TextInput
               style={[s.notesInput, { backgroundColor: colors.surface, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-              placeholder="Ex: Coupe courte avec dégradé, allergie au latex..."
+              placeholder={t('booking.notesPlaceholder')}
               placeholderTextColor={colors.onSurfaceVariant}
               value={notes}
               onChangeText={setNotes}
@@ -451,12 +449,12 @@ export default function BookingScreen() {
         <View style={[s.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.outlineVariant }]}>
           <View>
             <Text style={[s.bottomDate, { color: colors.onSurfaceVariant }]}>
-              {DAYS_SHORT[selectedDate.getDay()]}. {selectedDate.getDate()} {MONTHS[selectedDate.getMonth()].toLowerCase()} · {selectedTime}
+              {formatDayShort(selectedDate)}. {selectedDate.getDate()} {formatMonthName(selectedDate)} · {selectedTime}
             </Text>
             <Text style={[s.bottomPrice, { color: colors.onSurface }]}>{selectedService?.price} €</Text>
           </View>
           <PrimaryButton icon="arrow-right" full onPress={goToSummary} style={s.continueBtn}>
-            Continuer
+            {t('booking.continue')}
           </PrimaryButton>
         </View>
       )}
@@ -466,12 +464,12 @@ export default function BookingScreen() {
         <View style={[s.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.outlineVariant }]}>
           <View>
             <Text style={[s.bottomDate, { color: colors.onSurfaceVariant }]}>
-              {selectedDate && selectedTime && `${DAYS_SHORT[selectedDate.getDay()]}. ${selectedDate.getDate()} ${MONTHS[selectedDate.getMonth()].toLowerCase()} · ${selectedTime}`}
+              {selectedDate && selectedTime && `${formatDayShort(selectedDate)}. ${selectedDate.getDate()} ${formatMonthName(selectedDate)} · ${selectedTime}`}
             </Text>
             <Text style={[s.bottomPrice, { color: colors.onSurface }]}>{selectedService?.price} €</Text>
           </View>
           <PrimaryButton icon="check" full onPress={handleBook} loading={isBooking} style={s.continueBtn}>
-            Confirmer
+            {t('common.actions.confirm')}
           </PrimaryButton>
         </View>
       )}

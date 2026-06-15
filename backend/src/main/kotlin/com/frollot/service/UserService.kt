@@ -7,6 +7,7 @@ import com.frollot.model.User
 import com.frollot.model.PendingRegistration
 import com.frollot.repository.UserRepository
 import com.frollot.repository.PendingRegistrationRepository
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -52,6 +53,12 @@ class UserService(
     private val passwordEncoder: PasswordEncoder,
     private val emailVerificationService: EmailVerificationService
 ) {
+
+    companion object {
+        // E.164 : '+' puis 2 à 15 chiffres, premier chiffre non nul (max 16 caractères,
+        // tient dans users.phone_number VARCHAR(20))
+        private val E164_REGEX = Regex("^\\+[1-9]\\d{1,14}$")
+    }
 
     /**
      * Récupère tous les utilisateurs de la base de données.
@@ -469,27 +476,49 @@ class UserService(
     }
 
     /**
-     * Change le téléphone d'un utilisateur.
+     * Change le téléphone d'un utilisateur (durci, incrément 1 — stockage DÉCLARATIF,
+     * aucune vérification OTP/SMS, couche future).
      *
-     * @param userId ID de l'utilisateur
-     * @param newPhone Nouveau numéro de téléphone
-     * @param password Mot de passe pour confirmation
-     * @return L'utilisateur mis à jour
-     * @throws IllegalArgumentException Si mot de passe incorrect
+     * - Normalisation blank -> NULL : jamais '' en base (l'UNIQUE sur phone_number
+     *   exploserait au 2e utilisateur qui supprime son numéro).
+     * - Validation E.164 serveur sur tout numéro non vide (sinon 400, pas de 500 SQL).
+     * - Doublon (UNIQUE conservé) : capturé via saveAndFlush (le flush DANS la méthode
+     *   est obligatoire — avec save() seul, la violation n'éclaterait qu'au commit,
+     *   après la sortie du try) -> IllegalArgumentException -> 400 propre.
+     * - Visibilité (V045) : phone_public enregistré avec le numéro ; suppression du
+     *   numéro -> phone_public remis à false (rien à exposer).
+     *
+     * @throws IllegalArgumentException mot de passe incorrect, format invalide ou doublon
      */
     @Transactional
-    fun changePhone(userId: String, newPhone: String?, password: String): User {
+    fun changePhone(userId: String, newPhone: String?, phonePublic: Boolean, password: String): User {
         val user = userRepository.findById(userId)
             .orElseThrow { IllegalArgumentException("Utilisateur non trouvé") }
-        
-        // Vérifier le mot de passe
+
+        // Vérifier le mot de passe (user rechargé de la BDD ci-dessus : le piège du
+        // principal JWT sans passwordHash — S9c — ne s'applique pas ici)
         if (!passwordEncoder.matches(password, user.passwordHash)) {
             throw IllegalArgumentException("Mot de passe incorrect")
         }
-        
-        // Mettre à jour le téléphone
-        user.phoneNumber = newPhone
-        return userRepository.save(user)
+
+        // Normalisation : vide/blanc = suppression -> NULL (jamais '')
+        val normalized = newPhone?.trim()?.takeIf { it.isNotEmpty() }
+
+        // Validation E.164 ('+' puis 2 à 15 chiffres, premier non nul) — tient dans VARCHAR(20)
+        if (normalized != null && !E164_REGEX.matches(normalized)) {
+            throw IllegalArgumentException(
+                "Numéro invalide : format international attendu (ex. +24106123456)."
+            )
+        }
+
+        user.phoneNumber = normalized
+        user.phonePublic = if (normalized == null) false else phonePublic
+
+        return try {
+            userRepository.saveAndFlush(user)
+        } catch (e: DataIntegrityViolationException) {
+            throw IllegalArgumentException("Ce numéro est déjà utilisé.")
+        }
     }
 
     /**
@@ -549,7 +578,8 @@ class UserService(
         // Mise à jour partielle : seuls les champs non-null sont modifiés
         request.firstName?.let { user.firstName = it.trim() }
         request.lastName?.let { user.lastName = it.trim() }
-        request.phoneNumber?.let { user.phoneNumber = it.trim() }
+        // phoneNumber retiré de l'update partiel : chemin d'écriture UNIQUE = changePhone
+        // (validation E.164 + unicité + visibilité). Voir UpdateProfileRequest.
         request.bio?.let { user.bio = it.trim() }
         request.avatarUrl?.let { user.avatarUrl = it }
         request.preferredLanguage?.let { user.preferredLanguage = it }

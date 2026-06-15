@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -39,7 +40,7 @@ export default function ClientProfileScreen() {
         if (profileData.status === 'fulfilled') setProfile(profileData.value);
         if (collectionsData.status === 'fulfilled') setCollections(collectionsData.value);
       } catch (e: any) {
-        setError(e?.message || t('common.error'));
+        setError(e?.message || t('common.states.error'));
       } finally {
         setIsLoading(false);
       }
@@ -56,19 +57,17 @@ export default function ClientProfileScreen() {
   }
 
   const stats = [
-    { label: t('booking.myBookings'), value: profile.totalBookings },
-    { label: t('salon.reviews'), value: profile.totalReviews },
-    { label: t('profile.favorites'), value: profile.favoriteSalonsCount },
-    { label: t('profile.collections'), value: profile.collectionsCount },
+    { label: t('booking.myBookings'), value: profile.statistics.bookingsCount },
+    { label: t('profile.collections'), value: profile.statistics.collectionsCount },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>{t('profile.profile')}</Text>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{t('profile.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -87,7 +86,7 @@ export default function ClientProfileScreen() {
           </Text>
           {profile.memberSince && (
             <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginTop: 4 }]}>
-              Membre depuis {new Date(profile.memberSince).getFullYear()}
+              {t('profile.memberSince', { year: new Date(profile.memberSince).getFullYear() })}
             </Text>
           )}
 
@@ -116,11 +115,11 @@ export default function ClientProfileScreen() {
                 <View style={[styles.collectionIcon, { backgroundColor: colors.tertiaryContainer }]}>
                   <MaterialIcons name="collections-bookmark" size={20} color={colors.onTertiaryContainer} />
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, marginStart: 12 }}>
                   <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{col.name}</Text>
-                  <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{col.postsCount} posts</Text>
+                  <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{col.postsCount} {t('profile.stats.posts').toLowerCase()}</Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+                <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={24} color={colors.onSurfaceVariant} />
               </TouchableOpacity>
             ))}
           </>

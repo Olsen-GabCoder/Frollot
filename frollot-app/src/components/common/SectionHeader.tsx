@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme';
 
 interface SectionHeaderProps {
@@ -8,14 +9,15 @@ interface SectionHeaderProps {
   onActionPress?: () => void;
 }
 
-export function SectionHeader({ title, action = 'Voir tout', onActionPress }: SectionHeaderProps) {
+export function SectionHeader({ title, action, onActionPress }: SectionHeaderProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.onBackground }]}>{title}</Text>
       {onActionPress && (
         <TouchableOpacity onPress={onActionPress}>
-          <Text style={[styles.action, { color: colors.primary }]}>{action}</Text>
+          <Text style={[styles.action, { color: colors.primary }]}>{action ?? t('common.actions.seeAll')}</Text>
         </TouchableOpacity>
       )}
     </View>

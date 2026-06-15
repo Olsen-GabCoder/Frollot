@@ -65,6 +65,17 @@ class JwtAuthenticationFilter(
                     return
                 }
 
+                // 2.1bis. (S9b) Verrou : rejeter tout token "typé" (claim type présent,
+                // quelle que soit sa valeur). Seuls les access tokens (sans claim type)
+                // authentifient une requête normale. Ferme aussi la faille latente du
+                // JWT type=refresh (30 j) qui passait comme access token.
+                val tokenType = jwtTokenProvider.getTokenType(jwt)
+                if (tokenType != null) {
+                    logger.warn("Token JWT typé '{}' refusé comme access token pour: {}", tokenType, request.requestURI)
+                    sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Ce type de jeton n'autorise pas l'accès à l'API")
+                    return
+                }
+
                 // 2.2. Vérifier isActive depuis le token (évite la requête BDD si inactif)
                 val isActive = jwtTokenProvider.isUserActiveFromToken(jwt)
                 

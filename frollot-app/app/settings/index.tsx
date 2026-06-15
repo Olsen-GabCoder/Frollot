@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal, Pressable, I18nManager } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialIcons } from '@expo/vector-icons';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
 import { useTheme } from '../../src/theme';
 import { useAuthStore } from '../../src/stores/authStore';
 import { usePreferencesStore } from '../../src/stores/preferencesStore';
@@ -19,10 +20,11 @@ const LANGUAGES: { code: Language; label: string }[] = [
   { code: 'ar', label: 'العربية' },
 ];
 
-const THEME_MODES: { mode: ThemeMode; label: string; icon: 'settings-suggest' | 'light-mode' | 'dark-mode' }[] = [
-  { mode: 'system', label: 'Système', icon: 'settings-suggest' },
-  { mode: 'light', label: 'Clair', icon: 'light-mode' },
-  { mode: 'dark', label: 'Sombre', icon: 'dark-mode' },
+// labelKey -> t() au rendu (constante module : pas d'acces au hook ici)
+const THEME_MODES: { mode: ThemeMode; labelKey: string; icon: 'settings-suggest' | 'light-mode' | 'dark-mode' }[] = [
+  { mode: 'system', labelKey: 'settings.themeModes.system', icon: 'settings-suggest' },
+  { mode: 'light', labelKey: 'settings.themeModes.light', icon: 'light-mode' },
+  { mode: 'dark', labelKey: 'settings.themeModes.dark', icon: 'dark-mode' },
 ];
 
 interface RowDef {
@@ -45,35 +47,43 @@ export default function SettingsScreen() {
 
   const currentLanguageLabel = LANGUAGES.find((l) => l.code === language)?.label ?? 'Français';
 
+  // Sous-titre dynamique : numéro actuel au format international lisible quand il existe.
+  // NOTE : le store ne porte le numéro qu'après un passage par /me (initialize/refreshUser/
+  // change-phone) — sinon libellé générique, l'écran cible refetch /me de toute façon.
+  const phoneSub = user?.phoneNumber
+    ? parsePhoneNumberFromString(user.phoneNumber)?.formatInternational() ?? user.phoneNumber
+    : t('phone.numberLabel');
+
   // route absente = écran à venir (familles A/B/C de l'Étape 8)
   const sections: { title: string; rows: RowDef[] }[] = [
     {
-      title: 'Compte',
+      title: t('settings.sections.account'),
       rows: [
         { icon: 'alternate-email', label: t('settings.changeEmail'), sub: user?.email ?? undefined, route: '/settings/change-email' },
-        { icon: 'phone-iphone', label: t('settings.changePhone'), sub: 'Numéro de téléphone' },
+        { icon: 'phone-iphone', label: t('settings.changePhone'), sub: phoneSub, route: '/settings/change-phone' },
       ],
     },
     {
-      title: 'Confidentialité & sécurité',
+      title: t('settings.sections.privacySecurity'),
       rows: [
-        { icon: 'lock-outline', label: t('settings.security'), sub: 'Mot de passe, 2FA, sessions' },
-        { icon: 'block', label: t('settings.blockedUsers'), sub: 'Gérer les comptes bloqués' },
-        { icon: 'verified-user', label: 'Demande de vérification', sub: 'Obtenir le badge vérifié' },
+        // S9d-1 : 2FA réintégrée au sous-titre (gestion complète dans security.tsx)
+        { icon: 'lock-outline', label: t('settings.security'), sub: t('settings.subtitles.security'), route: '/settings/security' },
+        { icon: 'block', label: t('settings.blockedUsers'), sub: t('settings.subtitles.blockedUsers') },
+        { icon: 'verified-user', label: t('settings.verificationRequest'), sub: t('settings.subtitles.verification') },
       ],
     },
     {
-      title: 'Support',
+      title: t('settings.sections.support'),
       rows: [
-        { icon: 'help-outline', label: t('settings.helpCenter'), sub: 'FAQ et guides' },
-        { icon: 'support-agent', label: t('settings.contactSupport'), sub: 'Notre équipe vous répond' },
+        { icon: 'help-outline', label: t('settings.helpCenter'), sub: t('settings.subtitles.help'), route: '/settings/help' },
+        { icon: 'support-agent', label: t('settings.contactSupport'), sub: t('settings.subtitles.contact'), route: '/settings/contact' },
       ],
     },
     {
-      title: 'Légal',
+      title: t('settings.sections.legal'),
       rows: [
-        { icon: 'description', label: t('settings.termsOfService') },
-        { icon: 'privacy-tip', label: t('settings.privacyPolicy') },
+        { icon: 'description', label: t('settings.termsOfService'), route: '/settings/terms' },
+        { icon: 'privacy-tip', label: t('settings.privacyPolicy'), route: '/settings/privacy' },
       ],
     },
   ];
@@ -101,10 +111,10 @@ export default function SettingsScreen() {
         </View>
         {comingSoon ? (
           <View style={[styles.soonBadge, { backgroundColor: colors.tertiaryContainer }]}>
-            <Text style={[typo.labelSmall, { color: colors.onTertiaryContainer }]}>Bientôt</Text>
+            <Text style={[typo.labelSmall, { color: colors.onTertiaryContainer }]}>{t('settings.soon')}</Text>
           </View>
         ) : (
-          <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+          <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={22} color={colors.onSurfaceVariant} />
         )}
       </>
     );
@@ -128,14 +138,14 @@ export default function SettingsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surfaceContainerHigh }]} onPress={goBack}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.onSurface} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={[typo.overline, { color: colors.secondary }]}>Votre espace</Text>
+        <Text style={[typo.overline, { color: colors.secondary }]}>{t('settings.yourSpace')}</Text>
         <Text style={[typo.headlineMedium, { color: colors.onBackground, marginTop: 4 }]}>
-          {t('settings.settings')}
+          {t('settings.title')}
         </Text>
 
         {/* Identity card */}
@@ -169,7 +179,7 @@ export default function SettingsScreen() {
         ))}
 
         {/* Apparence — fonctionnel (préférences locales, pas d'API) */}
-        <Text style={[typo.overline, styles.sectionTitle, { color: colors.secondary }]}>Apparence</Text>
+        <Text style={[typo.overline, styles.sectionTitle, { color: colors.secondary }]}>{t('settings.sections.appearance')}</Text>
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
           <View style={styles.row}>
             <View style={[styles.rowIconCircle, { backgroundColor: colors.surfaceContainerHigh }]}>
@@ -193,7 +203,7 @@ export default function SettingsScreen() {
                 >
                   <MaterialIcons name={tm.icon} size={18} color={on ? colors.primary : colors.onSurfaceVariant} />
                   <Text style={[typo.labelMedium, { color: on ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>
-                    {tm.label}
+                    {t(tm.labelKey)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -208,7 +218,7 @@ export default function SettingsScreen() {
               <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{t('settings.language')}</Text>
               <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginTop: 1 }]}>{currentLanguageLabel}</Text>
             </View>
-            <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+            <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={22} color={colors.onSurfaceVariant} />
           </TouchableOpacity>
         </View>
 
@@ -225,13 +235,13 @@ export default function SettingsScreen() {
         {/* Déconnexion — même Modal partagé que le profil */}
         <TouchableOpacity style={[styles.logoutBtn, { borderColor: colors.error }]} onPress={() => setShowLogoutModal(true)}>
           <MaterialIcons name="logout" size={20} color={colors.error} />
-          <Text style={[typo.labelLarge, { color: colors.error, marginLeft: 8 }]}>
+          <Text style={[typo.labelLarge, { color: colors.error, marginStart: 8 }]}>
             {t('settings.logout')}
           </Text>
         </TouchableOpacity>
 
         <Text style={[typo.labelSmall, styles.version, { color: colors.onSurfaceVariant }]}>
-          Frollot · Version 1.0.0
+          {t('settings.versionLabel', { version: '1.0.0' })}
         </Text>
       </ScrollView>
 
@@ -241,7 +251,7 @@ export default function SettingsScreen() {
       <Modal visible={showLanguageModal} transparent animationType="fade" onRequestClose={() => setShowLanguageModal(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowLanguageModal(false)}>
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-            <Text style={[typo.overline, { color: colors.secondary, textAlign: 'center' }]}>Apparence</Text>
+            <Text style={[typo.overline, { color: colors.secondary, textAlign: 'center' }]}>{t('settings.sections.appearance')}</Text>
             <Text style={[typo.headlineSmall, { color: colors.onSurface, textAlign: 'center', marginBottom: 16 }]}>
               {t('settings.language')}
             </Text>
@@ -285,13 +295,13 @@ const styles = StyleSheet.create({
   },
   identityAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   // Sections
-  sectionTitle: { marginTop: 28, marginBottom: 10, marginLeft: 4 },
+  sectionTitle: { marginTop: 28, marginBottom: 10, marginStart: 4 },
   card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16 },
   rowDisabled: { opacity: 0.55 },
   rowIconCircle: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   rowTextWrap: { flex: 1 },
-  separator: { height: StyleSheet.hairlineWidth, marginLeft: 68 },
+  separator: { height: StyleSheet.hairlineWidth, marginStart: 68 },
   soonBadge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999 },
   // Theme segment
   themeSegment: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 14 },

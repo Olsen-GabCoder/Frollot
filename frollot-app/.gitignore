@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# i18n : dictionnaire KMP regenerable (extract-kmp-reference.js), jamais charge par l'app
+scripts/i18n/kmp-reference.json

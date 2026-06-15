@@ -368,6 +368,75 @@ class JwtTokenProvider(
     }
 
     /**
+     * Extrait le claim "type" d'un token JWT (S9b).
+     *
+     * Les access tokens normaux (generateToken) n'ont PAS de claim "type".
+     * Les tokens typés existants : "refresh" (generateRefreshToken),
+     * "2fa_pending" (generateTwoFactorPendingToken). Un token typé ne doit
+     * JAMAIS authentifier une requête normale (JwtAuthenticationFilter).
+     */
+    fun getTokenType(token: String): String? {
+        val claims = Jwts.parser()
+            .verifyWith(key)
+            .build()
+            .parseSignedClaims(token)
+            .payload
+
+        return claims["type"] as? String
+    }
+
+    /**
+     * Génère le jeton temporaire du défi 2FA (S9b).
+     *
+     * Portée STRICTEMENT limitée : claim type=2fa_pending -> rejeté par
+     * JwtAuthenticationFilter sur toute requête normale ; seul
+     * POST /api/users/login/2fa l'accepte. Expiration : 5 minutes.
+     * Le jti (UUID) sert de clé au compteur anti-brute-force.
+     *
+     * @return Pair(token, jti)
+     */
+    fun generateTwoFactorPendingToken(userId: String): Pair<String, String> {
+        val now = Date()
+        val expiryDate = Date(now.time + 5 * 60 * 1000) // 5 minutes
+        val jti = UUID.randomUUID().toString()
+
+        val token = Jwts.builder()
+            .subject(userId)
+            .id(jti)
+            .claim("type", "2fa_pending")
+            .issuedAt(now)
+            .expiration(expiryDate)
+            .signWith(key)
+            .compact()
+
+        return Pair(token, jti)
+    }
+
+    /**
+     * Valide un jeton de défi 2FA (S9b) : signature + non expiré + type=2fa_pending.
+     *
+     * @return Pair(userId, jti) si valide, null sinon (tout autre token — access,
+     *         refresh, expiré, malformé — est refusé)
+     */
+    fun validateTwoFactorPendingToken(token: String): Pair<String, String>? {
+        return try {
+            val claims = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .payload
+
+            if (claims["type"] != "2fa_pending") return null
+            val userId = claims.subject ?: return null
+            val jti = claims.id ?: return null
+            Pair(userId, jti)
+        } catch (e: Exception) {
+            logger.debug("Jeton 2FA pending invalide: {}", e.message)
+            null
+        }
+    }
+
+    /**
      * Génère un refresh token (durée de vie plus longue).
      */
     fun generateRefreshToken(user: User): String {

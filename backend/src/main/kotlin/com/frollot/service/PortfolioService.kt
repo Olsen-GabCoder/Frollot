@@ -309,6 +309,7 @@ class PortfolioService(
 
         // Récupérer les posts
         val allPosts = portfolioPostRepository.findPostsByPortfolioId(portfolioId)
+            .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
 
         // Pagination manuelle
         val start = pageable.pageNumber * pageable.pageSize

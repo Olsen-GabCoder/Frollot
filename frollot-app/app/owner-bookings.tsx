@@ -8,23 +8,25 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialIcons } from '@expo/vector-icons';
+import { formatDateTimeShort } from '../src/utils/formatDate';
 import { useTheme } from '../src/theme';
 import { bookingsApi } from '../src/api/bookings';
 import { BookingResponse, BookingStatus } from '../src/types';
 
 type BookingFilter = 'ALL' | BookingStatus;
 
-const FILTERS: { key: BookingFilter; label: string }[] = [
-  { key: 'ALL', label: 'Tous' },
-  { key: BookingStatus.PENDING, label: 'En attente' },
-  { key: BookingStatus.CONFIRMED, label: 'Confirmes' },
-  { key: BookingStatus.IN_PROGRESS, label: 'En cours' },
-  { key: BookingStatus.COMPLETED, label: 'Termines' },
-  { key: BookingStatus.CANCELLED, label: 'Annules' },
+const FILTER_KEYS: { key: BookingFilter; i18nKey: string }[] = [
+  { key: 'ALL', i18nKey: 'booking.filter.all' },
+  { key: BookingStatus.PENDING, i18nKey: 'booking.filter.pending' },
+  { key: BookingStatus.CONFIRMED, i18nKey: 'booking.filter.confirmed' },
+  { key: BookingStatus.IN_PROGRESS, i18nKey: 'booking.filter.inProgress' },
+  { key: BookingStatus.COMPLETED, i18nKey: 'booking.filter.completed' },
+  { key: BookingStatus.CANCELLED, i18nKey: 'booking.filter.cancelled' },
 ];
 
 export default function OwnerBookingsManagementScreen() {
@@ -56,7 +58,7 @@ export default function OwnerBookingsManagementScreen() {
       setBookings(data);
       setError(null);
     } catch (e: any) {
-      setError('Impossible de charger les reservations');
+      setError(t('booking.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -72,7 +74,7 @@ export default function OwnerBookingsManagementScreen() {
 
   const handleCancel = async (bookingId: string) => {
     Alert.alert(t('booking.cancelBooking'), t('booking.cancelConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.actions.cancel'), style: 'cancel' },
       {
         text: t('booking.cancelBooking'),
         style: 'destructive',
@@ -97,10 +99,10 @@ export default function OwnerBookingsManagementScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, flex: 1, marginLeft: 16 }]}>
-          Reservations
+        <Text style={[typo.titleLarge, { color: colors.onSurface, flex: 1, marginStart: 16 }]}>
+          {t('salon.reservations')}
         </Text>
         <TouchableOpacity onPress={loadBookings}>
           <MaterialIcons name="refresh" size={24} color={colors.onSurface} />
@@ -111,25 +113,25 @@ export default function OwnerBookingsManagementScreen() {
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: colors.primaryContainer }]}>
           <Text style={[typo.headlineSmall, { color: colors.onPrimaryContainer }]}>{bookings.length}</Text>
-          <Text style={[typo.labelSmall, { color: colors.onPrimaryContainer }]}>Total</Text>
+          <Text style={[typo.labelSmall, { color: colors.onPrimaryContainer }]}>{t('booking.total')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.warningContainer }]}>
           <Text style={[typo.headlineSmall, { color: colors.onWarningContainer }]}>
             {bookings.filter((b) => b.status === BookingStatus.PENDING).length}
           </Text>
-          <Text style={[typo.labelSmall, { color: colors.onWarningContainer }]}>En attente</Text>
+          <Text style={[typo.labelSmall, { color: colors.onWarningContainer }]}>{t('booking.filter.pending')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.successContainer }]}>
           <Text style={[typo.headlineSmall, { color: colors.onSuccessContainer }]}>
             {bookings.filter((b) => b.status === BookingStatus.CONFIRMED).length}
           </Text>
-          <Text style={[typo.labelSmall, { color: colors.onSuccessContainer }]}>Confirmes</Text>
+          <Text style={[typo.labelSmall, { color: colors.onSuccessContainer }]}>{t('booking.filter.confirmed')}</Text>
         </View>
       </View>
 
       {/* Filters */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersScroll} contentContainerStyle={styles.filtersContent}>
-        {FILTERS.map((f) => {
+        {FILTER_KEYS.map((f) => {
           const count = f.key === 'ALL' ? bookings.length : bookings.filter((b) => b.status === f.key).length;
           return (
             <TouchableOpacity
@@ -140,7 +142,7 @@ export default function OwnerBookingsManagementScreen() {
               onPress={() => setFilter(f.key)}
             >
               <Text style={[typo.labelMedium, { color: filter === f.key ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>
-                {f.label} ({count})
+                {t(f.i18nKey)} ({count})
               </Text>
             </TouchableOpacity>
           );
@@ -175,14 +177,14 @@ export default function OwnerBookingsManagementScreen() {
               <Text style={[typo.bodyMedium, { color: colors.onSurface }]}>{item.serviceName}</Text>
               <View style={styles.metaRow}>
                 <MaterialIcons name="event" size={14} color={colors.onSurfaceVariant} />
-                <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
-                  {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
+                  {formatDateTimeShort(date)}
                 </Text>
               </View>
               {item.staffName && (
                 <View style={styles.metaRow}>
                   <MaterialIcons name="person" size={14} color={colors.onSurfaceVariant} />
-                  <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>{item.staffName}</Text>
+                  <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>{item.staffName}</Text>
                 </View>
               )}
               {item.formattedPrice && (

@@ -125,7 +125,8 @@ class VerificationService(
 
         val savedUser = userRepository.save(user)
         println("✅ Utilisateur ${savedUser.email} (${savedUser.id}) vérifié avec le type ${request.verificationType} par admin ${currentUser.email}")
-        return UserResponse.fromEntity(savedUser)
+        // Vue ADMIN : numéro visible quelle que soit la visibilité choisie (V045)
+        return UserResponse.fromEntity(savedUser, includePrivatePhone = true)
     }
 
     /**

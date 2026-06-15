@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialIcons } from '@expo/vector-icons';
+import { I18nManager } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../../src/theme';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -38,23 +39,23 @@ export default function ProfileScreen() {
         if (user.userType === 'client') {
           const profile = await profilesApi.getClientProfile(user.id);
           if (!ignore) setStats([
-            { label: 'Réservations', value: profile.statistics.bookingsCount },
-            { label: 'Collections', value: profile.statistics.collectionsCount },
-            { label: 'Posts', value: profile.statistics.postsCount },
+            { label: t('profile.stats.bookings'), value: profile.statistics.bookingsCount },
+            { label: t('profile.stats.collections'), value: profile.statistics.collectionsCount },
+            { label: t('profile.stats.posts'), value: profile.statistics.postsCount },
           ]);
         } else if (user.userType === 'salon_owner') {
           const profile = await profilesApi.getSalonOwnerProfile(user.id);
           if (!ignore) setStats([
-            { label: 'Salons', value: profile.statistics.salonsCount },
-            { label: 'Abonnés', value: profile.statistics.followersCount },
-            { label: 'Posts', value: profile.statistics.postsCount },
+            { label: t('profile.stats.salons'), value: profile.statistics.salonsCount },
+            { label: t('profile.stats.followers'), value: profile.statistics.followersCount },
+            { label: t('profile.stats.posts'), value: profile.statistics.postsCount },
           ]);
         } else if (user.userType === 'hairstylist') {
           const profile = await profilesApi.getCoiffeurProfile(user.id);
           if (!ignore) setStats([
-            { label: 'Abonnés', value: profile.statistics.followersCount },
-            { label: 'Posts', value: profile.statistics.postsCount },
-            { label: 'Likes', value: profile.statistics.totalLikes },
+            { label: t('profile.stats.followers'), value: profile.statistics.followersCount },
+            { label: t('profile.stats.posts'), value: profile.statistics.postsCount },
+            { label: t('profile.stats.likes'), value: profile.statistics.totalLikes },
           ]);
         }
       } catch {} finally {
@@ -98,7 +99,7 @@ export default function ProfileScreen() {
     { icon: 'archive' as const, label: t('profile.archives'), onPress: () => router.push(`/archives/${user?.id}`) },
     { icon: 'collections-bookmark' as const, label: t('profile.collections'), onPress: () => router.push(`/collections/user/${user?.id}`) },
     { icon: 'photo-library' as const, label: t('profile.portfolios'), onPress: () => router.push(`/portfolios?ownerId=${user?.id}&ownerType=${user?.userType}`) },
-    { icon: 'settings' as const, label: t('profile.settings'), onPress: () => router.push('/settings') },
+    { icon: 'settings' as const, label: t('settings.title'), onPress: () => router.push('/settings') },
   ];
 
   const avatarUri = avatarPreview || resolveMediaUrl(user?.avatarUrl);
@@ -126,13 +127,13 @@ export default function ProfileScreen() {
         {avatarPreview && (
           <View style={styles.previewActions}>
             <TouchableOpacity style={[styles.previewBtn, { backgroundColor: colors.surfaceContainerHigh }]} onPress={cancelPreview}>
-              <Text style={[styles.previewBtnText, { color: colors.onSurface }]}>Annuler</Text>
+              <Text style={[styles.previewBtnText, { color: colors.onSurface }]}>{t('common.actions.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.previewBtn, { backgroundColor: colors.primary }]} onPress={saveAvatar} disabled={isUploading}>
               {isUploading ? (
                 <ActivityIndicator size="small" color={colors.onPrimary} />
               ) : (
-                <Text style={[styles.previewBtnText, { color: colors.onPrimary }]}>Enregistrer</Text>
+                <Text style={[styles.previewBtnText, { color: colors.onPrimary }]}>{t('common.actions.save')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -147,7 +148,7 @@ export default function ProfileScreen() {
         {user?.isVerified && (
           <View style={styles.verifiedRow}>
             <MaterialIcons name="verified" size={16} color={colors.primary} />
-            <Text style={[typo.labelSmall, { color: colors.primary, marginLeft: 4 }]}>
+            <Text style={[typo.labelSmall, { color: colors.primary, marginStart: 4 }]}>
               {t('verification.verified')}
             </Text>
           </View>
@@ -174,10 +175,10 @@ export default function ProfileScreen() {
         {menuItems.map((item, index) => (
           <TouchableOpacity key={index} style={styles.menuItem} onPress={item.onPress}>
             <MaterialIcons name={item.icon} size={24} color={colors.onSurfaceVariant} />
-            <Text style={[typo.bodyLarge, { color: colors.onSurface, flex: 1, marginLeft: 16 }]}>
+            <Text style={[typo.bodyLarge, { color: colors.onSurface, flex: 1, marginStart: 16 }]}>
               {item.label}
             </Text>
-            <MaterialIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
+            <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={24} color={colors.onSurfaceVariant} />
           </TouchableOpacity>
         ))}
       </View>
@@ -185,7 +186,7 @@ export default function ProfileScreen() {
       {/* Logout */}
       <TouchableOpacity style={[styles.logoutBtn, { borderColor: colors.error }]} onPress={() => setShowLogoutModal(true)}>
         <MaterialIcons name="logout" size={20} color={colors.error} />
-        <Text style={[typo.labelLarge, { color: colors.error, marginLeft: 8 }]}>
+        <Text style={[typo.labelLarge, { color: colors.error, marginStart: 8 }]}>
           {t('settings.logout')}
         </Text>
       </TouchableOpacity>
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   profileHeader: { alignItems: 'center', marginBottom: 24 },
   avatar: { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   editBadge: {
-    position: 'absolute', bottom: 0, right: 0,
+    position: 'absolute', bottom: 0, end: 0,
     width: 28, height: 28, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
   },

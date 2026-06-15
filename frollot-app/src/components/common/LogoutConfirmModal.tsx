@@ -1,6 +1,7 @@
 import { Modal, Pressable, Text, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -15,6 +16,7 @@ interface LogoutConfirmModalProps {
  */
 export function LogoutConfirmModal({ visible, onClose }: LogoutConfirmModalProps) {
   const { colors, typography: typo } = useTheme();
+  const { t } = useTranslation();
   const { logout } = useAuthStore();
 
   const handleLogout = async () => {
@@ -29,17 +31,17 @@ export function LogoutConfirmModal({ visible, onClose }: LogoutConfirmModalProps
         <Pressable onPress={(e) => e.stopPropagation()} style={[styles.card, { backgroundColor: colors.surface }]}>
           <MaterialIcons name="logout" size={36} color={colors.error} style={{ alignSelf: 'center', marginBottom: 12 }} />
           <Text style={[typo.titleMedium, { color: colors.onSurface, textAlign: 'center', marginBottom: 8 }]}>
-            Se déconnecter ?
+            {t('auth.logoutConfirmTitle')}
           </Text>
           <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: 20 }]}>
-            Vous devrez vous reconnecter pour accéder à votre compte.
+            {t('auth.logoutConfirmHint')}
           </Text>
           <View style={styles.actions}>
             <TouchableOpacity style={[styles.btn, { backgroundColor: colors.surfaceContainerHigh }]} onPress={onClose}>
-              <Text style={[styles.btnText, { color: colors.onSurface }]}>Annuler</Text>
+              <Text style={[styles.btnText, { color: colors.onSurface }]}>{t('common.actions.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.btn, { backgroundColor: colors.error }]} onPress={handleLogout}>
-              <Text style={[styles.btnText, { color: colors.onError }]}>Se déconnecter</Text>
+              <Text style={[styles.btnText, { color: colors.onError }]}>{t('auth.logoutButton')}</Text>
             </TouchableOpacity>
           </View>
         </Pressable>

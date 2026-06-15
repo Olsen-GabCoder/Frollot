@@ -24,7 +24,7 @@ class SocialService(
     private val postRepository: PostRepository,
     private val postLikeRepository: PostLikeRepository,
     private val postFavoriteRepository: PostFavoriteRepository,
-    private val postArchiveRepository: PostArchiveRepository,
+    // V041 : PostArchiveRepository retiré (archivage global via posts.is_archived ; table post_archives dormante)
     private val commentRepository: CommentRepository,
     private val userRepository: UserRepository,
     private val postTagRepository: PostTagRepository,
@@ -44,7 +44,8 @@ class SocialService(
     private val badgeRepository: com.frollot.repository.BadgeRepository, // Phase E.3 - Badges et Certifications
     private val userBadgeRepository: com.frollot.repository.UserBadgeRepository, // Phase E.3 - Badges et Certifications
     private val collectionRepository: com.frollot.repository.CollectionRepository, // Phase F.1 - Collections Thématiques
-    private val collectionPostRepository: com.frollot.repository.CollectionPostRepository // Phase F.1 - Collections Thématiques
+    private val collectionPostRepository: com.frollot.repository.CollectionPostRepository, // Phase F.1 - Collections Thématiques
+    private val reviewRepository: ReviewRepository // Lot 2 - Note coiffeur
 ) {
 
     // ========== EXCEPTIONS MÉTIER ==========
@@ -347,7 +348,8 @@ class SocialService(
     fun getPostsByHashtag(hashtagName: String, pageable: Pageable, currentUserId: String? = null): Page<PostResponse> {
         val normalizedName = hashtagName.lowercase().trim().removePrefix("#")
         val posts = postHashtagRepository.findPostsByHashtagName(normalizedName)
-        
+            .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
+
         // Pagination manuelle
         val start = pageable.pageNumber * pageable.pageSize
         val end = minOf(start + pageable.pageSize, posts.size)
@@ -407,6 +409,11 @@ class SocialService(
     fun getPostById(postId: String, currentUserId: String? = null): PostResponse {
         val post = postRepository.findById(postId)
             .orElseThrow { PostNotFoundException(postId) }
+
+        // V041 - Archivage global : un post archivé est introuvable (404) sauf pour son auteur
+        if (post.isArchived && post.author?.id != currentUserId) {
+            throw PostNotFoundException(postId)
+        }
 
         val isLiked = currentUserId?.let { postLikeRepository.existsByPostIdAndUserId(postId, it) } ?: false
         val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
@@ -496,6 +503,7 @@ class SocialService(
         // 5. Fusionner et trier par date décroissante
         val allPosts = (salonPosts + coiffeurPosts)
             .distinctBy { it.id }
+            .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
             .sortedByDescending { it.createdAt }
         
         // 6. Appliquer la pagination manuellement
@@ -545,13 +553,9 @@ class SocialService(
     @Transactional(readOnly = true)
     fun getFeed(pageable: Pageable, currentUserId: String? = null): Page<PostResponse> {
         val postsPage = if (currentUserId != null) {
-            // Récupérer les IDs des posts archivés par l'utilisateur
-            val archivedPostIds = postArchiveRepository.findArchivedPostIdsByUserId(currentUserId).toSet()
-            
-            // Filtrer les posts pour exclure ceux qui sont archivés
             val allPosts = postRepository.findAllOrderByCreatedAtDesc(Pageable.unpaged())
             val filteredPosts = allPosts.content
-                .filter { it.id !in archivedPostIds }
+                .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
                 .filter { isPostVisible(it, currentUserId) } // Phase F.3 - Filtrer par visibilité
                 .filter { !it.isHidden && !it.isDeleted } // Phase H.3 - Filtrer les contenus modérés
             
@@ -569,6 +573,7 @@ class SocialService(
             // Utilisateur non connecté : uniquement les posts publics
             val allPosts = postRepository.findAllOrderByCreatedAtDesc(Pageable.unpaged())
             val publicPosts = allPosts.content
+                .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
                 .filter { it.visibility == com.frollot.model.PostVisibility.PUBLIC } // Phase F.3
                 .filter { !it.isHidden && !it.isDeleted } // Phase H.3 - Filtrer les contenus modérés
             
@@ -629,9 +634,11 @@ class SocialService(
         }
 
         val allPosts = postRepository.searchByContent(query.trim(), Pageable.unpaged())
-        
+
         // Phase F.3 - Filtrer par visibilité
-        val visiblePosts = allPosts.content.filter { isPostVisible(it, currentUserId) }
+        val visiblePosts = allPosts.content
+            .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
+            .filter { isPostVisible(it, currentUserId) }
         
         // Pagination manuelle
         val start = pageable.pageNumber * pageable.pageSize
@@ -725,9 +732,12 @@ class SocialService(
 
         // Étape 5 : Phase F.3 - Filtrer par visibilité
         filteredPosts = filteredPosts.filter { isPostVisible(it, currentUserId) }.toMutableList()
-        
+
         // Étape 5.5 : Phase H.3 - Filtrer les contenus modérés
         filteredPosts = filteredPosts.filter { !it.isHidden && !it.isDeleted }.toMutableList()
+
+        // Étape 5.6 : V041 - Archivage global (masqué pour tous)
+        filteredPosts = filteredPosts.filter { !it.isArchived }.toMutableList()
 
         // Étape 6 : Trier par date décroissante
         filteredPosts.sortByDescending { it.createdAt }
@@ -791,11 +801,14 @@ class SocialService(
         // Phase F.3 - Filtrer par visibilité (sauf si l'utilisateur consulte son propre profil)
         // Phase H.3 - Filtrer les contenus modérés (sauf pour l'auteur et les admins)
         val filteredPosts = if (currentUserId == userId) {
-            // L'utilisateur voit tous ses propres posts (même modérés)
+            // L'utilisateur voit tous ses propres posts (même modérés),
+            // sauf les archivés qui vivent dans l'écran Archives (V041)
             allPosts.content
+                .filter { !it.isArchived }
         } else {
             // Filtrer selon la visibilité et la modération
             allPosts.content
+                .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
                 .filter { isPostVisible(it, currentUserId) }
                 .filter { !it.isHidden && !it.isDeleted }
         }
@@ -886,7 +899,9 @@ class SocialService(
         }
 
         // 3. Phase F.3 - Filtrer par visibilité
-        val visiblePosts = allTaggedPosts.filter { isPostVisible(it, currentUserId) }
+        val visiblePosts = allTaggedPosts
+            .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
+            .filter { isPostVisible(it, currentUserId) }
 
         // 4. Trier par date décroissante
         val sortedPosts = visiblePosts.sortedByDescending { it.createdAt }
@@ -1037,9 +1052,12 @@ class SocialService(
 
         // Étape 4 : Phase F.3 - Filtrer par visibilité
         posts = posts.filter { isPostVisible(it, currentUserId) }
-        
+
         // Étape 4.5 : Phase H.3 - Filtrer les contenus modérés
         posts = posts.filter { !it.isHidden && !it.isDeleted }
+
+        // Étape 4.6 : V041 - Archivage global (masqué pour tous)
+        posts = posts.filter { !it.isArchived }
 
         // Étape 5 : Trier selon sortBy
         posts = when (sortBy) {
@@ -1289,7 +1307,19 @@ class SocialService(
             throw RuntimeException("Utilisateur avec ID '$userId' non trouvé")
         }
 
-        val favoritesPage = postFavoriteRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+        // V041 - Archivage global : un post archivé n'apparaît dans les favoris de personne
+        // (exclusion simple, y compris pour l'auteur — cohérent avec "masqué pour tous").
+        // Filtrage en mémoire + pagination manuelle (même approche que getFeed).
+        val allFavorites = postFavoriteRepository.findByUserIdOrderByCreatedAtDesc(userId, Pageable.unpaged())
+            .content
+            .filter { it.post?.isArchived == false }
+        val start = pageable.pageNumber * pageable.pageSize
+        val end = minOf(start + pageable.pageSize, allFavorites.size)
+        val favoritesPage = org.springframework.data.domain.PageImpl(
+            if (start < allFavorites.size) allFavorites.subList(start, end) else emptyList(),
+            pageable,
+            allFavorites.size.toLong()
+        )
 
         return favoritesPage.map { favorite ->
             val post = favorite.post!!
@@ -1323,9 +1353,10 @@ class SocialService(
     // ========== GESTION DES ARCHIVES ==========
 
     /**
-     * Archive un post pour un utilisateur.
-     * Un post archivé est masqué du feed principal mais reste accessible dans les archives.
-     * 
+     * Archive un post (archivage global, façon Instagram).
+     * V041 : un post archivé est masqué pour TOUS les utilisateurs.
+     * Seul l'auteur du post peut l'archiver. Idempotent.
+     *
      * @return PostResponse mis à jour
      */
     @Transactional
@@ -1334,68 +1365,26 @@ class SocialService(
         val post = postRepository.findById(postId)
             .orElseThrow { PostNotFoundException(postId) }
 
-        // Vérification de l'existence de l'utilisateur
-        if (!userRepository.existsById(userId)) {
-            throw RuntimeException("Utilisateur avec ID '$userId' non trouvé")
+        // Vérification de l'ownership : seul l'auteur peut archiver
+        if (post.author?.id != userId) {
+            throw UnauthorizedAccessException("Seul l'auteur du post peut l'archiver")
         }
 
-        // Vérifier si le post est déjà archivé
-        val existingArchive = postArchiveRepository.findByPostIdAndUserId(postId, userId)
-        if (existingArchive != null) {
-            // Déjà archivé, retourner le post tel quel
-            val isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId)
-            val isFavorited = postFavoriteRepository.existsByPostIdAndUserId(postId, userId)
-            val commentsCount = commentRepository.countByPostId(postId).toInt()
-            val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
-            return PostResponse.fromEntity(
-                post,
-                isLikedByCurrentUser = isLiked,
-                isFavoritedByCurrentUser = isFavorited,
-                isSharedByCurrentUser = false,
-                commentsCount = commentsCount,
-                sharesCount = 0,
-                tags = tags
-            )
+        if (!post.isArchived) {
+            post.isArchived = true
+            post.archivedAt = java.time.LocalDateTime.now()
+            postRepository.save(post)
+            println("📦 Post archivé (global): Post $postId par User $userId")
         }
 
-        // Archiver le post
-        val user = userRepository.findById(userId)
-            .orElseThrow { RuntimeException("Utilisateur avec ID '$userId' non trouvé") }
-        
-        val newArchive = PostArchive(
-            id = UUID.randomUUID().toString(),
-            post = post,
-            user = user
-        )
-
-        if (!newArchive.isValid()) {
-            throw IllegalStateException("Impossible de créer une archive invalide")
-        }
-
-        postArchiveRepository.save(newArchive)
-        println("📦 Post archivé: Post $postId par User $userId")
-
-        // Récupérer le statut final
-        val isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId)
-        val isFavorited = postFavoriteRepository.existsByPostIdAndUserId(postId, userId)
-        val commentsCount = commentRepository.countByPostId(postId).toInt()
-        val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
-        return PostResponse.fromEntity(
-            post,
-            isLikedByCurrentUser = isLiked,
-            isFavoritedByCurrentUser = isFavorited,
-            isSharedByCurrentUser = false,
-            commentsCount = commentsCount,
-            sharesCount = 0,
-            tags = tags
-        )
+        return buildPostResponse(post, userId)
     }
 
     /**
-     * Désarchive un post pour un utilisateur.
-     * 
+     * Désarchive un post (archivage global, façon Instagram).
+     * V041 : le post redevient visible pour tous.
+     * Seul l'auteur du post peut le désarchiver. Idempotent.
+     *
      * @return PostResponse mis à jour
      */
     @Transactional
@@ -1404,54 +1393,25 @@ class SocialService(
         val post = postRepository.findById(postId)
             .orElseThrow { PostNotFoundException(postId) }
 
-        // Vérification de l'existence de l'utilisateur
-        if (!userRepository.existsById(userId)) {
-            throw RuntimeException("Utilisateur avec ID '$userId' non trouvé")
+        // Vérification de l'ownership : seul l'auteur peut désarchiver
+        if (post.author?.id != userId) {
+            throw UnauthorizedAccessException("Seul l'auteur du post peut le désarchiver")
         }
 
-        // Vérifier si le post est archivé
-        val existingArchive = postArchiveRepository.findByPostIdAndUserId(postId, userId)
-        if (existingArchive == null) {
-            // Pas archivé, retourner le post tel quel
-            val isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId)
-            val isFavorited = postFavoriteRepository.existsByPostIdAndUserId(postId, userId)
-            val commentsCount = commentRepository.countByPostId(postId).toInt()
-            val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
-            return PostResponse.fromEntity(
-                post,
-                isLikedByCurrentUser = isLiked,
-                isFavoritedByCurrentUser = isFavorited,
-                isSharedByCurrentUser = false,
-                commentsCount = commentsCount,
-                sharesCount = 0,
-                tags = tags
-            )
+        if (post.isArchived) {
+            post.isArchived = false
+            post.archivedAt = null
+            postRepository.save(post)
+            println("📤 Post désarchivé (global): Post $postId par User $userId")
         }
 
-        // Désarchiver le post
-        postArchiveRepository.delete(existingArchive)
-        println("📤 Post désarchivé: Post $postId par User $userId")
-
-        // Récupérer le statut final
-        val isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId)
-        val isFavorited = postFavoriteRepository.existsByPostIdAndUserId(postId, userId)
-        val commentsCount = commentRepository.countByPostId(postId).toInt()
-        val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
-        return PostResponse.fromEntity(
-            post,
-            isLikedByCurrentUser = isLiked,
-            isFavoritedByCurrentUser = isFavorited,
-            isSharedByCurrentUser = false,
-            commentsCount = commentsCount,
-            sharesCount = 0,
-            tags = tags
-        )
+        return buildPostResponse(post, userId)
     }
 
     /**
      * Récupère les posts archivés d'un utilisateur avec pagination.
+     * V041 : lit le flag isArchived sur posts (post_archives dormante).
+     * URL et forme de réponse inchangées.
      */
     @Transactional(readOnly = true)
     fun getArchivedPosts(userId: String, pageable: Pageable, currentUserId: String? = null): Page<PostResponse> {
@@ -1459,10 +1419,9 @@ class SocialService(
             throw RuntimeException("Utilisateur avec ID '$userId' non trouvé")
         }
 
-        val archivesPage = postArchiveRepository.findByUserIdOrderByArchivedAtDesc(userId, pageable)
+        val archivedPage = postRepository.findByAuthorIdAndIsArchivedTrueOrderByArchivedAtDesc(userId, pageable)
 
-        return archivesPage.map { archive ->
-            val post = archive.post!!
+        return archivedPage.map { post ->
             val postId = post.id!!
             val isLiked = currentUserId?.let { postLikeRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
@@ -2061,11 +2020,18 @@ class SocialService(
         )
         val followingCount = followRepository.countByFollowerId(coiffeurId)
 
+        // Note coiffeur : agrégation sur tous les staffIds (multi-salon)
+        val staffIds = salonStaffRepository.findByUserId(coiffeurId).mapNotNull { it.id }
+        val averageRating = if (staffIds.isNotEmpty()) reviewRepository.findAverageRatingByStaffIds(staffIds) else java.math.BigDecimal.ZERO
+        val totalReviews = if (staffIds.isNotEmpty()) reviewRepository.countByStaffIdsAndIsVisibleTrue(staffIds).toInt() else 0
+
         val statistics = CoiffeurProfileStatistics(
             postsCount = postsCount,
             totalLikes = totalLikes,
             followersCount = followersCount,
-            followingCount = followingCount
+            followingCount = followingCount,
+            averageRating = averageRating,
+            totalReviews = totalReviews
         )
 
         // Vérifier si l'utilisateur courant suit ce coiffeur
@@ -2171,6 +2137,7 @@ class SocialService(
         val highlightedPostEntities = salonHighlightedPostRepository.findBySalonIdOrderByOrderIndexAsc(salonId)
         val highlightedPosts = highlightedPostEntities.mapNotNull { highlightedPost ->
             val post = highlightedPost.post ?: return@mapNotNull null
+            if (post.isArchived) return@mapNotNull null // V041 - Archivage global (masqué pour tous)
             val postId = post.id!!
             val isLiked = currentUserId?.let { postLikeRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
@@ -2247,7 +2214,9 @@ class SocialService(
         val statistics = SalonSocialProfileStatistics(
             postsCount = postsCount,
             totalLikes = totalLikes,
-            followersCount = followersCount
+            followersCount = followersCount,
+            averageRating = salon.ratingAverage,
+            totalReviews = salon.totalReviews
         )
 
         // Récupérer l'équipe (coiffeurs actifs)
@@ -2890,7 +2859,10 @@ class SocialService(
         )
 
         // Convertir en CollectionPostResponse
-        val collectionPostResponses = collectionPostsPage.content.map { collectionPost ->
+        // V041 - Archivage global : on saute les posts archivés au lieu de laisser
+        // getPostById jeter un 404 qui casserait toute la liste.
+        val collectionPostResponses = collectionPostsPage.content.mapNotNull { collectionPost ->
+            if (collectionPost.post?.isArchived == true) return@mapNotNull null
             val postResponse = getPostById(collectionPost.post!!.id!!, currentUserId)
             CollectionPostResponse.fromEntity(collectionPost, postResponse)
         }
@@ -3030,8 +3002,9 @@ class SocialService(
             throw RuntimeException("Auteur avec ID '$authorId' non trouvé")
         }
 
-        // Récupérer les posts épinglés
+        // Récupérer les posts épinglés (hors archivés - V041)
         val pinnedPosts = postRepository.findByAuthorIdAndIsPinnedTrueOrderByCreatedAtDesc(authorId)
+            .filter { !it.isArchived }
 
         // Convertir en PostResponse
         return pinnedPosts.map { post ->

@@ -47,6 +47,11 @@ data class User(
     @Column(name = "phone_number")
     var phoneNumber: String? = null,
 
+    // V045 — visibilité du numéro (déclaratif, sans vérification). FALSE = privé (défaut) :
+    // visible du seul propriétaire + canal transactionnel (réservations). TRUE = vues publiques aussi.
+    @Column(name = "phone_public", nullable = false)
+    var phonePublic: Boolean = false,
+
     @Column(name = "is_verified")
     var isVerified: Boolean = false,
 

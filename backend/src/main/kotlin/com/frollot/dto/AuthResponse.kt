@@ -1,5 +1,6 @@
 package com.frollot.dto
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.frollot.model.User
 import com.frollot.model.UserType
 
@@ -64,7 +65,13 @@ data class AuthResponse(
     val isActive: Boolean = true,
     val avatarUrl: String? = null,
     val message: String? = null,
-    val emailSendStatus: String? = null
+    val emailSendStatus: String? = null,
+    // S9b — défi 2FA : présents UNIQUEMENT dans la réponse de défi
+    // (login correct sur un compte 2FA-activé). Jamais sérialisés sinon (null).
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val requiresTwoFactor: Boolean? = null,
+    @field:JsonInclude(JsonInclude.Include.NON_NULL)
+    val twoFactorToken: String? = null
 ) {
     companion object {
         /**
@@ -83,13 +90,7 @@ data class AuthResponse(
             message: String? = null,
             emailSendStatus: String? = null
         ): AuthResponse {
-            // LOGS CRITIQUES POUR DEBUGGER LE PROBLÈME DE REDIRECTION
-            println("🔧 [AuthResponse.fromUser] Construction de la réponse:")
-            println("🔧 [AuthResponse.fromUser] user.emailVerified = ${user.emailVerified}")
-            println("🔧 [AuthResponse.fromUser] user.isVerified = ${user.isVerified}")
-            println("🔧 [AuthResponse.fromUser] user.email = ${user.email}")
-
-            val response = AuthResponse(
+            return AuthResponse(
                 accessToken = accessToken,
                 refreshToken = refreshToken,
                 userId = user.id!!,
@@ -103,9 +104,25 @@ data class AuthResponse(
                 message = message,
                 emailSendStatus = emailSendStatus
             )
+        }
 
-            println("🔧 [AuthResponse.fromUser] response.isVerified = ${response.isVerified}")
-            return response
+        /**
+         * Crée la réponse de DÉFI 2FA (S9b) : login correct sur un compte 2FA-activé.
+         *
+         * AUCUN token réel n'est émis — seulement le jeton temporaire 2fa_pending
+         * (5 min, rejeté partout sauf sur POST /api/users/login/2fa).
+         */
+        fun twoFactorChallenge(twoFactorToken: String): AuthResponse {
+            return AuthResponse(
+                accessToken = "",
+                refreshToken = "",
+                userId = "",
+                email = "",
+                userType = UserType.client, // valeur par défaut, non utilisée
+                message = "Vérification en deux étapes requise",
+                requiresTwoFactor = true,
+                twoFactorToken = twoFactorToken
+            )
         }
 
         /**

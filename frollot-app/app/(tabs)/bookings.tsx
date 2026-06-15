@@ -8,6 +8,7 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { bookingsApi } from '../../src/api/bookings';
 import { LoadingState, EmptyState, ErrorState } from '../../src/components/lists';
 import { BookingResponse, BookingStatus } from '../../src/types';
+import { formatDateTimeShort } from '../../src/utils/formatDate';
 
 type BookingFilter = 'all' | 'upcoming' | 'past';
 
@@ -77,10 +78,10 @@ export default function BookingsScreen() {
     }
   };
 
-  const FILTERS: { key: BookingFilter; label: string }[] = [
-    { key: 'all', label: 'Toutes' },
-    { key: 'upcoming', label: 'À venir' },
-    { key: 'past', label: 'Passées' },
+  const FILTER_KEYS: { key: BookingFilter; i18nKey: string }[] = [
+    { key: 'all', i18nKey: 'booking.tabFilter.all' },
+    { key: 'upcoming', i18nKey: 'booking.tabFilter.upcoming' },
+    { key: 'past', i18nKey: 'booking.tabFilter.past' },
   ];
 
   const renderBooking = ({ item }: { item: BookingResponse }) => {
@@ -102,11 +103,11 @@ export default function BookingsScreen() {
         <Text style={[typo.bodyMedium, { color: colors.onSurface }]}>{item.serviceName}</Text>
         <View style={styles.metaRow}>
           <MaterialIcons name="event" size={16} color={colors.onSurfaceVariant} />
-          <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
-            {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
+            {formatDateTimeShort(date)}
           </Text>
           {item.formattedDuration && (
-            <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginLeft: 8 }]}>
+            <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 8 }]}>
               {item.formattedDuration}
             </Text>
           )}
@@ -124,7 +125,7 @@ export default function BookingsScreen() {
               style={[styles.actionBtn, { borderColor: colors.error }]}
               onPress={() => setCancelId(item.id)}
             >
-              <Text style={[styles.actionText, { color: colors.error }]}>Annuler</Text>
+              <Text style={[styles.actionText, { color: colors.error }]}>{t('common.actions.cancel')}</Text>
             </TouchableOpacity>
           )}
           {isCompleted && (
@@ -133,7 +134,7 @@ export default function BookingsScreen() {
               onPress={() => router.push(`/create-review?salonId=${item.salonId}&salonName=${encodeURIComponent(item.salonName)}&bookingId=${item.id}&serviceName=${encodeURIComponent(item.serviceName)}`)}
             >
               <MaterialIcons name="rate-review" size={16} color={colors.tertiary} />
-              <Text style={[styles.actionText, { color: colors.tertiary }]}>Laisser un avis</Text>
+              <Text style={[styles.actionText, { color: colors.tertiary }]}>{t('booking.leaveReview')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -149,14 +150,14 @@ export default function BookingsScreen() {
 
       {/* Filter tabs */}
       <View style={styles.filterRow}>
-        {FILTERS.map((f) => (
+        {FILTER_KEYS.map((f) => (
           <TouchableOpacity
             key={f.key}
             style={[styles.filterChip, { backgroundColor: filter === f.key ? colors.primaryContainer : colors.surfaceContainerHigh }]}
             onPress={() => setFilter(f.key)}
           >
             <Text style={[styles.filterText, { color: filter === f.key ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>
-              {f.label} ({counts[f.key]})
+              {t(f.i18nKey)} ({counts[f.key]})
             </Text>
           </TouchableOpacity>
         ))}
@@ -166,12 +167,12 @@ export default function BookingsScreen() {
       {isLoading ? (
         <LoadingState />
       ) : hasError ? (
-        <ErrorState message="Impossible de charger les réservations" onRetry={() => { setIsLoading(true); loadBookings(); }} />
+        <ErrorState message={t('booking.loadError')} onRetry={() => { setIsLoading(true); loadBookings(); }} />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon="calendar-blank-outline"
-          title="Aucune réservation"
-          message={filter === 'upcoming' ? 'Pas de rendez-vous à venir.' : filter === 'past' ? 'Pas de rendez-vous passés.' : 'Vous n\'avez pas encore de réservation.'}
+          title={t('booking.emptyTitle')}
+          message={filter === 'upcoming' ? t('booking.emptyUpcoming') : filter === 'past' ? t('booking.emptyPast') : t('booking.emptyAll')}
         />
       ) : (
         <FlatList
@@ -189,18 +190,18 @@ export default function BookingsScreen() {
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: colors.surface }]}>
             <MaterialIcons name="event-busy" size={40} color={colors.error} style={{ alignSelf: 'center', marginBottom: 12 }} />
             <Text style={[typo.titleMedium, { color: colors.onSurface, textAlign: 'center', marginBottom: 8 }]}>
-              Annuler cette réservation ?
+              {t('booking.cancelModalTitle')}
             </Text>
             <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center', marginBottom: 20 }]}>
-              Cette action est irréversible. La réservation passera au statut « Annulée ».
+              {t('booking.cancelModalMessage')}
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.surfaceContainerHigh }]} onPress={() => setCancelId(null)}>
-                <Text style={[styles.modalBtnText, { color: colors.onSurface }]}>Non, garder</Text>
+                <Text style={[styles.modalBtnText, { color: colors.onSurface }]}>{t('booking.cancelKeep')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.modalBtn, { backgroundColor: colors.error }]} onPress={handleCancel} disabled={isCancelling}>
                 <Text style={[styles.modalBtnText, { color: colors.onError }]}>
-                  {isCancelling ? 'Annulation...' : 'Oui, annuler'}
+                  {isCancelling ? t('booking.cancelling') : t('booking.cancelYes')}
                 </Text>
               </TouchableOpacity>
             </View>

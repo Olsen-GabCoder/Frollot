@@ -17,6 +17,7 @@ data class UserResponse(
     val firstName: String?,
     val lastName: String?,
     val phoneNumber: String?,
+    val phonePublic: Boolean = false, // V045 — visibilité choisie par l'utilisateur
     val isVerified: Boolean,
     val verificationType: VerificationType? = null, // Phase H.2 - Vérification Salons/Coiffeurs
     val isActive: Boolean,
@@ -27,14 +28,26 @@ data class UserResponse(
     val followersCount: Long? = null
 ) {
     companion object {
-        fun fromEntity(user: User): UserResponse {
+        /**
+         * V045 — règle de visibilité du numéro APPLIQUÉE ICI, point unique.
+         *
+         * PAR DÉFAUT (includePrivatePhone=false) : vue PUBLIQUE — phoneNumber n'est
+         * présent que si l'utilisateur a choisi phone_public=true. Tout futur appelant
+         * est donc privé-par-défaut. Les vues propriétaire (GET/PUT /me, avatar) et
+         * admin (liste, vérification) passent explicitement includePrivatePhone=true.
+         *
+         * Le canal transactionnel (BookingDto.clientPhone) ne passe PAS par ce DTO :
+         * il reste toujours visible du salon.
+         */
+        fun fromEntity(user: User, includePrivatePhone: Boolean = false): UserResponse {
             return UserResponse(
                 id = user.id!!,
                 email = user.email,
                 userType = user.userType,
                 firstName = user.firstName,
                 lastName = user.lastName,
-                phoneNumber = user.phoneNumber,
+                phoneNumber = if (includePrivatePhone || user.phonePublic) user.phoneNumber else null,
+                phonePublic = user.phonePublic,
                 isVerified = user.isVerified,
                 verificationType = user.verificationType, // Phase H.2
                 isActive = user.isActive,

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,13 @@ export default function QueueManagementScreen() {
     [QueueEntryStatus.CALLED]: colors.info,
     [QueueEntryStatus.CANCELLED]: colors.error,
     [QueueEntryStatus.COMPLETED]: colors.success,
+  };
+
+  const STATUS_LABELS: Record<QueueEntryStatus, string> = {
+    [QueueEntryStatus.WAITING]: t('queue.waiting'),
+    [QueueEntryStatus.CALLED]: t('queue.called'),
+    [QueueEntryStatus.CANCELLED]: t('queue.cancelled'),
+    [QueueEntryStatus.COMPLETED]: t('queue.completed'),
   };
 
   const [queueStatus, setQueueStatus] = useState<QueueStatusResponse | null>(null);
@@ -50,7 +58,7 @@ export default function QueueManagementScreen() {
       setQueueStatus(data);
       setError(null);
     } catch (e: any) {
-      setError(e?.message || 'Impossible de charger la file');
+      setError(e?.message || t('queue.loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +92,7 @@ export default function QueueManagementScreen() {
       await queueApi.callNextClient(salonId);
     } catch (e: any) {
       setQueueStatus(snapshot); // rollback
-      setActionError(e?.response?.data?.message || 'Erreur lors de l\'appel');
+      setActionError(e?.response?.data?.message || t('queue.callError'));
     } finally {
       setActionRunning(false);
       startPoll();
@@ -108,7 +116,7 @@ export default function QueueManagementScreen() {
       await queueApi.removeQueueEntry(salonId, entryId);
     } catch (e: any) {
       setQueueStatus(snapshot); // rollback
-      setActionError(e?.response?.data?.message || 'Erreur lors du retrait');
+      setActionError(e?.response?.data?.message || t('queue.removeError'));
     } finally {
       setActionRunning(false);
       startPoll();
@@ -128,9 +136,9 @@ export default function QueueManagementScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, flex: 1, marginLeft: 16 }]}>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, flex: 1, marginStart: 16 }]}>
           {t('salon.queue')}
         </Text>
         <TouchableOpacity onPress={loadQueue} disabled={actionRunning}>
@@ -142,15 +150,15 @@ export default function QueueManagementScreen() {
       <View style={styles.statsRow}>
         <View style={[styles.statCard, { backgroundColor: colors.warningContainer }]}>
           <Text style={[typo.headlineSmall, { color: colors.onWarningContainer }]}>{waitingEntries.length}</Text>
-          <Text style={[typo.labelSmall, { color: colors.onWarningContainer }]}>En attente</Text>
+          <Text style={[typo.labelSmall, { color: colors.onWarningContainer }]}>{t('queue.waiting')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.infoContainer }]}>
           <Text style={[typo.headlineSmall, { color: colors.onInfoContainer }]}>{calledEntries.length}</Text>
-          <Text style={[typo.labelSmall, { color: colors.onInfoContainer }]}>Appeles</Text>
+          <Text style={[typo.labelSmall, { color: colors.onInfoContainer }]}>{t('queue.called')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: colors.surfaceContainerHigh }]}>
           <Text style={[typo.headlineSmall, { color: colors.onSurface }]}>{queueStatus?.estimatedWaitForNew ?? 0}</Text>
-          <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant }]}>min attente</Text>
+          <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant }]}>{t('queue.waitTime')}</Text>
         </View>
       </View>
 
@@ -179,21 +187,21 @@ export default function QueueManagementScreen() {
                 <View style={[styles.positionBadge, { backgroundColor: colors.primaryContainer }]}>
                   <Text style={[typo.labelLarge, { color: colors.onPrimaryContainer }]}>{item.position}</Text>
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, marginStart: 12 }}>
                   <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{item.clientName}</Text>
                   {item.requestedServiceName && (
                     <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{item.requestedServiceName}</Text>
                   )}
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-                  <Text style={[typo.labelSmall, { color: statusColor }]}>{item.status}</Text>
+                  <Text style={[typo.labelSmall, { color: statusColor }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
                 </View>
               </View>
 
               <View style={styles.entryMeta}>
                 <MaterialIcons name="access-time" size={14} color={colors.onSurfaceVariant} />
-                <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
-                  ~{item.estimatedWaitMinutes} min
+                <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
+                  {t('queue.estimatedWait', { count: item.estimatedWaitMinutes })}
                 </Text>
               </View>
 
@@ -205,7 +213,7 @@ export default function QueueManagementScreen() {
                     onPress={handleCallNext} disabled={actionRunning}
                   >
                     {actionRunning ? <ActivityIndicator size="small" color={colors.onPrimary} /> : (
-                      <Text style={[typo.labelMedium, { color: colors.onPrimary }]}>Appeler</Text>
+                      <Text style={[typo.labelMedium, { color: colors.onPrimary }]}>{t('queue.callButton')}</Text>
                     )}
                   </TouchableOpacity>
                 )}
@@ -213,7 +221,7 @@ export default function QueueManagementScreen() {
                   style={[styles.actionBtn, { borderColor: colors.error, borderWidth: 1 }]}
                   onPress={() => handleRemove(item.entryId)} disabled={actionRunning}
                 >
-                  <Text style={[typo.labelMedium, { color: colors.error }]}>Retirer</Text>
+                  <Text style={[typo.labelMedium, { color: colors.error }]}>{t('queue.removeButton')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

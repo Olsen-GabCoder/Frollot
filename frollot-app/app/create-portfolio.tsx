@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity, Switch,
-  StyleSheet, ActivityIndicator, Alert,
+  StyleSheet, ActivityIndicator, Alert, I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -55,9 +55,9 @@ export default function CreatePortfolioScreen() {
         coverImageUrl,
         isPublic,
       });
-      Alert.alert(t('common.done'), 'Portfolio cree', [{ text: 'OK', onPress: () => router.back() }]);
+      Alert.alert(t('common.actions.done'), t('portfolio.created'), [{ text: t('common.actions.ok'), onPress: () => router.back() }]);
     } catch (e: any) {
-      setError(e?.response?.data?.message || t('common.error'));
+      setError(e?.response?.data?.message || t('common.states.error'));
     } finally {
       setIsCreating(false);
     }
@@ -66,8 +66,8 @@ export default function CreatePortfolioScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => router.back()}><MaterialIcons name="arrow-back" size={24} color={colors.onSurface} /></TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>Creer un portfolio</Text>
+        <TouchableOpacity onPress={() => router.back()}><MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} /></TouchableOpacity>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{t('portfolio.create')}</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <TouchableOpacity style={[styles.coverPicker, { backgroundColor: colors.surfaceContainerHigh, borderColor: colors.outlineVariant }]} onPress={pickCover}>
@@ -77,26 +77,26 @@ export default function CreatePortfolioScreen() {
         </TouchableOpacity>
         {ownerType === 'salon' && salons.length > 0 && (
           <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <Text style={[typo.labelLarge, { color: colors.onSurface, marginBottom: 8 }]}>Salon</Text>
+            <Text style={[typo.labelLarge, { color: colors.onSurface, marginBottom: 8 }]}>{t('portfolio.salonLabel')}</Text>
             {salons.map((s) => (
               <TouchableOpacity key={s.id} style={styles.radioRow} onPress={() => setSelectedSalonId(s.id)}>
                 <MaterialIcons name={selectedSalonId === s.id ? 'radio-button-checked' : 'radio-button-unchecked'} size={20} color={colors.primary} />
-                <Text style={[typo.bodyMedium, { color: colors.onSurface, marginLeft: 8 }]}>{s.name}</Text>
+                <Text style={[typo.bodyMedium, { color: colors.onSurface, marginStart: 8 }]}>{s.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
         <TextInput style={[styles.input, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-          placeholder="Nom du portfolio *" placeholderTextColor={colors.onSurfaceVariant} value={name} onChangeText={setName} />
+          placeholder={t('portfolio.namePlaceholder')} placeholderTextColor={colors.onSurfaceVariant} value={name} onChangeText={setName} />
         <TextInput style={[styles.input, styles.textArea, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-          placeholder="Description" placeholderTextColor={colors.onSurfaceVariant} value={description} onChangeText={setDescription} multiline textAlignVertical="top" />
+          placeholder={t('portfolio.descriptionPlaceholder')} placeholderTextColor={colors.onSurfaceVariant} value={description} onChangeText={setDescription} multiline textAlignVertical="top" />
         <View style={styles.switchRow}>
-          <Text style={[typo.bodyLarge, { color: colors.onSurface, flex: 1 }]}>Public</Text>
+          <Text style={[typo.bodyLarge, { color: colors.onSurface, flex: 1 }]}>{t('portfolio.publicLabel')}</Text>
           <Switch value={isPublic} onValueChange={setIsPublic} trackColor={{ true: colors.primary }} />
         </View>
         {error && <View style={[styles.errorCard, { backgroundColor: colors.errorContainer }]}><Text style={[typo.bodyMedium, { color: colors.onErrorContainer }]}>{error}</Text></View>}
         <TouchableOpacity style={[styles.submitBtn, { backgroundColor: name.trim() ? colors.primary : colors.surfaceContainerHigh }]} onPress={handleCreate} disabled={!name.trim() || isCreating}>
-          {isCreating ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={[typo.labelLarge, { color: name.trim() ? colors.onPrimary : colors.onSurfaceVariant }]}>Creer</Text>}
+          {isCreating ? <ActivityIndicator color={colors.onPrimary} /> : <Text style={[typo.labelLarge, { color: name.trim() ? colors.onPrimary : colors.onSurfaceVariant }]}>{t('portfolio.createButton')}</Text>}
         </TouchableOpacity>
       </ScrollView>
     </View>

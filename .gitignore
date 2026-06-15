@@ -48,6 +48,7 @@ target/
 # 🗂️ IDE & Éditeurs
 # =========================
 .idea/
+.claude/
 *.iml
 *.iws
 *.ipr

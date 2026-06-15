@@ -29,10 +29,16 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setLoginError(null);
-    if (!email.trim()) { setLoginError(t('auth.emailRequired')); return; }
-    if (!password.trim()) { setLoginError(t('auth.passwordRequired')); return; }
+    if (!email.trim()) { setLoginError(t('common.validation.emailRequired')); return; }
+    if (!password.trim()) { setLoginError(t('common.validation.passwordRequired')); return; }
     try {
-      await login(email.trim(), password);
+      const response = await login(email.trim(), password);
+      // S9d-2 — compte 2FA-actif : pas de session (le store n'a RIEN stocké), le jeton
+      // de défi vit en mémoire dans authStore. On passe à la saisie du code.
+      if (response.requiresTwoFactor) {
+        router.push('/(auth)/two-factor');
+        return;
+      }
       setLoginSuccess(true);
       setTimeout(() => router.replace('/(tabs)'), 2000);
     } catch (error: any) {
@@ -41,11 +47,11 @@ export default function LoginScreen() {
       if (status === 403 && message.includes('vérifiée')) {
         router.push({ pathname: '/(auth)/email-verification', params: { email: email.trim() } });
       } else if (status === 403) {
-        setLoginError('Votre compte a été désactivé.');
+        setLoginError(t('auth.accountDisabled'));
       } else if (status === 429) {
-        setLoginError('Trop de tentatives. Veuillez patienter quelques minutes.');
+        setLoginError(t('auth.tooManyAttempts'));
       } else {
-        setLoginError('Email ou mot de passe incorrect.');
+        setLoginError(t('auth.invalidCredentialsError'));
       }
     }
   };
@@ -81,15 +87,15 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={[styles.overline, { color: colors.secondary }]}>{t('auth.welcomeBack') || 'Bon retour parmi nous'}</Text>
-          <Text style={[styles.headline, { color: colors.onBackground }]}>{t('auth.welcome') || 'Bienvenue'}</Text>
+          <Text style={[styles.overline, { color: colors.secondary }]}>{t('auth.welcomeBack')}</Text>
+          <Text style={[styles.headline, { color: colors.onBackground }]}>{t('auth.welcomeTitle')}</Text>
           <Text style={[styles.subtitle, { color: colors.onSurfaceVariant }]}>
-            {t('auth.loginSubtitle') || 'Connectez-vous pour retrouver vos salons, rendez-vous et inspirations.'}
+            {t('auth.loginSubtitle')}
           </Text>
 
           <View style={styles.fields}>
             <TextField
-              label={t('auth.email') || 'Email'}
+              label={t('common.fields.email')}
               icon="email-outline"
               value={email}
               onChangeText={setEmail}
@@ -98,7 +104,7 @@ export default function LoginScreen() {
               autoComplete="email"
             />
             <PasswordTextField
-              label={t('auth.password') || 'Mot de passe'}
+              label={t('common.fields.password')}
               value={password}
               onChangeText={setPassword}
               autoComplete="password"
@@ -109,7 +115,7 @@ export default function LoginScreen() {
             onPress={() => router.push('/(auth)/forgot-password')}
             style={styles.forgotLink}
           >
-            <Text style={[styles.forgotText, { color: colors.primary }]}>{t('auth.forgotPassword') || 'Mot de passe oublié ?'}</Text>
+            <Text style={[styles.forgotText, { color: colors.primary }]}>{t('auth.forgotPassword')}</Text>
           </TouchableOpacity>
 
           {loginError && (
@@ -122,7 +128,7 @@ export default function LoginScreen() {
           {loginSuccess && (
             <View style={[styles.successCard, { backgroundColor: colors.successContainer }]}>
               <MaterialCommunityIcons name="check-circle" size={18} color={colors.onSuccessContainer} />
-              <Text style={[styles.errorText, { color: colors.onSuccessContainer }]}>Connexion réussie ! Redirection...</Text>
+              <Text style={[styles.errorText, { color: colors.onSuccessContainer }]}>{t('auth.loginSuccessRedirect')}</Text>
             </View>
           )}
 
@@ -133,24 +139,25 @@ export default function LoginScreen() {
             loading={isLoading}
             style={styles.loginBtn}
           >
-            {t('auth.login') || 'Se connecter'}
+            {t('auth.loginButton')}
           </PrimaryButton>
 
           {/* Separator */}
           <View style={styles.divider}>
             <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant }]} />
-            <Text style={[styles.dividerText, { color: colors.onSurfaceVariant }]}>OU</Text>
+            <Text style={[styles.dividerText, { color: colors.onSurfaceVariant }]}>{t('common.words.or')}</Text>
             <View style={[styles.dividerLine, { backgroundColor: colors.outlineVariant }]} />
           </View>
 
           <OutlineButton full onPress={() => router.push('/(auth)/register')}>
-            {t('auth.createAccount') || 'Créer un compte'}
+            {t('auth.registerButton')}
           </OutlineButton>
 
           <Text style={[styles.legal, { color: colors.onSurfaceVariant }]}>
-            En continuant, vous acceptez nos{' '}
-            <Text style={[styles.legalLink, { color: colors.primary }]}>Conditions</Text> et notre{' '}
-            <Text style={[styles.legalLink, { color: colors.primary }]}>Politique de confidentialité</Text>.
+            {t('auth.legal.continuingAccept')}
+            <Text style={[styles.legalLink, { color: colors.primary }]}>{t('auth.legal.terms')}</Text>
+            {t('auth.legal.conjunction')}
+            <Text style={[styles.legalLink, { color: colors.primary }]}>{t('auth.legal.privacy')}</Text>.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -168,12 +175,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   heroPlaceholder: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    position: 'absolute', top: 0, start: 0, end: 0, bottom: 0,
   },
   brandContainer: {
     position: 'absolute',
     top: 28,
-    left: 24,
+    start: 24,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,

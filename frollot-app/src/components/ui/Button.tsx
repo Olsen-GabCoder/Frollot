@@ -48,7 +48,7 @@ export function Button({ children, kind = 'primary', icon, full = false, onPress
       ) : (
         <>
           {icon && <MaterialCommunityIcons name={icon} size={20} color={k.color} />}
-          <Text style={[styles.label, { color: k.color }]}>{children}</Text>
+          <Text style={[styles.label, { color: k.color }]} numberOfLines={1}>{children}</Text>
         </>
       )}
     </TouchableOpacity>

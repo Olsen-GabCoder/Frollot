@@ -17,6 +17,10 @@ export interface Salon {
   verificationType?: VerificationType;
   isFollowedByCurrentUser?: boolean;
   followersCount?: number;
+  // Salon.kt: ratingAverage (BigDecimal) & totalReviews (Int) — colonnes DB,
+  // pas encore exposées dans SalonResponse DTO mais anticipées par l'écran Home.
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export interface CreateSalonRequest {
@@ -43,14 +47,14 @@ export enum ServiceCategory {
   AUTRE = 'AUTRE',
 }
 
-export const SERVICE_CATEGORY_META: Record<ServiceCategory, { emoji: string; label: string }> = {
-  [ServiceCategory.COUPE]: { emoji: '\u2702\uFE0F', label: 'Coupe & Taille' },
-  [ServiceCategory.COLORATION]: { emoji: '\uD83C\uDFA8', label: 'Coloration' },
-  [ServiceCategory.SOIN]: { emoji: '\uD83D\uDC86', label: 'Soins' },
-  [ServiceCategory.COIFFAGE]: { emoji: '\uD83D\uDC87', label: 'Coiffage' },
-  [ServiceCategory.BARBE]: { emoji: '\uD83E\uDDD4', label: 'Barbier' },
-  [ServiceCategory.TECHNIQUE]: { emoji: '\uD83C\uDF1F', label: 'Techniques Speciales' },
-  [ServiceCategory.AUTRE]: { emoji: '\uD83D\uDCCB', label: 'Autres Prestations' },
+export const SERVICE_CATEGORY_META: Record<ServiceCategory, { emoji: string; labelKey: string }> = {
+  [ServiceCategory.COUPE]: { emoji: '✂️', labelKey: 'service.categories.coupe' },
+  [ServiceCategory.COLORATION]: { emoji: '🎨', labelKey: 'service.categories.coloration' },
+  [ServiceCategory.SOIN]: { emoji: '💆', labelKey: 'service.categories.soin' },
+  [ServiceCategory.COIFFAGE]: { emoji: '💇', labelKey: 'service.categories.coiffage' },
+  [ServiceCategory.BARBE]: { emoji: '🧔', labelKey: 'service.categories.barbe' },
+  [ServiceCategory.TECHNIQUE]: { emoji: '🌟', labelKey: 'service.categories.technique' },
+  [ServiceCategory.AUTRE]: { emoji: '📋', labelKey: 'service.categories.autre' },
 };
 
 export interface SalonService {
@@ -95,6 +99,7 @@ export interface StaffMember {
   userLastName: string;
   userEmail: string;
   userAvatarUrl?: string;
+  role: string;
   specialties: ServiceCategory[];
   specialtyLabels: string[];
   isActive: boolean;

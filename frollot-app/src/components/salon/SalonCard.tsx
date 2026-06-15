@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   favoriteBtn: {
     position: 'absolute',
     top: 10,
-    right: 10,
+    end: 10,
     width: 34,
     height: 34,
     borderRadius: 17,

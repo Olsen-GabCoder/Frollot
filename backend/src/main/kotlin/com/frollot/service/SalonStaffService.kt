@@ -107,13 +107,34 @@ class SalonStaffService(
      */
     @Transactional(readOnly = true)
     fun getStaffBySalon(salonId: String): List<StaffResponse> {
-        // Vérification de l'existence du salon
-        if (!salonRepository.existsById(salonId)) {
-            throw SalonServiceService.SalonNotFoundException(salonId)
-        }
+        val salon = salonRepository.findById(salonId)
+            .orElseThrow { SalonServiceService.SalonNotFoundException(salonId) }
 
         val staffList = salonStaffRepository.findBySalonId(salonId)
-        return StaffResponse.fromEntities(staffList)
+        val responses = StaffResponse.fromEntities(staffList).toMutableList()
+
+        // Include the salon owner at the top if not already in the staff table
+        val ownerId = salon.owner?.id
+        if (ownerId != null && responses.none { it.userId == ownerId }) {
+            val owner = salon.owner!!
+            responses.add(0, StaffResponse(
+                id = "owner-$salonId",
+                salonId = salonId,
+                salonName = salon.name ?: "",
+                userId = ownerId,
+                userFirstName = owner.firstName ?: "",
+                userLastName = owner.lastName ?: "",
+                userEmail = owner.email ?: "",
+                userAvatarUrl = owner.avatarUrl,
+                role = "owner",
+                specialties = emptyList(),
+                specialtyLabels = emptyList(),
+                isActive = true,
+                createdAt = salon.createdAt
+            ))
+        }
+
+        return responses
     }
 
     /**

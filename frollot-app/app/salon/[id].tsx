@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, RefreshControl, FlatList } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, RefreshControl, FlatList, I18nManager } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -21,9 +21,9 @@ import { useTheme } from '../../src/theme';
 import { resolveMediaUrl } from '../../src/utils/media';
 
 type SalonTab = 'services' | 'team' | 'reviews' | 'posts' | 'info';
-const TABS: { key: SalonTab; label: string }[] = [
-  { key: 'services', label: 'Services' }, { key: 'team', label: 'Équipe' },
-  { key: 'reviews', label: 'Avis' }, { key: 'posts', label: 'Posts' }, { key: 'info', label: 'Info' },
+const TAB_KEYS: { key: SalonTab; i18nKey: string }[] = [
+  { key: 'services', i18nKey: 'salon.services' }, { key: 'team', i18nKey: 'salon.team' },
+  { key: 'reviews', i18nKey: 'review.reviewsTitle' }, { key: 'posts', i18nKey: 'salon.posts' }, { key: 'info', i18nKey: 'salon.info' },
 ];
 
 export default function SalonDetailScreen() {
@@ -68,7 +68,7 @@ export default function SalonDetailScreen() {
       if (revR.status === 'fulfilled') setReviews(revR.value);
       if (statsR.status === 'fulfilled') setReviewStats(statsR.value);
       if (qR.status === 'fulfilled') setQueueStatus(qR.value);
-    } catch (e: any) { setError(e?.message || 'Erreur'); } finally { setIsLoading(false); }
+    } catch (e: any) { setError(e?.message || t('common.states.error')); } finally { setIsLoading(false); }
   }, [id]);
 
   useEffect(() => { loadSalon(); }, [loadSalon]);
@@ -96,7 +96,7 @@ export default function SalonDetailScreen() {
     try {
       await queueApi.joinQueue(id, { salonId: id, clientId: user.id });
       setQueueStatus(await queueApi.getQueueStatus(id));
-    } catch (e: any) { Alert.alert('Erreur', e?.response?.data?.message || 'Erreur'); }
+    } catch (e: any) { Alert.alert(t('common.states.error'), e?.response?.data?.message || t('common.states.error')); }
     finally { setIsJoining(false); }
   };
 
@@ -143,7 +143,7 @@ export default function SalonDetailScreen() {
       await queueApi.leaveQueue(id, { entryId: myEntry.entryId });
       setQueueStatus(await queueApi.getQueueStatus(id));
     } catch (e: any) {
-      Alert.alert('Erreur', e?.response?.data?.message || 'Erreur');
+      Alert.alert(t('common.states.error'), e?.response?.data?.message || t('common.states.error'));
     } finally {
       setIsLeaving(false);
     }
@@ -152,7 +152,7 @@ export default function SalonDetailScreen() {
   const isInQueue = queueStatus?.entries?.some(e => e.clientId === user?.id && e.status === 'WAITING');
 
   if (isLoading) return <LoadingState />;
-  if (error || !salon) return <ErrorState message={error || 'Salon introuvable'} onRetry={loadSalon} />;
+  if (error || !salon) return <ErrorState message={error || t('salon.notFound')} onRetry={loadSalon} />;
 
   const queueSize = queueStatus?.entries?.filter(e => e.status === 'WAITING').length ?? 0;
   const avgRating = reviewStats?.averageRating ?? 0;
@@ -160,7 +160,7 @@ export default function SalonDetailScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={{ flex: 1 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
         {/* Cover */}
         <TouchableOpacity style={s.coverWrap} activeOpacity={isOwner ? 0.8 : 1} onPress={isOwner ? handlePickCover : undefined}>
           {salon.coverPhotoUrl ? (
@@ -185,7 +185,7 @@ export default function SalonDetailScreen() {
           />
           <View style={s.coverActions}>
             <TouchableOpacity style={s.coverBtn} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />{/* design-fixed */}
+              <MaterialCommunityIcons name={I18nManager.isRTL ? "arrow-right" : "arrow-left"} size={24} color="#FFFFFF" />{/* design-fixed */}
             </TouchableOpacity>
             <View style={{ flex: 1 }} />
             <TouchableOpacity style={s.coverBtn}>
@@ -212,7 +212,7 @@ export default function SalonDetailScreen() {
                 <MaterialCommunityIcons name="star" size={18} color={colors.tertiary} />
                 <Text style={[s.ratingValue, { color: colors.onTertiaryContainer }]}>{avgRating.toFixed(1)}</Text>
               </View>
-              <Text style={[s.ratingCount, { color: colors.onTertiaryContainer }]}>{totalReviews} avis</Text>
+              <Text style={[s.ratingCount, { color: colors.onTertiaryContainer }]}>{t('review.totalReviews', { count: totalReviews })}</Text>
             </View>
           </View>
 
@@ -220,8 +220,8 @@ export default function SalonDetailScreen() {
           {queueStatus && (
             <View style={[s.queueBanner, { backgroundColor: colors.successContainer }]}>
               <View style={[s.queueDot, { backgroundColor: colors.success }]} />
-              <Text style={[s.queueText, { color: colors.onSuccessContainer }]}>File ouverte · ~{queueStatus.estimatedWaitForNew || 15} min d'attente</Text>
-              <Text style={[s.queueCount, { color: colors.success }]}>{queueSize} en attente</Text>
+              <Text style={[s.queueText, { color: colors.onSuccessContainer }]}>{t('salon.queueOpen', { minutes: queueStatus.estimatedWaitForNew || 15 })}</Text>
+              <Text style={[s.queueCount, { color: colors.success }]}>{t('salon.queueWaiting', { count: queueSize })}</Text>
               {isInQueue && (
                 <TouchableOpacity
                   style={[s.queueLeaveBtn, { borderColor: colors.onSuccessContainer }]}
@@ -229,7 +229,7 @@ export default function SalonDetailScreen() {
                   disabled={isLeaving}
                 >
                   <Text style={[s.queueLeaveText, { color: colors.onSuccessContainer }]}>
-                    {isLeaving ? 'Sortie...' : 'Quitter'}
+                    {isLeaving ? t('salon.queueLeaving') : t('salon.leaveQueue')}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -238,9 +238,9 @@ export default function SalonDetailScreen() {
 
           {/* Tabs */}
           <View style={[s.tabRow, { borderBottomColor: colors.outlineVariant }]}>
-            {TABS.filter(tab => tab.key !== 'team' || isOwner).map((tab) => (
+            {TAB_KEYS.map((tab) => (
               <TouchableOpacity key={tab.key} onPress={() => setSelectedTab(tab.key)} style={s.tab}>
-                <Text style={[s.tabLabel, { color: selectedTab === tab.key ? colors.primary : colors.onSurfaceVariant }]}>{tab.label}</Text>
+                <Text style={[s.tabLabel, { color: selectedTab === tab.key ? colors.primary : colors.onSurfaceVariant }]}>{t(tab.i18nKey)}</Text>
                 {selectedTab === tab.key && <View style={[s.tabIndicator, { backgroundColor: colors.primary }]} />}
               </TouchableOpacity>
             ))}
@@ -262,17 +262,23 @@ export default function SalonDetailScreen() {
                 </View>
               </View>
               <TouchableOpacity style={[s.reserveBtn, { borderColor: colors.primary, backgroundColor: colors.surface }]} onPress={() => router.push(`/booking/new?salonId=${id}&serviceId=${svc.id}`)}>
-                <Text style={[s.reserveBtnText, { color: colors.primary }]}>Réserver</Text>
+                <Text style={[s.reserveBtnText, { color: colors.primary }]}>{t('salon.book')}</Text>
               </TouchableOpacity>
             </View>
           ))}
 
+          {selectedTab === 'team' && staff.length === 0 && (
+            <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>{t('salon.noTeam')}</Text>
+          )}
           {selectedTab === 'team' && staff.map((m) => (
             <View key={m.id} style={[s.staffItem, { borderBottomColor: colors.outlineVariant }]}>
-              <Avatar initials={`${m.userFirstName?.[0] || ''}${m.userLastName?.[0] || ''}`} size={48} tone="secondary" imageUrl={m.userAvatarUrl} />
+              <Avatar initials={`${m.userFirstName?.[0] || ''}${m.userLastName?.[0] || ''}`} size={44} ring tone={m.role === 'owner' ? 'primary' : 'secondary'} imageUrl={m.userAvatarUrl} />
               <View style={{ flex: 1 }}>
                 <Text style={[s.staffName, { color: colors.onSurface }]}>{m.userFirstName} {m.userLastName}</Text>
-                <Text style={[s.staffSpecialty, { color: colors.onSurfaceVariant }]}>{m.specialties?.join(', ')}</Text>
+                <Text style={[s.staffRole, { color: colors.primary }]}>{t(`salon.roles.${m.role}`)}</Text>
+                {m.specialtyLabels?.length > 0 && (
+                  <Text style={[s.staffSpecialty, { color: colors.onSurfaceVariant }]}>{m.specialtyLabels.join(', ')}</Text>
+                )}
               </View>
             </View>
           ))}
@@ -283,7 +289,7 @@ export default function SalonDetailScreen() {
                 <View style={[s.statsCard, { backgroundColor: colors.tertiaryContainer }]}>
                   <Text style={[s.statsRating, { color: colors.onTertiaryContainer }]}>{avgRating.toFixed(1)}</Text>
                   <RatingStars value={avgRating} size={20} />
-                  <Text style={[s.statsCount, { color: colors.onTertiaryContainer }]}>{totalReviews} avis</Text>
+                  <Text style={[s.statsCount, { color: colors.onTertiaryContainer }]}>{t('review.totalReviews', { count: totalReviews })}</Text>
                 </View>
               )}
               {reviews.map((rev) => (
@@ -305,26 +311,34 @@ export default function SalonDetailScreen() {
             isLoadingPosts ? (
               <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 20 }} />
             ) : salonPosts.length === 0 ? (
-              <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>Aucun post pour ce salon.</Text>
+              <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>{t('salon.noPosts')}</Text>
             ) : (
-              salonPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={user?.id}
-                  onPress={() => router.push(`/post/${post.id}`)}
-                  onComment={() => router.push(`/comments/${post.id}`)}
-                />
-              ))
+              <>
+                {/* S6 : l'onglet est un aperçu (page 0) — la liste complète (filtres,
+                    infinite scroll, actions complètes) vit sur l'écran dédié */}
+                <TouchableOpacity style={s.seeAllRow} onPress={() => router.push(`/salon/${id}/posts`)}>
+                  <Text style={[s.seeAllText, { color: colors.primary }]}>{t('common.actions.seeAll')}</Text>
+                  <MaterialCommunityIcons name={I18nManager.isRTL ? "arrow-left" : "arrow-right"} size={18} color={colors.primary} />
+                </TouchableOpacity>
+                {salonPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    currentUserId={user?.id}
+                    onPress={() => router.push(`/post/${post.id}`)}
+                    onComment={() => router.push(`/comments/${post.id}`)}
+                  />
+                ))}
+              </>
             )
           )}
 
           {selectedTab === 'info' && (
             <View style={{ gap: 12 }}>
-              <Text style={[s.infoLabel, { color: colors.secondary }]}>Adresse</Text>
+              <Text style={[s.infoLabel, { color: colors.secondary }]}>{t('salon.address')}</Text>
               <Text style={[s.infoValue, { color: colors.onSurface }]}>{salon.address}, {salon.postalCode} {salon.city}</Text>
               {salon.description && <>
-                <Text style={[s.infoLabel, { color: colors.secondary }]}>Description</Text>
+                <Text style={[s.infoLabel, { color: colors.secondary }]}>{t('salon.description')}</Text>
                 <Text style={[s.infoValue, { color: colors.onSurface }]}>{salon.description}</Text>
               </>}
             </View>
@@ -336,20 +350,20 @@ export default function SalonDetailScreen() {
       <LinearGradient colors={['transparent', colors.surface]} locations={[0, 0.28]} style={s.floatingBar}>
         {isOwner ? (
           <>
-            <PrimaryButton icon="calendar-check" onPress={() => router.push(`/owner-bookings?salonId=${id}`)} style={s.bookBtnShadow}>
-              Réservations
+            <PrimaryButton icon="calendar-check" onPress={() => router.push(`/owner-bookings?salonId=${id}`)} style={{ ...s.barBtn, ...s.bookBtnShadow }}>
+              {t('salon.reservations')}
             </PrimaryButton>
-            <OutlineButton icon="account-group" onPress={() => router.push(`/queue-management?salonId=${id}`)}>
-              File d'attente
+            <OutlineButton icon="account-group" onPress={() => router.push(`/queue-management?salonId=${id}`)} style={s.barBtn}>
+              {t('salon.queue')}
             </OutlineButton>
           </>
         ) : (
           <>
-            <OutlineButton icon="account-plus" onPress={handleToggleFollow}>
-              {isFollowing ? 'Suivi' : 'Suivre'}
+            <OutlineButton icon="account-plus" onPress={handleToggleFollow} style={s.barBtn}>
+              {isFollowing ? t('common.states.following') : t('common.actions.follow')}
             </OutlineButton>
-            <PrimaryButton icon="calendar-month" full onPress={() => router.push(`/booking/new?salonId=${id}`)} style={s.bookBtnShadow}>
-              Réserver une prestation
+            <PrimaryButton icon="calendar-month" onPress={() => router.push(`/booking/new?salonId=${id}`)} style={{ ...s.barBtnWide, ...s.bookBtnShadow }}>
+              {t('salon.bookService')}
             </PrimaryButton>
           </>
         )}
@@ -363,9 +377,9 @@ const s = StyleSheet.create({
   // Cover
   coverWrap: { position: 'relative', height: 230 },
   coverImage: { width: '100%', height: 230 },
-  coverActions: { position: 'absolute', top: 12, left: 8, right: 8, flexDirection: 'row', alignItems: 'center' },
-  coverBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', marginLeft: 4 }, // design-fixed
-  coverEditBadge: { position: 'absolute', bottom: 12, right: 12, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  coverActions: { position: 'absolute', top: 12, start: 8, end: 8, flexDirection: 'row', alignItems: 'center' },
+  coverBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', marginStart: 4 }, // design-fixed
+  coverEditBadge: { position: 'absolute', bottom: 12, end: 12, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   // Sheet
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -22, paddingTop: 22, paddingHorizontal: 20 },
   identityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
@@ -383,11 +397,13 @@ const s = StyleSheet.create({
   queueLeaveBtn: { paddingVertical: 6, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1 },
   queueLeaveText: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600' },
   emptyText: { fontFamily: 'Manrope-Regular', fontSize: 14, textAlign: 'center', paddingVertical: 24 },
+  seeAllRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, paddingVertical: 10 },
+  seeAllText: { fontFamily: 'Manrope-SemiBold', fontSize: 13, fontWeight: '600' },
   // Tabs
   tabRow: { flexDirection: 'row', gap: 22, marginTop: 18, borderBottomWidth: 1 },
   tab: { paddingVertical: 10, position: 'relative' },
   tabLabel: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
-  tabIndicator: { position: 'absolute', bottom: -1, left: 0, right: 0, height: 3, borderRadius: 3 },
+  tabIndicator: { position: 'absolute', bottom: -1, start: 0, end: 0, height: 3, borderRadius: 3 },
   // Tab content
   tabContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 120 },
   // Services
@@ -402,6 +418,7 @@ const s = StyleSheet.create({
   // Staff
   staffItem: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, borderBottomWidth: 1 },
   staffName: { fontFamily: 'Manrope-SemiBold', fontSize: 15, fontWeight: '600' },
+  staffRole: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600', marginTop: 2 },
   staffSpecialty: { fontFamily: 'Manrope-Regular', fontSize: 12, marginTop: 2 },
   // Reviews
   statsCard: { alignItems: 'center', padding: 20, marginVertical: 12, borderRadius: 16, gap: 4 },
@@ -414,6 +431,9 @@ const s = StyleSheet.create({
   infoLabel: { fontFamily: 'Manrope-Bold', fontSize: 11, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase' },
   infoValue: { fontFamily: 'Manrope-Regular', fontSize: 14, lineHeight: 20 },
   // Floating bar
-  floatingBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, flexDirection: 'row', gap: 10 },
+  floatingBar: { position: 'absolute', start: 0, end: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, flexDirection: 'row', gap: 10 },
+  // Dans une row : flex (jamais width 100%, sinon débordement horizontal)
+  barBtn: { flex: 1, minWidth: 0, paddingHorizontal: 12 },
+  barBtnWide: { flex: 1.7, minWidth: 0, paddingHorizontal: 12 },
   bookBtnShadow: { shadowColor: 'rgb(39,26,44)', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 3 }, // design-fixed
 });

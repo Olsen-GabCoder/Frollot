@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator,
+  ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, I18nManager,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,10 +12,10 @@ import { TextField, PasswordTextField, PrimaryButton } from '../../src/component
 import { useTheme } from '../../src/theme';
 import { UserType } from '../../src/types';
 
-const ACCOUNT_TYPES = [
-  { type: UserType.CLIENT, icon: 'account' as const, label: 'Client', sub: 'Réserver & suivre' },
-  { type: UserType.HAIRSTYLIST, icon: 'content-cut' as const, label: 'Coiffeur', sub: 'Portfolio & agenda' },
-  { type: UserType.SALON_OWNER, icon: 'storefront' as const, label: 'Salon', sub: 'Gérer mon salon' },
+const ACCOUNT_TYPE_KEYS = [
+  { type: UserType.CLIENT, icon: 'account' as const, labelKey: 'auth.userTypes.client', subKey: 'auth.register.accountSub.client' },
+  { type: UserType.HAIRSTYLIST, icon: 'content-cut' as const, labelKey: 'auth.userTypes.hairstylist', subKey: 'auth.register.accountSub.hairstylist' },
+  { type: UserType.SALON_OWNER, icon: 'storefront' as const, labelKey: 'auth.userTypes.salonOwner', subKey: 'auth.register.accountSub.salonOwner' },
 ];
 
 export default function RegisterScreen() {
@@ -34,7 +34,7 @@ export default function RegisterScreen() {
   const isEmailValid = email.includes('@') && email.includes('.');
   const passwordsMatch = password === confirmPassword;
   const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 8 ? 2 : password.length < 12 ? 3 : 4;
-  const strengthLabels = ['', 'Faible', 'Moyen', 'Bon', 'Robuste'];
+  const strengthLabels = ['', t('auth.register.strength.weak'), t('auth.register.strength.medium'), t('auth.register.strength.good'), t('auth.register.strength.strong')];
   const strengthColors = ['', colors.error, colors.warning, colors.info, colors.success];
   const canSubmit = firstName.trim() && lastName.trim() && isEmailValid && password.length >= 8 && passwordsMatch;
 
@@ -45,7 +45,7 @@ export default function RegisterScreen() {
       await register(email.trim(), password, firstName.trim(), lastName.trim(), userType);
       router.replace({ pathname: '/(auth)/email-verification', params: { email: email.trim() } });
     } catch (error: any) {
-      setRegisterError(error?.response?.data?.message || 'Erreur lors de l\'inscription.');
+      setRegisterError(error?.response?.data?.message || t('auth.register.error'));
     }
   };
 
@@ -62,7 +62,7 @@ export default function RegisterScreen() {
         />
         <View style={s.heroActions}>
           <TouchableOpacity style={s.heroBackBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />{/* design-fixed — white arrow over hero */}
+            <MaterialCommunityIcons name={I18nManager.isRTL ? 'arrow-right' : 'arrow-left'} size={24} color="#FFFFFF" />{/* design-fixed — white arrow over hero */}
           </TouchableOpacity>
         </View>
         <View style={s.heroBrand}>
@@ -74,24 +74,24 @@ export default function RegisterScreen() {
       </View>
 
       <ScrollView style={s.formScroll} contentContainerStyle={s.formContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Text style={[s.overline, { color: colors.secondary }]}>Créez votre compte</Text>
-        <Text style={[s.headline, { color: colors.onSurface }]}>Rejoignez-nous</Text>
-        <Text style={[s.subtitle, { color: colors.onSurfaceVariant }]}>Quelques instants suffisent pour faire partie de la communauté beauté.</Text>
+        <Text style={[s.overline, { color: colors.secondary }]}>{t('auth.register.overline')}</Text>
+        <Text style={[s.headline, { color: colors.onSurface }]}>{t('auth.register.headline')}</Text>
+        <Text style={[s.subtitle, { color: colors.onSurfaceVariant }]}>{t('auth.register.subtitle')}</Text>
 
         {/* Account type cards */}
-        <Text style={[s.fieldLabel, { color: colors.onSurface, marginTop: 24, marginBottom: 10 }]}>Je m'inscris en tant que</Text>
+        <Text style={[s.fieldLabel, { color: colors.onSurface, marginTop: 24, marginBottom: 10 }]}>{t('auth.register.accountTypeLabel')}</Text>
         <View style={s.typeGrid}>
-          {ACCOUNT_TYPES.map((t) => {
-            const on = userType === t.type;
+          {ACCOUNT_TYPE_KEYS.map((item) => {
+            const on = userType === item.type;
             return (
               <TouchableOpacity
-                key={t.type}
+                key={item.type}
                 style={[s.typeCard, {
                   backgroundColor: on ? colors.primaryContainer : colors.surface,
                   borderColor: on ? colors.primary : colors.outlineVariant,
                   borderWidth: on ? 2 : 1,
                 }]}
-                onPress={() => setUserType(t.type)}
+                onPress={() => setUserType(item.type)}
               >
                 {on && (
                   <View style={s.typeCheck}>
@@ -99,10 +99,10 @@ export default function RegisterScreen() {
                   </View>
                 )}
                 <View style={[s.typeIconCircle, { backgroundColor: on ? colors.primary : colors.surfaceContainerHigh }]}>
-                  <MaterialCommunityIcons name={t.icon} size={22} color={on ? colors.onPrimary : colors.onSurfaceVariant} />
+                  <MaterialCommunityIcons name={item.icon} size={22} color={on ? colors.onPrimary : colors.onSurfaceVariant} />
                 </View>
-                <Text style={[s.typeLabel, { color: on ? colors.onPrimaryContainer : colors.onSurface }]}>{t.label}</Text>
-                <Text style={[s.typeSub, { color: on ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>{t.sub}</Text>
+                <Text style={[s.typeLabel, { color: on ? colors.onPrimaryContainer : colors.onSurface }]}>{t(item.labelKey)}</Text>
+                <Text style={[s.typeSub, { color: on ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>{t(item.subKey)}</Text>
               </TouchableOpacity>
             );
           })}
@@ -112,19 +112,19 @@ export default function RegisterScreen() {
         <View style={s.fieldsSection}>
           <View style={s.nameRow}>
             <View style={{ flex: 1 }}>
-              <TextField label="Prénom" icon="badge-account" value={firstName} onChangeText={setFirstName} placeholder="Camille" />
+              <TextField label={t('common.fields.firstName')} icon="badge-account" value={firstName} onChangeText={setFirstName} placeholder={t('auth.register.firstNamePlaceholder')} />
             </View>
             <View style={{ flex: 1 }}>
-              <TextField label="Nom" value={lastName} onChangeText={setLastName} placeholder="Roussel" />
+              <TextField label={t('common.fields.lastName')} value={lastName} onChangeText={setLastName} placeholder={t('auth.register.lastNamePlaceholder')} />
             </View>
           </View>
 
           <TextField
-            label="Email"
+            label={t('common.fields.email')}
             icon="email-outline"
             value={email}
             onChangeText={setEmail}
-            placeholder="camille@email.com"
+            placeholder={t('auth.register.emailPlaceholder')}
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -132,10 +132,10 @@ export default function RegisterScreen() {
           />
 
           <PasswordTextField
-            label="Mot de passe"
+            label={t('common.fields.password')}
             value={password}
             onChangeText={setPassword}
-            placeholder="Minimum 8 caractères"
+            placeholder={t('auth.register.passwordPlaceholder')}
             autoComplete="new-password"
           />
           {password.length > 0 && (
@@ -150,11 +150,11 @@ export default function RegisterScreen() {
           )}
 
           <PasswordTextField
-            label="Confirmer le mot de passe"
+            label={t('common.fields.confirmPassword')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            placeholder="Retapez le mot de passe"
-            error={confirmPassword.length > 0 && !passwordsMatch ? 'Les mots de passe ne correspondent pas' : undefined}
+            placeholder={t('auth.register.confirmPlaceholder')}
+            error={confirmPassword.length > 0 && !passwordsMatch ? t('common.validation.passwordsDoNotMatch') : undefined}
           />
         </View>
 
@@ -174,22 +174,23 @@ export default function RegisterScreen() {
             <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <>
-              <Text style={[s.submitText, { color: canSubmit ? colors.onPrimary : colors.onSurfaceVariant }]}>S'inscrire</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color={canSubmit ? colors.onPrimary : colors.onSurfaceVariant} />
+              <Text style={[s.submitText, { color: canSubmit ? colors.onPrimary : colors.onSurfaceVariant }]}>{t('auth.register.signUp')}</Text>
+              <MaterialCommunityIcons name={I18nManager.isRTL ? 'arrow-left' : 'arrow-right'} size={20} color={canSubmit ? colors.onPrimary : colors.onSurfaceVariant} />
             </>
           )}
         </TouchableOpacity>
 
         <Text style={[s.legal, { color: colors.onSurfaceVariant }]}>
-          En créant un compte, vous acceptez nos{' '}
-          <Text style={{ color: colors.primary, fontWeight: '600' }}>Conditions</Text> et notre{' '}
-          <Text style={{ color: colors.primary, fontWeight: '600' }}>Politique de confidentialité</Text>.
+          {t('auth.legal.creatingAccept')}
+          <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('auth.legal.terms')}</Text>
+          {t('auth.legal.conjunction')}
+          <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('auth.legal.privacy')}</Text>.
         </Text>
 
         <View style={s.loginRow}>
-          <Text style={[s.loginText, { color: colors.onSurfaceVariant }]}>Déjà un compte ?</Text>
+          <Text style={[s.loginText, { color: colors.onSurfaceVariant }]}>{t('auth.alreadyHaveAccount')}</Text>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[s.loginLink, { color: colors.primary }]}>Se connecter</Text>
+            <Text style={[s.loginLink, { color: colors.primary }]}>{t('auth.loginButton')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -201,13 +202,13 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   // Hero compact
   hero: { position: 'relative', height: 150, flexShrink: 0 },
-  heroPlaceholder: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
-  heroActions: { position: 'absolute', top: 12, left: 8, right: 8, flexDirection: 'row' },
+  heroPlaceholder: { position: 'absolute', top: 0, start: 0, end: 0, bottom: 0 },
+  heroActions: { position: 'absolute', top: 12, start: 8, end: 8, flexDirection: 'row' },
   heroBackBtn: {
     width: 44, height: 44,
     alignItems: 'center', justifyContent: 'center',
   },
-  heroBrand: { position: 'absolute', bottom: 20, left: 24, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  heroBrand: { position: 'absolute', bottom: 20, start: 24, flexDirection: 'row', alignItems: 'center', gap: 10 },
   brandLogo: {
     width: 40, height: 40, borderRadius: 12,
     backgroundColor: 'rgba(255,255,255,0.16)', // design-fixed
@@ -229,10 +230,12 @@ const s = StyleSheet.create({
     paddingTop: 16, paddingBottom: 12, paddingHorizontal: 6,
     borderRadius: 12, position: 'relative',
   },
-  typeCheck: { position: 'absolute', top: 6, right: 6 },
+  typeCheck: { position: 'absolute', top: 6, end: 6 },
   typeIconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   typeLabel: { fontFamily: 'Manrope-Bold', fontSize: 13, fontWeight: '700', textAlign: 'center' },
   typeSub: { fontFamily: 'Manrope-Regular', fontSize: 10.5, lineHeight: 13, textAlign: 'center' },
+  // Field label
+  fieldLabel: { fontFamily: 'Manrope-Bold', fontSize: 14, fontWeight: '700' },
   // Fields
   fieldsSection: { gap: 14, marginTop: 22 },
   nameRow: { flexDirection: 'row', gap: 12 },

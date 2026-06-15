@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Pressable, Modal, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Avatar } from '../common/Avatar';
 import { PostResponse } from '../../types';
 import { useTheme } from '../../theme';
@@ -24,13 +25,16 @@ interface PostCardProps {
   onSaveToCollection?: () => void;
   /** Affiché dans le menu uniquement si fourni ET post possédé (B32) */
   onArchive?: () => void;
+  /** Affiché dans le menu uniquement si fourni ET post possédé (B29) — bascule selon post.isPinned */
+  onPin?: () => void;
 }
 
 export function PostCard({
   post, currentUserId, onLike, onComment, onShare,
-  onBookmark, onPress, onProfilePress, onDelete, onReport, onUnarchive, onSaveToCollection, onArchive,
+  onBookmark, onPress, onProfilePress, onDelete, onReport, onUnarchive, onSaveToCollection, onArchive, onPin,
 }: PostCardProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const hashtags = post.content?.match(/#\w+/g) || [];
   const textWithoutTags = post.content?.replace(/#\w+/g, '').trim();
@@ -51,7 +55,7 @@ export function PostCard({
           <View style={styles.metaRow}>
             {post.authorUserType && (
               <View style={[styles.typeBadge, { backgroundColor: colors.secondaryContainer }]}>
-                <Text style={[styles.typeText, { color: colors.secondary }]}>{post.authorUserType === 'salon_owner' ? 'Salon' : 'Coiffeur'}</Text>
+                <Text style={[styles.typeText, { color: colors.secondary }]}>{post.authorUserType === 'salon_owner' ? t('social.authorTypes.salonOwner') : t('social.authorTypes.hairstylist')}</Text>
               </View>
             )}
             <Text style={[styles.date, { color: colors.onSurfaceVariant }]}>· {post.createdAt || ''}</Text>
@@ -69,35 +73,41 @@ export function PostCard({
             {onUnarchive && (
               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onUnarchive(); }}>
                 <MaterialCommunityIcons name="archive-arrow-up-outline" size={18} color={colors.onSurface} />
-                <Text style={[styles.menuText, { color: colors.onSurface }]}>Désarchiver</Text>
+                <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('social.menu.unarchive')}</Text>
               </TouchableOpacity>
             )}
             {isOwn && onDelete && (
               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onDelete(); }}>
                 <MaterialCommunityIcons name="delete-outline" size={18} color={colors.error} />
-                <Text style={[styles.menuText, { color: colors.error }]}>Supprimer</Text>
+                <Text style={[styles.menuText, { color: colors.error }]}>{t('common.actions.delete')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onPress?.(); }}>
               <MaterialCommunityIcons name="open-in-new" size={18} color={colors.onSurface} />
-              <Text style={[styles.menuText, { color: colors.onSurface }]}>Voir le post</Text>
+              <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('social.menu.viewPost')}</Text>
             </TouchableOpacity>
             {onSaveToCollection && (
               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onSaveToCollection(); }}>
                 <MaterialCommunityIcons name="folder-plus-outline" size={18} color={colors.onSurface} />
-                <Text style={[styles.menuText, { color: colors.onSurface }]}>Ajouter à une collection</Text>
+                <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('social.menu.addToCollection')}</Text>
               </TouchableOpacity>
             )}
             {isOwn && onArchive && (
               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onArchive(); }}>
                 <MaterialCommunityIcons name="archive-arrow-down-outline" size={18} color={colors.onSurface} />
-                <Text style={[styles.menuText, { color: colors.onSurface }]}>Archiver</Text>
+                <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('social.menu.archive')}</Text>
+              </TouchableOpacity>
+            )}
+            {isOwn && onPin && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onPin(); }}>
+                <MaterialCommunityIcons name={post.isPinned ? 'pin-off-outline' : 'pin-outline'} size={18} color={colors.onSurface} />
+                <Text style={[styles.menuText, { color: colors.onSurface }]}>{post.isPinned ? t('social.menu.unpin') : t('social.menu.pin')}</Text>
               </TouchableOpacity>
             )}
             {onReport && (
               <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); onReport(); }}>
                 <MaterialCommunityIcons name="flag-outline" size={18} color={colors.onSurface} />
-                <Text style={[styles.menuText, { color: colors.onSurface }]}>Signaler</Text>
+                <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('common.actions.report')}</Text>
               </TouchableOpacity>
             )}
           </Pressable>
@@ -120,11 +130,11 @@ export function PostCard({
           <View style={styles.beforeAfter}>
             <View style={styles.baHalf}>
               <Image source={{ uri: resolveMediaUrl(post.media[0].mediaUrl) }} style={styles.baImage} contentFit="cover" />
-              <View style={[styles.baLabelContainer, { backgroundColor: colors.inverseSurface }]}><Text style={[styles.baLabel, { color: colors.inverseOnSurface }]}>AVANT</Text></View>
+              <View style={[styles.baLabelContainer, { backgroundColor: colors.inverseSurface }]}><Text style={[styles.baLabel, { color: colors.inverseOnSurface }]}>{t('social.beforeAfter.before')}</Text></View>
             </View>
             <View style={styles.baHalf}>
               <Image source={{ uri: resolveMediaUrl(post.media[1].mediaUrl) }} style={styles.baImage} contentFit="cover" />
-              <View style={[styles.baLabelContainer, { backgroundColor: colors.secondary }]}><Text style={[styles.baLabel, { color: colors.onSecondary }]}>APRES</Text></View>
+              <View style={[styles.baLabelContainer, { backgroundColor: colors.secondary }]}><Text style={[styles.baLabel, { color: colors.onSecondary }]}>{t('social.beforeAfter.after')}</Text></View>
             </View>
             <View style={styles.swapIcon}>
               <MaterialCommunityIcons name="swap-horizontal" size={22} color={colors.primary} />
@@ -195,7 +205,7 @@ const styles = StyleSheet.create({
   baLabelContainer: {
     position: 'absolute',
     bottom: 12,
-    left: 12,
+    start: 12,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 999,
@@ -209,7 +219,7 @@ const styles = StyleSheet.create({
   swapIcon: {
     position: 'absolute',
     top: '50%',
-    left: '50%',
+    start: '50%',
     transform: [{ translateX: -20 }, { translateY: -20 }],
     width: 40,
     height: 40,
@@ -251,7 +261,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
     paddingTop: 180,
-    paddingRight: 16,
+    paddingEnd: 16,
   },
   menuCard: {
     minWidth: 200,

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -34,11 +35,11 @@ export default function CreateReviewScreen() {
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      setError('Veuillez selectionner une note');
+      setError(t('review.ratingRequired'));
       return;
     }
     if (!salonId || !bookingId) {
-      setError(t('common.error'));
+      setError(t('common.states.error'));
       return;
     }
 
@@ -52,26 +53,26 @@ export default function CreateReviewScreen() {
         title: title.trim() || undefined,
         content: content.trim() || undefined,
       });
-      Alert.alert(t('common.done'), t('review.submit'), [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert(t('common.actions.done'), t('review.successMessage'), [
+        { text: t('common.actions.ok'), onPress: () => router.back() },
       ]);
     } catch (e: any) {
-      setError(e?.response?.data?.message || t('common.error'));
+      setError(e?.response?.data?.message || t('common.states.error'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const ratingLabels = ['', 'Mauvais', 'Moyen', 'Bien', 'Tres bien', 'Excellent'];
+  const ratingLabels = ['', t('review.rating.bad'), t('review.rating.average'), t('review.rating.good'), t('review.rating.veryGood'), t('review.rating.excellent')];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>
           {t('review.writeReview')}
         </Text>
       </View>
@@ -86,7 +87,7 @@ export default function CreateReviewScreen() {
         {/* Rating */}
         <View style={[styles.card, { backgroundColor: colors.surface, alignItems: 'center' }]}>
           <Text style={[typo.titleMedium, { color: colors.onSurface, marginBottom: 12 }]}>
-            {t('review.rating')}
+            {t('review.ratingLabel')}
           </Text>
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map((star) => (
@@ -113,7 +114,7 @@ export default function CreateReviewScreen() {
             color: colors.onSurface,
             borderColor: colors.outlineVariant,
           }]}
-          placeholder={`${t('review.title')} (${t('booking.notes').replace(/\(.*\)/, '').trim()})`}
+          placeholder={`${t('review.titleLabel')} (${t('common.fields.optional')})`}
           placeholderTextColor={colors.onSurfaceVariant}
           value={title}
           onChangeText={setTitle}
@@ -126,7 +127,7 @@ export default function CreateReviewScreen() {
             color: colors.onSurface,
             borderColor: colors.outlineVariant,
           }]}
-          placeholder={t('review.content')}
+          placeholder={t('review.contentLabel')}
           placeholderTextColor={colors.onSurfaceVariant}
           value={content}
           onChangeText={setContent}

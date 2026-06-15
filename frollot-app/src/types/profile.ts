@@ -1,3 +1,33 @@
+// --- Statistics sub-objects (SocialDto.kt, backend) ---
+// Champs toujours présents (defaults 0 côté backend).
+
+export interface ClientProfileStatistics {
+  postsCount: number;
+  totalLikes: number;
+  followersCount: number;
+  followingCount: number;
+  collectionsCount: number;
+  bookingsCount: number;
+}
+
+export interface SalonOwnerProfileStatistics {
+  postsCount: number;
+  totalLikes: number;
+  followersCount: number;
+  followingCount: number;
+  salonsCount: number;
+  collectionsCount: number;
+}
+
+export interface CoiffeurProfileStatistics {
+  postsCount: number;
+  totalLikes: number;
+  followersCount: number;
+  followingCount: number;
+  averageRating: number;
+  totalReviews: number;
+}
+
 export interface CoiffeurProfileResponse {
   id: string;
   userId: string;
@@ -10,18 +40,22 @@ export interface CoiffeurProfileResponse {
   salonId?: string;
   salonName?: string;
   isVerified: boolean;
-  followersCount: number;
-  postsCount: number;
-  portfoliosCount: number;
-  averageRating?: number;
-  totalReviews?: number;
   isFollowedByCurrentUser?: boolean;
+  statistics: CoiffeurProfileStatistics;
 }
 
 export interface UpdateCoiffeurProfileRequest {
   bio?: string;
   specialties?: string[];
   yearsExperience?: number;
+}
+
+export interface SalonSocialProfileStatistics {
+  postsCount: number;
+  totalLikes: number;
+  followersCount: number;
+  averageRating: number;
+  totalReviews: number;
 }
 
 export interface SalonSocialProfileResponse {
@@ -31,13 +65,9 @@ export interface SalonSocialProfileResponse {
   description?: string;
   coverPhotoUrl?: string;
   city: string;
-  followersCount: number;
-  postsCount: number;
-  portfoliosCount: number;
-  averageRating?: number;
-  totalReviews?: number;
   isVerified: boolean;
   isFollowedByCurrentUser?: boolean;
+  statistics: SalonSocialProfileStatistics;
 }
 
 export interface UpdateSalonSocialProfileRequest {
@@ -51,10 +81,7 @@ export interface ClientProfileResponse {
   lastName: string;
   avatarUrl?: string;
   memberSince?: string;
-  totalBookings: number;
-  totalReviews: number;
-  favoriteSalonsCount: number;
-  collectionsCount: number;
+  statistics: ClientProfileStatistics;
 }
 
 export interface SalonOwnerProfileResponse {
@@ -63,10 +90,8 @@ export interface SalonOwnerProfileResponse {
   firstName: string;
   lastName: string;
   avatarUrl?: string;
-  salonsCount: number;
-  totalFollowers: number;
-  totalRevenue?: number;
   isVerified: boolean;
+  statistics: SalonOwnerProfileStatistics;
 }
 
 // Phase E.3 - Badges et Certifications

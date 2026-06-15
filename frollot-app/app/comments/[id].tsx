@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +49,7 @@ export default function CommentsScreen() {
       setComments(commentsData.content);
       setHasMore(!commentsData.last);
     } catch (e: any) {
-      setError(e?.message || t('common.error'));
+      setError(e?.message || t('common.states.error'));
     } finally {
       setIsLoading(false);
     }
@@ -115,9 +116,9 @@ export default function CommentsScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>
           {t('social.comments')}
         </Text>
       </View>
@@ -144,7 +145,7 @@ export default function CommentsScreen() {
                   {(item.authorName?.[0] || '?').toUpperCase()}
                 </Text>
               </View>
-              <View style={{ flex: 1, marginLeft: 8 }}>
+              <View style={{ flex: 1, marginStart: 8 }}>
                 <Text style={[typo.labelMedium, { color: colors.onSurface }]}>{item.authorName}</Text>
                 <Text style={[typo.bodyMedium, { color: colors.onSurface, marginTop: 2 }]}>{item.content}</Text>
               </View>
@@ -170,7 +171,7 @@ export default function CommentsScreen() {
               {isLoadingMore ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={[typo.labelMedium, { color: colors.primary }]}>Charger plus</Text>
+                <Text style={[typo.labelMedium, { color: colors.primary }]}>{t('social.loadMore')}</Text>
               )}
             </TouchableOpacity>
           ) : null
@@ -187,7 +188,7 @@ export default function CommentsScreen() {
         </View>
         <TextInput
           style={[styles.textField, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface }]}
-          placeholder={t('social.writeComment')}
+          placeholder={t('social.writeCommentPlaceholder')}
           placeholderTextColor={colors.onSurfaceVariant}
           value={newComment}
           onChangeText={setNewComment}

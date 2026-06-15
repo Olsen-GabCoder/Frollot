@@ -12,6 +12,7 @@ import {
   Platform,
   NativeSyntheticEvent,
   TextInputSelectionChangeEventData,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -26,20 +27,20 @@ import { mediaApi } from '../src/api/media';
 import { Avatar } from '../src/components/common';
 import { PostType, PostVisibility, PostMediaType, CreatePostMediaRequest, CreateTagRequest, TaggedType, User, HairHashtagResponse } from '../src/types';
 
-const POST_TYPES = [
-  { key: PostType.GENERAL, label: 'General' },
-  { key: PostType.AVANT_APRES, label: 'Avant/Apres' },
-  { key: PostType.PORTFOLIO, label: 'Portfolio' },
-  { key: PostType.TENDANCE, label: 'Tendance' },
-  { key: PostType.CONSEIL, label: 'Conseil' },
-  { key: PostType.REALISATION, label: 'Realisation' },
-  { key: PostType.INSPIRATION, label: 'Inspiration' },
+const POST_TYPE_KEYS: { key: PostType; i18nKey: string }[] = [
+  { key: PostType.GENERAL, i18nKey: 'social.postTypes.general' },
+  { key: PostType.AVANT_APRES, i18nKey: 'social.postTypes.avantApres' },
+  { key: PostType.PORTFOLIO, i18nKey: 'social.postTypes.portfolio' },
+  { key: PostType.TENDANCE, i18nKey: 'social.postTypes.tendance' },
+  { key: PostType.CONSEIL, i18nKey: 'social.postTypes.conseil' },
+  { key: PostType.REALISATION, i18nKey: 'social.postTypes.realisation' },
+  { key: PostType.INSPIRATION, i18nKey: 'social.postTypes.inspiration' },
 ];
 
-const VISIBILITY_OPTIONS = [
-  { key: PostVisibility.PUBLIC, label: 'Public', icon: 'public' as const },
-  { key: PostVisibility.FOLLOWERS, label: 'Abonnes', icon: 'people' as const },
-  { key: PostVisibility.PRIVATE, label: 'Prive', icon: 'lock' as const },
+const VISIBILITY_KEYS: { key: PostVisibility; i18nKey: string; icon: 'public' | 'people' | 'lock' }[] = [
+  { key: PostVisibility.PUBLIC, i18nKey: 'social.visibility.public', icon: 'public' },
+  { key: PostVisibility.FOLLOWERS, i18nKey: 'social.visibility.followers', icon: 'people' },
+  { key: PostVisibility.PRIVATE, i18nKey: 'social.visibility.private', icon: 'lock' },
 ];
 
 interface MediaItem {
@@ -171,12 +172,12 @@ export default function CreatePostScreen() {
 
   const handlePublish = async () => {
     if (!user || !content.trim()) {
-      Alert.alert(t('common.error'), 'Le contenu est requis');
+      Alert.alert(t('common.states.error'), t('social.compose.contentRequired'));
       return;
     }
 
     if (postType === PostType.AVANT_APRES && media.length < 2) {
-      Alert.alert(t('common.error'), 'Avant/Apres requiert au moins 2 images');
+      Alert.alert(t('common.states.error'), t('social.compose.beforeAfterMinImages'));
       return;
     }
 
@@ -216,7 +217,7 @@ export default function CreatePostScreen() {
 
       router.back();
     } catch (e: any) {
-      setError(e?.response?.data?.message || t('common.error'));
+      setError(e?.response?.data?.message || t('common.states.error'));
     } finally {
       setIsPosting(false);
       setIsUploading(false);
@@ -233,7 +234,7 @@ export default function CreatePostScreen() {
         <TouchableOpacity onPress={() => router.back()}>
           <MaterialIcons name="close" size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, flex: 1, marginLeft: 16 }]}>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, flex: 1, marginStart: 16 }]}>
           {t('social.createPost')}
         </Text>
         <TouchableOpacity
@@ -245,7 +246,7 @@ export default function CreatePostScreen() {
             <ActivityIndicator size="small" color={colors.onPrimary} />
           ) : (
             <Text style={[typo.labelLarge, { color: content.trim() ? colors.onPrimary : colors.onSurfaceVariant }]}>
-              Publier
+              {t('social.publishButton')}
             </Text>
           )}
         </TouchableOpacity>
@@ -259,18 +260,18 @@ export default function CreatePostScreen() {
               {(user?.firstName?.[0] || 'F').toUpperCase()}
             </Text>
           </View>
-          <View style={{ marginLeft: 12 }}>
+          <View style={{ marginStart: 12 }}>
             <Text style={[typo.titleSmall, { color: colors.onSurface }]}>
               {user?.firstName} {user?.lastName}
             </Text>
             <View style={styles.visibilityIndicator}>
               <MaterialIcons
-                name={VISIBILITY_OPTIONS.find((v) => v.key === visibility)?.icon || 'public'}
+                name={VISIBILITY_KEYS.find((v) => v.key === visibility)?.icon || 'public'}
                 size={14}
                 color={colors.onSurfaceVariant}
               />
-              <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
-                {VISIBILITY_OPTIONS.find((v) => v.key === visibility)?.label}
+              <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
+                {t(VISIBILITY_KEYS.find((v) => v.key === visibility)?.i18nKey || 'social.visibility.public')}
               </Text>
             </View>
           </View>
@@ -278,10 +279,10 @@ export default function CreatePostScreen() {
 
         {/* Post type selector */}
         <Text style={[typo.labelLarge, { color: colors.onSurface, marginBottom: 8 }]}>
-          {t('social.postType')}
+          {t('social.postTypeLabel')}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-          {POST_TYPES.map((pt) => (
+          {POST_TYPE_KEYS.map((pt) => (
             <TouchableOpacity
               key={pt.key}
               style={[
@@ -297,7 +298,7 @@ export default function CreatePostScreen() {
                 typo.labelMedium,
                 { color: postType === pt.key ? colors.onPrimaryContainer : colors.onSurfaceVariant },
               ]}>
-                {pt.label}
+                {t(pt.i18nKey)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -305,10 +306,10 @@ export default function CreatePostScreen() {
 
         {/* Visibility selector */}
         <Text style={[typo.labelLarge, { color: colors.onSurface, marginTop: 16, marginBottom: 8 }]}>
-          {t('social.visibility')}
+          {t('social.visibilityLabel')}
         </Text>
         <View style={styles.visibilityRow}>
-          {VISIBILITY_OPTIONS.map((opt) => (
+          {VISIBILITY_KEYS.map((opt) => (
             <TouchableOpacity
               key={opt.key}
               style={[
@@ -327,9 +328,9 @@ export default function CreatePostScreen() {
               />
               <Text style={[
                 typo.labelMedium,
-                { color: visibility === opt.key ? colors.onPrimaryContainer : colors.onSurfaceVariant, marginLeft: 4 },
+                { color: visibility === opt.key ? colors.onPrimaryContainer : colors.onSurfaceVariant, marginStart: 4 },
               ]}>
-                {opt.label}
+                {t(opt.i18nKey)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -342,7 +343,7 @@ export default function CreatePostScreen() {
             color: colors.onSurface,
             borderColor: content.length > MAX_CHARS ? colors.error : colors.outlineVariant,
           }]}
-          placeholder={t('social.content')}
+          placeholder={t('social.contentLabel')}
           placeholderTextColor={colors.onSurfaceVariant}
           value={content}
           onChangeText={handleContentChange}
@@ -388,7 +389,7 @@ export default function CreatePostScreen() {
                 <Text style={[styles.suggestionHash, { color: colors.primary }]}>#</Text>
                 <Text style={[styles.suggestionText, { color: colors.onSurface }]}>{h.name}</Text>
                 {h.usageCount != null && (
-                  <Text style={[styles.suggestionMeta, { color: colors.onSurfaceVariant }]}>{h.usageCount} posts</Text>
+                  <Text style={[styles.suggestionMeta, { color: colors.onSurfaceVariant }]}>{t('social.hashtagCount', { count: h.usageCount })}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -398,7 +399,7 @@ export default function CreatePostScreen() {
         {/* Media section */}
         <View style={styles.mediaSection}>
           <Text style={[typo.labelLarge, { color: colors.onSurface, marginBottom: 8 }]}>
-            Media
+            {t('social.compose.media')}
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {media.map((item, index) => (
@@ -455,31 +456,31 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999,
-    marginRight: 8, borderWidth: 1,
+    marginEnd: 8, borderWidth: 1,
   },
   visibilityRow: { flexDirection: 'row', gap: 8 },
   contentInput: {
     minHeight: 120, borderRadius: 16, padding: 16,
     marginTop: 20, fontSize: 16, borderWidth: 1,
   },
-  counterRow: { alignItems: 'flex-end', marginTop: 4, paddingRight: 4 },
+  counterRow: { alignItems: 'flex-end', marginTop: 4, paddingEnd: 4 },
   counterText: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600' },
   // Suggestions
   suggestionsCard: { borderRadius: 12, borderWidth: 1, marginTop: 8, maxHeight: 200, overflow: 'hidden' },
   suggestionItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 14 },
   suggestionText: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
-  suggestionMeta: { fontFamily: 'Manrope-Regular', fontSize: 12, marginLeft: 'auto' },
+  suggestionMeta: { fontFamily: 'Manrope-Regular', fontSize: 12, marginStart: 'auto' },
   suggestionHash: { fontFamily: 'Manrope-Bold', fontSize: 18, fontWeight: '700' },
   mediaSection: { marginTop: 20 },
-  mediaItem: { width: 100, height: 100, borderRadius: 12, marginRight: 8, position: 'relative' },
+  mediaItem: { width: 100, height: 100, borderRadius: 12, marginEnd: 8, position: 'relative' },
   mediaThumb: { width: 100, height: 100, borderRadius: 12 },
   removeMediaBtn: {
-    position: 'absolute', top: 4, right: 4,
+    position: 'absolute', top: 4, end: 4,
     width: 24, height: 24, borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', // design-fixed
   },
   mediaTypeBadge: {
-    position: 'absolute', bottom: 4, left: 4,
+    position: 'absolute', bottom: 4, start: 4,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
   },
   addMediaBtn: {

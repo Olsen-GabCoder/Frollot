@@ -639,7 +639,7 @@ l'ecran de verification.
 - [ ] Cover photo upload/edit (salon owner seulement)
 - [ ] Follow/Unfollow avec compteur followers
 - [ ] Onglet Equipe avec specialites
-- [ ] Onglet Posts (navigation vers SalonPostsScreen)
+- [x] Onglet Posts (navigation vers SalonPostsScreen) — « Voir tout » -> `/salon/{id}/posts` (S6)
 - [ ] Onglet Info
 - [ ] Queue polling automatique (30s)
 - [ ] Barre flottante bas (Suivre + Reserver)
@@ -1046,28 +1046,33 @@ Corrections par rapport au decoupage initial (« 13 ecrans ») :
 | 2 | **ReportScreen** | `report.tsx` | ReportScreen.kt | **FAIT** (2026-06-10) |
 | 3 | **ArchivesScreen** | `archives/[userId].tsx` | ArchivesScreen.kt | **FAIT** (2026-06-10) |
 | 4 | **ChangeEmailScreen** | `settings/change-email.tsx` | ChangeEmailScreen.kt | **FAIT** (2026-06-11, S4) |
-| 5 | **SalonPostsScreen** | `salon/[id]/posts.tsx` | SalonPostsScreen.kt | A faire (seul restant famille A) |
+| 5 | **SalonPostsScreen** | `salon/[id]/posts.tsx` | SalonPostsScreen.kt | **FAIT** (2026-06-12, S6) |
 | 6 | **CollectionsListScreen** | `collections/user/[userId].tsx` | CollectionsScreen.kt | **FAIT** (2026-06-11, S5 + B26) |
 
 #### Famille B - Ecrans statiques (4 ecrans)
 
-Contenu legal genere comme modele, a faire valider plus tard.
+Documents juridiques REELS ancres droit gabonais (S7) — relecture juridique a prevoir
+avant production (check-lists « A FAIRE AVANT PRODUCTION » en tete de chaque fichier).
 
 | # | Ecran | Route | Statut |
 |---|-------|-------|--------|
-| 7 | **TermsOfServiceScreen** | `settings/terms.tsx` | A faire |
-| 8 | **PrivacyPolicyScreen** | `settings/privacy.tsx` | A faire |
-| 9 | **HelpCenterScreen** | `settings/help.tsx` | A faire |
-| 10 | **ContactSupportScreen** | `settings/contact.tsx` | A faire |
+| 7 | **TermsOfServiceScreen** | `settings/terms.tsx` | **FAIT** (2026-06-12, S7) |
+| 8 | **PrivacyPolicyScreen** | `settings/privacy.tsx` | **FAIT** (2026-06-12, S7) |
+| 9 | **HelpCenterScreen** | `settings/help.tsx` | **FAIT** (2026-06-12, S7) |
+| 10 | **ContactSupportScreen** | `settings/contact.tsx` | **FAIT** (2026-06-12, S7) |
 
 #### Famille C - API backend a creer d'abord (4 ecrans)
 
 | # | Ecran | Route | API backend manquante | Statut |
 |---|-------|-------|----------------------|--------|
-| 11 | **SecuritySettingsScreen** | `settings/security.tsx` | 2FA, sessions actives | A faire |
-| 12 | **ChangePhoneScreen** | `settings/change-phone.tsx` | OTP telephone | A faire |
-| 13 | **BlockedUsersScreen** | `settings/blocked-users.tsx` | blocage utilisateurs | A faire |
-| 14 | **RequestVerificationScreen** | `settings/verification.tsx` | demande de verification | A faire |
+| 11 | **SecuritySettingsScreen** | `settings/security.tsx` | aucune (backend complet, B25b) | **FAIT** (2026-06-12, S8) |
+| 12 | **ChangePhoneScreen** | `settings/change-phone.tsx` | OTP telephone (provider SMS) | **REPORTE** — chantier futur complet (decision S8 : pas de demi-feature sans verification SMS) |
+| 13 | **BlockedUsersScreen** | `settings/blocked-users.tsx` | blocage utilisateurs | A faire (**S11**) |
+| 14 | **RequestVerificationScreen** | `settings/verification.tsx` | demande de verification | A faire (**S10**) |
+
+> Numerotation actee (2026-06-12) : **S9 = chantier 2FA TOTP** (S9a socle backend FAIT,
+> S9b interception login, S9c desactivation, S9d ecrans RN), **S10 = verification**,
+> **S11 = blocage utilisateurs**.
 
 **Critere** : 14 ecrans presents, 0 lien mort silencieux (toute cible inexistante est
 marquee « Bientot » et desactivee, jamais un tap qui ne fait rien).
@@ -1280,6 +1285,577 @@ marquee « Bientot » et desactivee, jamais un tap qui ne fait rien).
     portfolio.ts, profile.tsx ligne route, les 2 ecrans collections) ; routes web
     `/collections/user/x` et `/collections/x` -> 200 (Metro compile).
 
+- **S6 (2026-06-12) : SalonPostsScreen cree** (`app/salon/[id]/posts.tsx`).
+  **CLOT LA FAMILLE A : 6/6 ecrans faits.**
+  - **Sonde de routing — issue A (coexistence)** : `app/salon/[id].tsx` et
+    `app/salon/[id]/posts.tsx` coexistent SANS deplacement ni collision. Preuve : les deux
+    routes enregistrees dans le bundle Metro (require.context `./salon/[id].tsx` +
+    `./salon/[id]/posts.tsx`), zero erreur bundler, `/salon/{id}` et `/salon/{id}/posts`
+    -> 200. NB diagnostic : en web dev le serveur repond 200 a TOUTE url (SPA shell, meme
+    `/route/bidon`) — un 200 seul ne prouve rien, la preuve est dans la table de routes
+    du bundle.
+  - **Verif `getSalonServices` (pre-dropdown)** : CORRECTE, pas de B37. Frontend
+    `salons.ts:41-42` GET `/api/salons/{id}/services` type `SalonService[]` == backend
+    `SalonServiceController` base `/api/salons/{salonId}/services` + `@GetMapping`
+    -> `List<ServiceResponse>` nu (deja prouvee par l'onglet Services 7.7).
+  - **Ecran** : racine FlatList (PAS de ScrollView parent — ce qui bridait l'onglet 7.7),
+    infinite scroll (page++ tant que !last, garde anti-reponse-perimee par cle de filtres)
+    + pull-to-refresh + flag `ignore` au cleanup des useEffect.
+  - **Jeu de handlers COMPLET** copie du patron social.tsx (cartographie figee B27->B34) :
+    onLike/onBookmark (fusion SELECTIVE B27, jamais le full-replace du KMP qui efface les
+    media), onShare (externe natif B31), onComment, onPress, onSaveToCollection
+    (CollectionPickerModal B34), onArchive (B32, optimiste+rollback), onPin (B29,
+    optimiste+rollback, message limite 3 affiche tel quel), onDelete, onReport + Toast.
+    DEPASSE le KMP qui n'avait ni pin, ni signaler, ni supprimer, ni menu « ... ».
+  - **Filtres parite KMP** (cote serveur via params confirmes de getPostsBySalon) :
+    chips PostType (memes 6 chips que le fil social), tri Recents/Populaires
+    (SortBy RECENT/POPular), services en chips horizontales (« Tous services » + chaque
+    service) — ADAPTATION assumee du dropdown KMP (pas de DropdownMenu RN, chips plus
+    directes). Changement de filtre = reset page 0 (reponses obsoletes jetees).
+  - **Header** : salon recharge via `getSalonById` (PAS de param de route — l'URL directe
+    fonctionne), titre « Posts · {nom} », retour garde B24b ; cover du salon en tete de
+    liste avec nom en overlay (parite header visuel KMP). FAB « + » owner-only
+    (`user.id === salon.ownerId`) -> navigation simple `/create-post` (aucune capacite
+    nouvelle dans create-post). Etats partages Loading/Error(retry)/Empty. Theming inline
+    strict (3 design-fixed : gradient cover, nom blanc sur cover, ombre FAB).
+  - **Point d'entree branche** (`app/salon/[id].tsx`, onglet Posts) : ligne « Voir tout -> »
+    en tete d'apercu -> `router.push('/salon/{id}/posts')`. L'apercu reste INCHANGE
+    (page 0, 2 handlers) : zero regression 7.7. L'ecran dedie n'a plus aucun lien mort.
+  - Verifications : `npx tsc --noEmit` -> zero NOUVELLE erreur (les 12 preexistantes
+    register/index/profile hors perimetre, identiques a B34) ; bundle web recompile
+    (8,2 Mo, ecran present) ; `/salon/{id}` et `/salon/{id}/posts` -> 200.
+
+- **B38 (2026-06-12) : debordement horizontal du detail salon** -- FAIT.
+  Symptomes : scroll horizontal parasite, bouton « Reserver une prestation » coupe,
+  scroll vertical sale (diagonal + scrollbar web par-dessus).
+  - **Cause racine** : prop `full` de Button = `width: '100%'` (Button.tsx:79-81) utilisee
+    DANS une row (floating bar du detail salon, a cote de « Suivre » + gap + padding)
+    -> contenu plus large que l'ecran -> overflow. Le scroll vertical « vulgaire » etait
+    une consequence (viewport elargi).
+  - **Correctif** : dans la floating bar, `flex` au lieu de `full` (styles `barBtn`
+    flex 1 / `barBtnWide` flex 1.7, minWidth 0, padding reduit) sur les DEUX rangees
+    (owner et visiteur) ; label de Button passe en `numberOfLines={1}` (un bouton ne
+    wrappe jamais sur 2 lignes dans sa hauteur fixe 48) ; ScrollView du detail en
+    `showsVerticalScrollIndicator={false}`. La semantique de `full` (hors row) inchangee.
+  - Verifs : tsc zero nouvelle erreur, `/salon/{id}` -> 200 (Metro compile).
+
+- **S7 (2026-06-12) : famille B complete (4/4) — ecrans legaux/support REELS,
+  droit gabonais** -- FAIT. Etape 8 : familles A (6/6) + B (4/4) faites, reste famille C.
+  - **Changement de cadrage (decision utilisateur)** : pas des coquilles placeholder mais
+    de vrais documents de production, longs, ancres dans le droit gabonais verifie par
+    recherche web (Etape 1 diagnostique validee avant redaction). REGLE DURE appliquee :
+    zero reference legale inventee — tout numero de loi/article cite provient d'une source
+    consultee ; les principes non sources sont rediges en clair sans numero.
+  - **Corpus juridique verifie** (sources en commentaire d'en-tete de chaque fichier) :
+    loi n°001/2011 modifiee par loi n°025/2023 (JO n°218 Bis lu en entier — PDF dans les
+    tool-results de la session ; articles VERIFIES : 7-8 APDPVP, 43-44 acces, 50-53
+    rectification/effacement, 55 limitation, 58-59 portabilite, 60-62 opposition,
+    66 profilage, 70 liceite) ; ordonnance n°0011/PR/2026 (reseaux sociaux : majorite
+    numerique 16 ans, identification NIP, signalement 24h/72h — s'applique a Frollot !) ;
+    loi n°025/2021 transactions electroniques ; reglement CEMAC n°04/18 services de
+    paiement (Airtel/Moov Money) ; AUDCG OHADA 2010 ; TVA 18 % (DGI). Constat : PAS de
+    code de la consommation gabonais, donc PAS de droit de retractation legal verifie.
+  - **Decisions commerciales appliquees (tranchees par Olsen)** : Premium 10 000 FCFA TTC
+    (TVA 18 % incluse), duree determinee SANS reconduction tacite ; remboursement = garantie
+    contractuelle VOLONTAIRE 48 h si Premium non utilise (presentee comme engagement
+    commercial, pas comme droit legal). PIN mobile money jamais collecte/stocke — seuls
+    montant/date/statut/reference conserves.
+  - **4 ecrans crees** : `settings/terms.tsx` (CGU+CGV, 15 articles, sommaire cliquable
+    scrollTo via onLayout) ; `settings/privacy.tsx` (12 sections, droits avec articles
+    verifies + recours APDPVP, mineurs <16 ans) ; `settings/help.tsx` (FAQ accordeon
+    6 categories dont pas-a-pas Airtel/Moov, liens croises terms/privacy/contact) ;
+    `settings/contact.tsx` (mailto via Linking, 6 objets pre-categorises dont « Donnees
+    personnelles (APDPVP) » -> renvoi procedure privacy §8, delais 24h/72h annonces).
+    Corps des textes SANS marqueur visible — les incertitudes et coordonnees a remplacer
+    (RCCM, NIF, siege, emails reels, points a confirmer par juriste) sont dans le
+    commentaire `/* A FAIRE AVANT PRODUCTION */` en tete de chaque fichier.
+  - **Entrees Settings activees** (`settings/index.tsx`, pattern RowDef S1) : help,
+    contact, terms, privacy ont leur `route:` — plus aucun badge « Bientot » sur ces 4,
+    garde B24b sur chaque ecran (fallback `/settings`).
+  - Verifs : tsc 12 erreurs preexistantes (register/index/profile, identiques B34), zero
+    nouvelle ; les 4 routes presentes dans la table require.context du bundle Metro
+    (preuve S6, pas un simple 200) ; `/settings` non regresse.
+
+- **S8 palier 1 (2026-06-12) : B25 SOLDEE — correction a la source des 6 API
+  `/api/security/*` (B25b) + 6 URLs admin moderation (B25c)** -- FAIT, TESTE CURL.
+  Decisions utilisateur prealables : 2FA EXCLU (chantier futur, zero trace backend) ;
+  ChangePhoneScreen EXCLU et REPORTE en chantier futur complet (OTP SMS requis, aucun
+  provider SMS backend — pas de demi-feature) ; deleteAccount INCLUS dans security.tsx.
+  - **B25b (`src/api/auth.ts` + `src/types/user.ts`)** : les 6 URLs `/api/security/*`
+    etaient inventees (AUCUN SecurityController). Corrigees contre UserController reel :
+    changePassword `PUT /api/users/me/password` (:732) ; changePhone `PUT /api/users/me/phone`
+    (:992, DORMANTE — reservee chantier futur, aucun appelant UI) ; deleteAccount
+    `DELETE /api/users/me` (:1034, POST->DELETE, corps via config axios `{data}`) ;
+    getActiveSessions `GET /api/users/me/sessions` (:780) ; revokeSession
+    `DELETE /api/users/me/sessions/{id}` (:807) ; revokeAllOtherSessions
+    `DELETE /api/users/me/sessions` (:842 — le `/others` invente aurait matche
+    `/{sessionId}`). Types completes (SecurityDto.kt) : +success sur ChangePassword/
+    ChangePhone/DeleteAccount Response, +success/revokedCount sur RevokeSessionResponse,
+    +newPhone? sur ChangePhoneResponse. SessionInfo/SessionsListResponse deja conformes.
+  - **PIEGE X-Refresh-Token (UserController:783, :845)** : sans ce header,
+    getActiveSessions ne marque aucune session courante et revokeAllOtherSessions revoque
+    TOUT y compris la session courante (auto-deconnexion, :854-857). Cable dans auth.ts via
+    `tokenManager.getRefreshToken()` (client.ts:147, jamais loggue) ; revokeAllOtherSessions
+    REFUSE de partir sans refresh token (throw explicite). **+ correction backend** :
+    `X-Refresh-Token` ajoute a la whitelist CORS `allowedHeaders` (SecurityConfig.kt:245)
+    — sans quoi le preflight web rejetait les 2 appels sessions.
+  - **B25c (`src/api/moderation.ts`)** : 6 routes admin pointaient vers
+    `/api/social/moderation/*` (base inventee). Base reelle : `/api/social/reports`
+    (ModerationController:25). handleReport, moderateContent, getModerationActions,
+    appealModeration, handleAppeal, getPendingAppeals corrigees. Routes DORMANTES
+    (aucun appelant UI), corrigees pour ne pas laisser de dette.
+  - **Tests curl (compte archtest.lecteur + compte jetable s8del clone en DB puis detruit)** :
+    login -> GET /me/sessions avec X-Refresh-Token : 200, isCurrent=true/currentSessionId
+    sur la session du login ; PUT /me/password : 200 {success:true} puis refresh de l'ancien
+    token -> 401 (revocation :753 confirmee, purge les 14 sessions accumulees) ; re-login x2
+    -> GET sessions : 2 sessions, courante correcte ; DELETE /sessions/94 : 200
+    revokedCount=1 ; +2 logins puis DELETE /sessions avec header : 200 revokedCount=2 et la
+    session courante SURVIT (refresh 200) ; PUT /me/phone (confirmation URL seule) : 200 ;
+    DELETE /me confirmDeletion=false : 400 refus explicite ; confirmDeletion=true : 200,
+    compte efface en base (hard delete verifie SQL). Mot de passe archtest restaure
+    (Diag1234!). Re-login post-delete : 429 RateLimitFilter (rate limit IP sur /login apres
+    nombreux logins de test — pas un bug).
+  - Piege shell note : git-bash corrompt `!` dans les corps JSON curl (`\!` envoye ->
+    JsonParseException 500) ; contournement octal `printf '\041'`.
+
+- **S8 palier 2 (2026-06-12) : SecuritySettingsScreen cree** (`settings/security.tsx`).
+  Famille C : 1/4 fait (security) ; verification et blocked-users restent (S9, S10) ;
+  change-phone REPORTE chantier futur complet (decision : pas de changement de numero sans
+  verification SMS — provider a integrer) ; 2FA EXCLU (chantier futur, zero trace backend).
+  - **3 sections** (parite KMP + deleteAccount reporte depuis S1) :
+    1. Changer le mot de passe : 3 PasswordTextField, regles de force live (>=8 = seule
+       regle backend SecurityDto.kt:18, different de l'actuel, confirmation identique),
+       avertissement PREALABLE « deconnecte tous vos appareils » ; au succes (le backend
+       revoque tous les refresh tokens, UserController:753) -> modal de succes puis
+       `logout()` (purement local, authStore:83) + redirect login. Erreur backend telle
+       quelle (carte errorContainer).
+    2. Sessions actives : liste (icone par deviceType, libelle deviceName/browser/OS,
+       IP+location, derniere activite), badge « Cet appareil » sur isCurrent (header
+       X-Refresh-Token cable palier 1), revoke par session (bouton masque sur la
+       courante), « Deconnecter les autres appareils (n) » desactive si seule la courante,
+       confirmation modal B22, re-fetch serveur apres revoke-all. Etats
+       LoadingState/ErrorState(retry)/EmptyState + bouton refresh.
+    3. Zone danger : carte bordure error, modal 1 (avertissement + mot de passe) puis
+       modal 2 (confirmation finale explicite) ; `confirmDeletion:true` envoye SEULEMENT
+       apres la 2e confirmation ; erreur (mot de passe faux, 400) re-affichee a l'etape 1 ;
+       au succes logout local + redirect login.
+  - Entree Settings « Securite » activee (`route: '/settings/security'`), sous-titre
+    « Mot de passe, sessions, suppression » (2FA retire). L'entree « Numero de telephone »
+    reste desactivee badge « Bientot » (chantier futur).
+  - Verifs : tsc 12 erreurs preexistantes (identiques S7), zero nouvelle ;
+    `./settings/security.tsx` present dans la table require.context du bundle Metro
+    (preuve S6) ; garde B24b ; theming inline strict (seul design-fixed : overlay modal).
+
+- **S8b (2026-06-12) : plafond de 5 sessions actives par utilisateur (demande utilisateur
+  apres test en main — trop d'appareils listes)** -- FAIT, TESTE CURL.
+  - **Backend** (`RefreshTokenService.kt`) : `MAX_ACTIVE_SESSIONS = 5` (companion object) ;
+    `enforceSessionLimit(userId)` appele en tete de `createRefreshTokenWithDeviceInfo`
+    AVANT la creation : si >= 5 sessions valides, revoque les moins recemment utilisees
+    (tri `lastUsedAt ?: createdAt`) pour que le total post-creation reste <= 5.
+    Politique : eviction LRU, JAMAIS de refus de login (un utilisateur ayant perdu ses
+    anciens appareils ne doit pas etre enferme dehors).
+  - **Surete rotation** : `rotateRefreshToken` revoque l'ancien token AVANT d'appeler la
+    creation (meme transaction, auto-flush Hibernate pre-requete JPQL) -> une rotation a
+    plafond plein n'evince RIEN (verifie curl : totalCount reste 5 apres rotation).
+    Course residuelle acceptee : 2 logins strictement simultanes peuvent depasser
+    temporairement (pas de verrou) ; le login suivant re-ecrete.
+  - **Frontend** (`security.tsx`) : phrase d'information sous « Sessions actives »
+    (« Maximum 5 appareils : au-dela, la session la moins recemment utilisee est
+    automatiquement deconnectee »).
+  - **Tests curl (archtest, sessions remises a zero en DB)** : 5 logins -> totalCount=5
+    (ids 100-104) ; logins 6-7 (apres fenetre rate limit login 5/min/IP, RateLimitFilter:56)
+    -> totalCount=5, ids 102-106 (100-101 evincees LRU) ; refresh du token evince -> 401 ;
+    refresh du token recent -> 200 ; re-liste apres rotation -> toujours 5.
+
+- **S9a (2026-06-12) : 2FA TOTP (RFC 6238) — socle backend + activation en deux temps** --
+  FAIT, TESTE CURL INTEGRALEMENT. Numerotation actee : S9 = 2FA (S9a-S9d),
+  verification = S10, blocage utilisateurs = S11. >>> Login NON touche (S9b) <<<.
+  - **Migration V044** (`V044__create_two_factor_tables.sql`) : `user_two_factor(user_id
+    CHAR(36) PK/FK CASCADE, secret_encrypted VARCHAR(512), enabled BOOL DEFAULT FALSE,
+    created_at, confirmed_at NULL)` + `two_factor_recovery_codes(id CHAR(36) UUID(),
+    user_id FK CASCADE, code_hash VARCHAR(60), used_at NULL, created_at)`. Conventions
+    V002/V024 (InnoDB, utf8mb4_unicode_ci).
+  - **Chiffrement** (`security/TotpEncryptionService.kt`) : AES-256-GCM via javax.crypto
+    (zero dependance). Cle env `TOTP_ENCRYPTION_KEY` (32 octets Base64, distincte de
+    JWT_SECRET), declaree `app.security.totp.encryption-key` (application.yml) SANS
+    fallback : init{} leve IllegalStateException si absente/invalide -> le backend
+    REFUSE de demarrer, meme en dev (prouve : bootRun sans cle -> crash avec message
+    explicite). Format stocke : Base64(IV 12 octets || ciphertext+tag GCM 128).
+    GARDE cle perdue/changee : decrypt() log ERROR « Secret 2FA indechiffrable pour
+    user X » + IllegalStateException explicite — jamais silencieux. Rotation de cle
+    NON implementee (hors perimetre, documente dans le service). `.env.example` cree
+    (backend/) avec consigne `openssl rand -base64 32`, sans valeur reelle.
+  - **Service** (`service/TwoFactorService.kt`) : secret 20 octets SecureRandom ->
+    Base32 RFC 4648 maison (~40 lignes encode+decode ; justification : pas de Base32
+    dans le JDK, commons-codec injustifie pour 2 fonctions). TOTP HMAC-SHA1, pas 30 s,
+    6 chiffres, fenetre ±1 pas, comparaison MessageDigest.isEqual sans court-circuit.
+    10 codes de recuperation XXXX-XXXX (alphabet 32 car. sans O/0/I/1, 40 bits),
+    haches BCrypt (PasswordEncoder existant), retournes EN CLAIR une seule fois au
+    confirm. URI `otpauth://totp/Frollot:{email}?secret=...&issuer=Frollot&algorithm=
+    SHA1&digits=6&period=30` (QR rendu client en S9d). setup() refuse si enabled=true ;
+    ecrase une ligne non confirmee (semantique S4 pending_email) ; purge les codes
+    residuels. confirm() exige un premier TOTP valide -> enabled=true + confirmed_at.
+  - **Endpoints** (`controller/TwoFactorController.kt`, `dto/TwoFactorDto.kt`) :
+    POST `/api/users/me/2fa/setup` -> {secret, otpauthUri} (SEULE exposition du secret
+    en clair, tant que enabled=false) ; POST `/api/users/me/2fa/confirm` {code} ->
+    {success, message, recoveryCodes[10]} ; GET `/api/users/me/2fa/status` -> {enabled}
+    (jamais le secret). Couverts par anyRequest().authenticated() (SecurityConfig:187),
+    aucun matcher ajoute. Erreurs metier -> 400 avec message clair (pas de 500 B36).
+  - **Tests curl (archtest.lecteur, backend redemarre proprement, cle ephemere en env
+    jamais affichee)** : bootRun SANS cle -> refus demarrage (message TOTP_ENCRYPTION_KEY
+    explicite) ; AVEC cle -> « TOTP_ENCRYPTION_KEY validee (AES-256-GCM) », V044
+    appliquee (schema 044) ; status initial -> 200 {enabled:false} ; setup -> 200
+    secret+otpauthUri ; status -> false ; confirm code faux -> 400 clair ; confirm
+    code calcule (script Python RFC 6238 local) -> 200 + 10 codes XXXX-XXXX ;
+    status -> true ; re-setup -> 400 « deja activee » ; re-confirm -> 400 ; sans
+    Bearer -> 401 ; SQL : secret_encrypted SANS le Base32 en clair, 10 code_hash
+    `$2a$10$` (60 car.) ; double setup non confirme -> secrets differents, 1 seule
+    ligne (ecrasement prouve). Donnees de test purgees (tables 2FA vides).
+  - **ACTION UTILISATEUR REQUISE** : generer TOTP_ENCRYPTION_KEY (`openssl rand
+    -base64 32`) et l'ajouter a backend/.env — la cle de test etait ephemere, le
+    backend ne redemarrera pas sans elle.
+  - Reste : S9b (interception login : jeton 2fa_pending + rejet filtre JWT + endpoint
+    /api/users/login/2fa + compteur jti + RateLimitFilter), S9c (desactivation
+    password+TOTP, purge), S9d (ecrans RN).
+
+- **S9b (2026-06-12) : interception 2FA du login — defi 2fa_pending + /login/2fa** --
+  FAIT, COMPILE, TESTE CURL INTEGRALEMENT (8/8). Backend pur, login des comptes
+  sans 2FA strictement inchange.
+  - **Durcissement filtre JWT (JwtAuthenticationFilter.kt:68-78)** : tout token
+    portant un claim `type` (quelle que soit sa valeur) est refuse comme access
+    token -> 401. Benefice collateral : ferme la faille latente du JWT type=refresh
+    (30 j, generateRefreshToken) qui passait comme access token.
+  - **JwtTokenProvider** : `getTokenType` (:378), `generateTwoFactorPendingToken`
+    (:398, Pair<token,jti>, claims sub+jti+type=2fa_pending, 5 min),
+    `validateTwoFactorPendingToken` (:421, signature + non expire + type strict).
+  - **Interception login (UserController.kt:293-297)** : APRES clearLoginFailures,
+    AVANT toute emission de token. Compte 2FA-active -> 200
+    `{requiresTwoFactor:true, twoFactorToken}` (AuthResponse.twoFactorChallenge,
+    champs @JsonInclude NON_NULL — invisibles pour les comptes sans 2FA), AUCUN
+    access token, AUCUNE ligne refresh_tokens (prouve SQL). Les println sensibles
+    du login (PII) ont ete remplaces par logger.debug sans PII.
+  - **Endpoint public POST /api/users/login/2fa (UserController.kt:346)** :
+    `TwoFactorLoginRequest{twoFactorToken, code}`. Ordre strict : 1) validation du
+    jeton de defi, 2) compteur jti, 3) verifyLoginCode, 4) consommation du jeton +
+    emission par le chemin EXISTANT (generateToken + createRefreshTokenWithDeviceInfo
+    -> plafond S8b de 5 sessions automatique, device capture sur CETTE requete).
+    >>> ECART vs plan initial : ajout de `/api/users/login/2fa` au permitAll
+    (SecurityConfig.kt:93), OUBLIE a l'ecriture — sans lui, 401 avant le controleur
+    (decouvert a la reprise post-crash, etat des lieux). <<<
+  - **TwoFactorService.verifyLoginCode (:156)** : TOTP courant (fenetre ±1) OU code
+    de recuperation (BCrypt, insensible casse/tiret, consomme usage-unique :
+    used_at pose dans la MEME transaction).
+  - **RateLimitFilter** : entree `/api/users/login/2fa` 5/min/IP (:58) + compteur
+    par jti (:179-231, MAX_TWO_FACTOR_ATTEMPTS=5, TTL 6 min purge paresseuse,
+    `registerTwoFactorAttempt`/`consumeTwoFactorChallenge` — le jeton est aussi
+    tue apres succes, anti-rejeu).
+  - **Tests curl (8/8 PASS, archtest.lecteur 2FA reconstitue via flux S9a)** :
+    1) token forge type=refresh (signe avec JWT_SECRET, script Python) -> 401 /me,
+    access normal -> 200 ; 2) non-regression login sans 2FA -> 200 vrais tokens ;
+    3) defi -> 200 requiresTwoFactor+twoFactorToken, refresh_tokens 32->32 (SQL) ;
+    4) etancheite : twoFactorToken sur /me -> 401 ; 5) 5 codes faux -> 401
+    « incorrect », 6e essai -> 401 « Trop de tentatives » (jeton mort ; NB : le
+    bucket IP 5/min repond 429 avant si rafale — deux couches) ; 6) re-login ->
+    bon TOTP (script independant RFC 6238) -> 200 vrais tokens, 5 sessions actives
+    max (SQL, eviction S8b) ; 7) code de recuperation MPXR-FW6A -> 200 tokens,
+    used_at pose (SQL 10/1), rejeu du meme code -> 401 ; 8) jeton 2fa_pending
+    forge expire -> 401 « invalide ou expire ».
+  - Etat compte de test : archtest.lecteur 2FA ACTIVE (conserve pour S9c/S9d),
+    9 codes de recuperation restants.
+  - Reste : S9c (desactivation password+TOTP, purge), S9d (ecrans RN).
+
+- **S9c (2026-06-12) : desactivation 2FA + regeneration des codes de recuperation** --
+  FAIT, COMPILE, TESTE CURL INTEGRALEMENT. Backend pur. Apres S9c il ne reste que
+  S9d (ecrans RN) pour clore le chantier 2FA.
+  - **DELETE /api/users/me/2fa (AUTHENTIFIE, TwoFactorController)** : corps
+    `TwoFactorDisableRequest{password, code}`. Exige les DEUX preuves : mot de passe
+    (verifie EN PREMIER — un mot de passe faux ne consomme JAMAIS de code de
+    recuperation) ET code via `verifyLoginCode` S9b (TOTP courant OU recovery non
+    utilise ; un recovery deja consomme est refuse). `TwoFactorService.disable`
+    @Transactional : verif code AVANT purge ; si le code etait un recovery, sa
+    consommation et la purge sont dans la MEME transaction (rollback complet en cas
+    d'echec). Purge EXPLICITE des deux tables (la cascade FK V044 ne joue qu'au
+    DELETE du user) -> etat strictement identique a un compte sans 2FA. 2FA
+    inactive -> 400 clair. Erreurs -> 400 avec message (pas de 500 B36).
+  - **POST /api/users/me/2fa/recovery-codes/regenerate (AUTHENTIFIE)** :
+    `TwoFactorRegenerateRequest{password, code}`. DECISION TRANCHEE : meme niveau
+    de preuve que la desactivation (password + code TOTP OU recovery) — detenir un
+    lot frais equivaut a detenir la 2FA ; un recovery consomme ici est de toute
+    facon remplace par le nouveau lot. Supprime TOUS les anciens codes (utilises ou
+    non), genere 10 nouveaux (clair une seule fois, BCrypt en base), secret TOTP
+    INTACT (2FA reste active). 2FA inactive -> 400 clair.
+  - **PIEGE DECOUVERT (corrige)** : le principal pose par JwtAuthenticationFilter
+    est RECONSTRUIT depuis les claims JWT (getUserFromToken :103) -> passwordHash
+    VIDE -> checkPassword echouait toujours (premier essai curl : 400 « Mot de
+    passe incorrect » avec le bon mot de passe). Correction : rechargement BDD
+    `userRepository.findById(user.id!!).orElse(user)` avant le check (meme pattern
+    que le login). A RETENIR pour tout futur endpoint verifiant le mot de passe
+    avec le principal.
+  - **Interactions verifiees (lecture + SQL, scope non elargi)** :
+    changePassword (UserService.kt:362-374) ne touche que password_hash -> 2FA
+    survit, conforme. deleteAccount (UserService.kt:516) = hard delete
+    userRepository.delete -> cascade FK V044 (ON DELETE CASCADE :17/:26) purge les
+    deux tables — PROUVE : compte jetable s9c.jetable cree en SQL, 2FA activee
+    (utf=1 rc=10), DELETE /me -> 200, SQL apres : users=0 utf=0 rc=0. Compte jetable
+    auto-purge par sa propre suppression.
+  - **Tests curl (tous PASS)** :
+    a) disable password OK + TOTP -> 200 ; SQL utf=0 rc=0 (purge prouvee) ;
+       status -> enabled:false ;
+    b) re-login -> 200 vrais tokens directs, champ requiresTwoFactor ABSENT
+       (le defi s'eteint avec la desactivation) ;
+    c) apres reactivation : password FAUX + TOTP bon -> 400, status true ;
+       password bon + code FAUX -> 400, status true ; disable via code de
+       RECUPERATION -> 200, SQL utf=0 rc=0 ;
+    d) disable quand 2FA inactive -> 400 « n'est pas activee » ;
+    e) regenerate (password+TOTP) -> 200, 10 nouveaux codes ; SQL : exactement 10,
+       0 utilises, 0 hash en commun avec l'ancien lot (comm -12) ; ANCIEN code au
+       login/2fa -> 401 ; NOUVEAU code -> 200 vrais tokens ;
+    f) regenerate quand 2FA inactive -> 400 clair.
+  - Etat final compte de test : archtest.lecteur 2FA ACTIVE, secret regenere
+    pendant les tests, lot final de 10 codes frais (0 utilise) — pret pour S9d.
+  - Reste : S9d (ecrans RN : wizard activation QR + saisie au login + desactivation
+    + regeneration/affichage des codes ; react-native-svg + qrcode-svg).
+
+- **S9d-1 (2026-06-12) : gestion 2FA dans security.tsx (RN)** -- FAIT, tsc ZERO
+  nouvelle erreur (baseline 12 preexistantes intacte), Metro compile security.tsx
+  (chunk 200 + contenu verifie). IMPORTANT : le LOGIN n'est PAS branche — un
+  utilisateur qui active la 2FA ici ne verra PAS de defi a la connexion RN tant
+  que S9d-2 (ecran de saisie du code apres `requiresTwoFactor`) n'est pas fait.
+  - **Dependances (npx expo install, versions alignees SDK 56)** :
+    react-native-svg 15.15.4, react-native-qrcode-svg ^6.3.21, expo-clipboard
+    ~56.0.4. Compatibles Expo Go (pas de module natif custom).
+  - **Couche API** : `src/types/user.ts` (6 interfaces alignees TwoFactorDto.kt,
+    commentees endpoint par endpoint) + `src/api/auth.ts` (getTwoFactorStatus,
+    setupTwoFactor, confirmTwoFactor, disableTwoFactor — corps sur DELETE via
+    `{ data }` axios, meme pattern B25b que deleteAccount —, regenerateRecoveryCodes).
+  - **security.tsx, section « Double authentification »** (entre mot de passe et
+    sessions) : statut via GET /2fa/status (LoadingState/ErrorState+retry) ;
+    si active -> badge « Activee » + boutons Regenerer les codes / Desactiver ;
+    sinon -> PrimaryButton « Activer la 2FA ».
+    - **Wizard activation** : setup appele a l'ouverture (un setup non confirme est
+      ecrase par le suivant — annuler est sans danger), QR `otpauthUri` (qrcode-svg,
+      fond blanc design-fixed), secret en clair selectionnable + bouton copier
+      (expo-clipboard) pour saisie manuelle, champ premier code 6 chiffres ->
+      confirm -> bascule sur l'ecran des codes de recuperation.
+    - **RecoveryCodesModal (composant UNIQUE activation + regeneration, zero
+      duplication)** : 10 codes en grille 2 colonnes monospace selectionnables,
+      bouton « Copier les 10 codes », avertissement errorContainer (« ne seront
+      plus jamais affiches »), bandeau supplementaire « anciens codes plus
+      valables » si regeneration. GARDE NON CONTOURNABLE : case « J'ai enregistre
+      mes codes de recuperation » obligatoire — bouton Terminer desactive,
+      onRequestClose refuse, pas de fermeture par l'overlay ; garde rearmee a
+      chaque nouveau lot (useEffect sur codes).
+    - **Desactivation / regeneration** : modals patron B22 (PasswordTextField +
+      TextField code « 123456 ou XXXX-XXXX »), erreurs backend affichees telles
+      quelles, zero catch muet, fermetures bloquees pendant l'appel.
+  - **settings/index.tsx** : sous-titre Securite -> « Mot de passe, 2FA, sessions,
+    suppression » (2FA reintegree, l'exclusion S8 est soldee).
+  - Theming inline useTheme() strict ; seules couleurs brutes = overlay et fond
+    blanc du QR, commentees `// design-fixed`.
+  - **Reste : S9d-2 (defi au login RN)** : ecran de saisie TOTP/recovery apres
+    reponse login `requiresTwoFactor=true` + appel POST /api/users/login/2fa
+    avec le jeton 2fa_pending. Compte de test pret : archtest.lecteur 2FA ACTIVE.
+
+- **S9d-2 (2026-06-12) : defi 2FA au login RN + fermeture de la classe « session
+  zombie » — LE CHANTIER 2FA (S9a -> S9d) EST CLOS** -- FAIT, tsc zero nouvelle
+  erreur (baseline 12), chunk Metro two-factor compile et verifie.
+  - **Symptome corrige** : compte 2FA-actif -> login 200 SANS tokens (defi S9b,
+    accessToken="" dans la reponse plate) -> l'ancien authStore stockait les
+    chaines vides et posait isAuthenticated=true -> session zombie (accueil
+    accessible, tous les /me/* en 401, profil vide).
+  - **Diagnostic formes reelles (verifie backend, rien presume)** : defi a la
+    RACINE du AuthResponse plat (`requiresTwoFactor` + `twoFactorToken`,
+    @JsonInclude NON_NULL — absents hors defi) ; succes /login/2fa = MEME
+    AuthResponse plat via fromUser qu'un login normal ; erreurs 401 = corps
+    AuthResponse.error -> champ `message` ; jeton mort (expire 5 min / 5 essais
+    epuises) = messages contenant « reconnecter » ; corps requete
+    {twoFactorToken, code}. BONUS verifie : l'intercepteur 401 de client.ts:86
+    (`url.includes('/users/login')`) couvre deja /users/login/2fa -> aucun
+    refresh parasite sur les 401 du defi.
+  - **authStore.ts — GARDE DEFENSIVE anti-zombie a la racine** : finalisation de
+    session CENTRALISEE en UNE fonction `finalizeSession` (login normal ET succes
+    2FA, etat final strictement identique) qui REFUSE d'entrer en etat authentifie
+    si accessToken OU refreshToken est absent/vide (erreur visible, rien stocke)
+    -> plus jamais d'isAuthenticated sans vrai token, meme sur reponse malformee
+    future. `login` teste `requiresTwoFactor` AVANT tout stockage : si defi ->
+    rien stocke, jeton garde dans `pendingTwoFactorToken` (EN MEMOIRE SEULE,
+    jamais SecureStore/AsyncStorage, jamais dans l'URL — un refresh web le perd
+    volontairement), sentinel rendu au caller. `loginTwoFactor(token, code)` ->
+    POST /login/2fa -> finalizeSession. `clearTwoFactorChallenge` jette le jeton ;
+    logout le purge aussi.
+  - **login.tsx** : si `response.requiresTwoFactor` -> push `/(auth)/two-factor`
+    et RETURN (pas de carte succes, pas de redirection accueil). Sinon
+    comportement strictement inchange (non-regression comptes sans 2FA).
+  - **app/(auth)/two-factor.tsx (nouveau, + Stack.Screen dans _layout)** : un
+    champ unique TOTP 6 chiffres OU recovery XXXX-XXXX (chaine brute, le backend
+    verifyLoginCode gere les deux), indice explicite. Valider -> loginTwoFactor ->
+    accueil (meme chemin final qu'un login normal). Erreurs backend AFFICHEES
+    TELLES QUELLES ; si message contient « reconnecter » -> etat jeton mort :
+    champ desactive, bouton unique « Retour a la connexion » (reessayer serait
+    inutile). ANTI double-soumission (guard submitting + loading + disabled — le
+    compteur jti plafonne a 5 essais, un double-clic gacherait un essai).
+    Annuler/back -> clearTwoFactorChallenge + garde B24b. Arrivee sans jeton
+    (URL directe, refresh web) -> redirect login via useEffect (navigatedRef
+    evite la double navigation au succes). Theming inline strict, composants
+    partages (TextField/PrimaryButton/OutlineButton), zero catch muet.
+  - **types/user.ts + api/auth.ts** : `requiresTwoFactor?`/`twoFactorToken?` sur
+    AuthResponse (commentes : champs racine, JsonInclude NON_NULL),
+    `TwoFactorLoginRequest`, `authApi.loginTwoFactor` (endpoint public).
+  - Tests en main attendus (Olsen) : compte SANS 2FA -> accueil normal (non-
+    regression) ; compte AVEC 2FA -> ecran de defi AVANT tout acces -> bon TOTP ->
+    accueil profil PLEIN, /me/* 200, settings/security charge statut + sessions
+    (zombie resolue) ; mauvais code -> erreur backend, reste sur l'ecran ;
+    recovery valide -> passe ; annuler -> retour login propre.
+
+- **S9-0 (2026-06-12) : Etape 9 i18n — OUTILLAGE + schema de nommage PROPOSE
+  (rien d'applique)** -- FAIT, tsc 12 = baseline, AUCUN JSON de prod modifie
+  (git status : seuls scripts/i18n/* nouveaux), aucun ecran touche.
+  - **Cadre tranche avec Olsen (NON NEGOCIABLE)** : 5 langues FR -> EN -> es/de -> ar ;
+    nommage PROPRE RN (le KMP = reference de comprehension/traduction SEULEMENT,
+    pas de source de cles ni d'import automatique) ; es/de/ar GENERES puis RELUS
+    par sous-agents ; 4 ecrans legaux EXCLUS (FR fait foi + bandeau) ; arabe = RTL
+    natif complet en dernier (S9-4) ; templates email backend = chantier separe.
+  - **scripts/i18n/extract-kmp-reference.js** : parse les strings_{fr,en,es,de,ar}.kt
+    KMP (regex `"cle" to "valeur"` + desechappement Kotlin) -> kmp-reference.json
+    HORS prod (jamais charge par l'app) : index par VALEUR FR -> {en,es,de,ar} +
+    cles KMP en metadonnee indicative. Chiffres reels : fr 876 / autres 858 cles
+    parsees, 727 valeurs FR distinctes, 99 groupes de doublons (meme texte FR sous
+    plusieurs cles KMP), 56 divergences de traduction signalees au sein des groupes
+    (ex. « Abonnes » -> Subscribers OU Followers selon l'ecran KMP — a arbitrer a
+    la generation).
+  - **scripts/i18n/check-keys.js** : parite des cles des 5 JSON de prod (src/i18n/),
+    fr = reference, liste manquantes + orphelines par langue, exit 1 si ecart
+    (pre-commit-ready). Baseline ACTUELLE rapportee (pas corrigee ici) :
+    fr 201 / en 201 (0 ecart), es 66 (-135), de 66 (-135), ar 57 (-144),
+    zero orpheline -> FAIL (414 ecarts) = point de depart attendu.
+  - **Schema de nommage PROPOSE (en attente de validation Olsen)** : namespaces
+    par zone fonctionnelle + `common.*` transverse (actions/etats/erreurs),
+    camelCase, profondeur max 3, interpolation i18next `{{var}}`, pluriels via
+    suffixes `_one/_other`. Les 201 cles fr/en existantes : recommandation =
+    RENOMMER vers le schema final en S9-1 (cout faible : 174 appels t() au total).
+  - **Reste** : validation du schema -> S9-1 (structuration des JSON) -> S9-2
+    (externalisation FR par zone) -> S9-3 (EN puis es/de) -> S9-4 (ar + RTL).
+
+- **Telephone increment 1 (2026-06-12) : reactivation du chemin backend changePhone —
+  stockage DECLARATIF E.164 + visibilite phone_public (V045)** -- FAIT, backend pur,
+  prouve curl (comptes phonetest.a/b crees puis purges). Aucune verification OTP/SMS
+  (couche future). Le frontend (increments 2-3 : selecteur pays libphonenumber-js +
+  ChangePhoneScreen) reste a faire — l'entree Settings garde son badge « Bientot ».
+  - **(A) Audit d'etancheite — 9 surfaces UserResponse cartographiees** :
+    proprietaire/admin (passees `includePrivatePhone=true`) = GET /me (UserController:561),
+    PUT /me (:589), avatar (:759), admin getAllUsers (:86), admin verifyUser
+    (VerificationService:129) ; publiques (defaut FILTRE de fromEntity, aucun edit) =
+    search mentions (UserController:710), FollowService:191, SearchService:53,
+    SocialService:2216. La regle vit en UN point : `UserResponse.fromEntity(user,
+    includePrivatePhone=false par defaut)` -> `phoneNumber = if (includePrivatePhone
+    || user.phonePublic) ... else null` — tout futur appelant est prive-par-defaut.
+    Canal transactionnel : BookingDto.kt:132 `clientPhone = client.phoneNumber` lit
+    l'ENTITE directement, ne passe pas par UserResponse -> le salon avec RDV voit
+    toujours le numero, intact par construction (preuve code, pas de fixture booking).
+    DECOUVERTE/DETTE SOLDEE : 2e chemin d'ecriture parallele PUT /me
+    (UpdateProfileRequest.phoneNumber + UserService updateUserProfile) SANS validation/
+    unicite/visibilite, zero appelant frontend -> SUPPRIME (chemin unique = changePhone).
+    Hors perimetre signale : l'email reste expose sur les surfaces publiques (preexistant).
+  - **(B) V045** : `users.phone_public BOOLEAN NOT NULL DEFAULT FALSE` (appliquee,
+    flyway_schema_history success=1). phone_number varchar(20) UNIQUE NULL inchange.
+  - **(C) changePhone durci (UserService)** : recharge BDD (piege principal JWT sans
+    passwordHash), mdp verifie, normalisation `trim().takeIf{isNotEmpty}` -> blank=NULL
+    (jamais '' — l'UNIQUE l'exige), E164_REGEX `^\+[1-9]\d{1,14}$` serveur (sinon 400),
+    suppression -> phone_public force a false, doublon capture par **saveAndFlush DANS
+    le try** (avec save() seul la violation UNIQUE n'eclaterait qu'au commit, hors du
+    try) -> 400 « Ce numero est deja utilise. ». DTO resserres : ChangePhoneRequest
+    {newPhone?, phonePublic=false, password}, Response renvoie newPhone+phonePublic.
+  - **Tests curl (tous PASS, etat SQL verifie a chaque etape)** : stockage +24106123456
+    -> 200, GET /me le montre, SQL E.164/phone_public=0 ; formats invalides 0612, abc123,
+    +0241..., >16 car. -> 4x400 sans toucher la base ; doublon B->numero de A -> 400 ;
+    visibilite : B cherche A prive -> cle phoneNumber ABSENTE du JSON (NON_NULL), A passe
+    public -> PRESENTE, /me proprietaire toujours present meme prive ; suppression "" et
+    null sur les DEUX comptes -> 200/200, SQL NULL/NULL (pas de collision UNIQUE sur ''),
+    phone_public retombe a 0 (A etait public avant suppression).
+
+- **Telephone increment 3 (2026-06-12) : ecran settings/change-phone.tsx —
+  LE CHANTIER TELEPHONE (incr. 1 -> 3) EST CLOS** -- FAIT, tsc 12 erreurs =
+  baseline exacte (zero nouvelle), chunk Metro /app/settings/change-phone -> 200
+  (ChangePhoneScreen/PhoneNumberField/phonePublic presents), demo /app/dev/
+  phone-demo -> 404 et 0 occurrence dans le bundle.
+  - **Couche API resserree** : ChangePhoneRequest TS = { newPhone: string ('' =
+    suppression, JAMAIS optionnel — l'envoi du champ est requis), phonePublic:
+    boolean, password } aligne SecurityDto.kt ; ChangePhoneResponse + phonePublic ;
+    User.phonePublic?: boolean (present sur /me, vue proprietaire). Commentaire
+    « chantier futur OTP SMS » d'auth.ts remplace (numero declaratif, couche future).
+  - **Ecran change-phone.tsx** : PREFILL via /me REFETCH (PAS le store —
+    l'AuthResponse du login ne porte ni phoneNumber ni phonePublic ; le refetch
+    alimente aussi le store via setUser), LoadingState + carte erreur + Reessayer.
+    PhoneNumberField (incr. 2) pre-rempli (pays + format national deduits de
+    l'E.164), Enregistrer desactive tant que (numero valide + mot de passe) n'est
+    pas reuni. Switch visibilite HONNETE : prive = « Visible de vous seul »,
+    public = « Visible sur votre profil public » + mention discrete du canal
+    transactionnel (un salon avec RDV voit le numero meme en prive — comportement
+    backend incr. 1, pas cache). PasswordTextField partage. Succes -> setUser
+    local (phoneNumber + phonePublic, facon S4) + etat succes au message adapte
+    (public/prive/supprime). Erreurs backend TELLES QUELLES en carte
+    errorContainer (400 format / doublon « deja utilise » / mdp incorrect —
+    prouves curl incr. 1). SUPPRESSION = intention SEPAREE : bouton distinct
+    (visible seulement si un numero existe), modal B22 avec PasswordTextField
+    PROPRE a la modale, newPhone:'' -> backend NULL + phonePublic=false.
+    Retour header garde B24b. Theming inline strict.
+  - **Settings active** : entree « Numero de telephone » recoit
+    route:'/settings/change-phone' (badge « Bientot » retire par le pattern
+    RowDef) ; sous-titre DYNAMIQUE = numero du store au formatInternational
+    (libphonenumber-js) quand il existe, sinon libelle generique.
+  - **Demo throwaway supprimee** : app/dev/phone-demo.tsx + dossier app/dev
+    purges, zero reference restante (grep), route 404, absente du bundle.
+  - Tests en main attendus (Olsen) : prefill d'un numero existant (pays + format
+    corrects), saisie + visibilite + enregistrement, doublon -> 400 backend tel
+    quel, mdp faux -> 400, suppression (modal + retour), badge « Bientot »
+    disparu de Settings et sous-titre = numero formate apres enregistrement.
+
+- **Telephone increment 2 (2026-06-12) : composants selecteur de pays + champ
+  telephone international, REUTILISABLES (inscription/profils pro a venir)** -- FAIT,
+  tsc 12 erreurs = baseline exacte (zero nouvelle), chunk Metro /app/dev/phone-demo
+  compile (PhoneNumberField/CountryPickerModal/CountryFlag/flagcdn presents).
+  - **Dependance** : `libphonenumber-js` (npm install — JS pur, pas un module natif,
+    Expo Go OK). 245 pays via getCountries().
+  - **Strategie drapeaux RETENUE : SVG flagcdn.com via expo-image** — docs Expo v56
+    verifiees : SVG supporte Android/iOS/Web par expo-image ; CDN prouve curl
+    (ga.svg -> 200 image/svg+xml). URL centralisee dans `getFlagUrl` (countries.ts) :
+    bascule PNG w80 = UNE ligne si un device Android reel prouvait le contraire.
+    Fallback monogramme (cercle primaryContainer + code ISO) sur onError — offline
+    au 1er chargement = pas un trou. Cache disque auto expo-image ensuite.
+  - **src/utils/countries.ts** : table statique de 245 noms FR (PAS Intl.DisplayNames
+    — pari Hermes evite ; couverture verifiee par script : 245/245, zero manquant,
+    zero orphelin), `Country {iso2,nameFr,callingCode}`, tri localeCompare 'fr',
+    `getDefaultCountry()` = GA/+241, fallback code ISO si territoire sans nom,
+    `searchCountries` insensible casse/ACCENTS (normalize NFD + strip diacritiques —
+    supporte par Hermes) par nom FR OU indicatif (« gab » et « 241 » -> Gabon).
+  - **src/components/phone/CountryPickerModal.tsx** (patron B22) : recherche en tete
+    (TextField partage) filtrant en direct, FlatList ~250 lignes (initialNumToRender
+    20, keyboardShouldPersistTaps), ligne = drapeau + nom FR + indicatif tabular-nums,
+    selection marquee (fond primaryContainer + check), tap -> onSelect + fermeture,
+    overlay/croix -> onClose (query reset). Theming inline strict.
+  - **src/components/phone/PhoneNumberField.tsx** : bouton-pays (drapeau + indicatif +
+    chevron, ouvre la modale) ACCOLE au champ national. Formatage A LA FRAPPE via
+    AsYouType — PIEGE evite : formater seulement quand le texte S'ALLONGE (en
+    suppression AsYouType re-insererait la ponctuation effacee). Chaque frappe ->
+    onChangeE164(parsePhoneNumberFromString .number | null si vide) +
+    onValidityChange(isValidPhoneNumber ; vide = valide). Changement de pays ->
+    chiffres conserves reformates pour le nouveau pays. Sync depuis le parent via
+    lastEmittedRef (ignore l'echo de sa propre emission ; pre-remplissage E.164 ->
+    pays + format national deduits). Indicateur de validite DISCRET (check vert
+    quand valide, rien d'agressif pendant la frappe). ZERO appel backend.
+  - **Preuves logique (node)** : AsYouType GA '06123456' -> '06 12 34 56' ;
+    parse('06 12 34 56','GA') -> +24106123456 valide ; memes chiffres en FR ->
+    '06 12 34 56 78' -> +33612345678 (reformatage au changement de pays).
+  - **app/dev/phone-demo.tsx** : ecran de demo THROWAWAY (en-tete explicite,
+    aucune entree de navigation, URL directe /dev/phone-demo) montrant le champ +
+    sortie E.164/validite en direct. A SUPPRIMER a l'increment 3. settings/
+    change-phone et l'entree Settings (« Bientot ») PAS touches.
+  - Piege Windows rencontre : watcher Metro ne voit pas un DOSSIER cree apres son
+    demarrage (UnableToResolveError sur fichiers existants) -> redemarrage Metro.
+  - **Reste : increment 3** = ecran settings/change-phone.tsx « ultra pro »
+    branchant PhoneNumberField sur PUT /api/users/me/phone (+ phonePublic), DTO TS
+    ChangePhoneRequest a resserrer, retrait du badge « Bientot », purge de la demo.
+
 - **B27 + retrait reactions (2026-06-11) : likes erratiques gueris a la racine** -- FAIT.
   Symptome utilisateur : compteurs de likes incoherents (retombent a 0/1, sautent de +1/+2).
   DB verifiee saine (post_likes + compteur + reconciliation auto SocialService.kt:1186-1192) —
@@ -1447,6 +2023,1313 @@ marquee « Bientot » et desactivee, jamais un tap qui ne fait rien).
     dans un increment dedie « menu ... au detail » plutot que d'y greffer une seule entree.
   - Verifications : `tsc --noEmit` -> zero erreur sur les fichiers touches ; `/social`
     -> 200 (Metro compile).
+
+- **B33 (2026-06-11) : BACKEND — archivage GLOBAL facon Instagram** -- FAIT, teste curl.
+  Remplace l'archivage par utilisateur (decouvertes B32 points 1-3) : un post archive est
+  masque pour TOUS, reversible par son auteur uniquement. Chantier interrompu par crash
+  machine puis repris : code retrouve intact, complete (favoris + 3 fuites), teste, trace.
+  - **Migration V041** (`V041__add_global_archive_to_posts.sql`) : colonnes
+    `posts.is_archived` (BOOLEAN NOT NULL DEFAULT FALSE) + `posts.archived_at`
+    (DATETIME NULL) ; migration des archives owner-only existantes de `post_archives`
+    vers le flag. Appliquee (Flyway schema 041). Table `post_archives` conservee
+    DORMANTE (future fonction « Masquer ce post » sur les posts d'autrui) ;
+    PostArchiveRepository conserve mais retire de SocialService.
+  - **Post.kt** : champs `isArchived`/`archivedAt`, calques sur isHidden/isDeleted.
+  - **archive/unarchive** (URLs INCHANGEES `POST`/`DELETE /posts/{postId}/archive`) :
+    basculent le flag, idempotents, ownership obligatoire -> **403** si non-auteur
+    (UnauthorizedAccessException, handler existant).
+  - **Exclusion `!isArchived` sur TOUS les chemins de lecture** (SocialService sauf
+    mention) : feed (2 branches connecte/anonyme) · following feed · trending (dans la
+    requete SQL `findTrendingPosts`, PostRepository) · posts par user · posts par salon ·
+    posts par hashtag · nearby · recherche (searchPostsByContent + searchPosts) ·
+    pinned posts · **favoris (getFavoritesByUser — trou du plan initial, exclusion simple
+    y compris pour l'auteur, pagination manuelle facon getFeed)** · posts mis en avant du
+    salon (getSalonSocialProfile) · posts de collection (getCollectionPosts, mapNotNull —
+    sinon getPostById y jetait un 404 qui cassait TOUTE la liste) · posts de portfolio
+    (PortfolioService.getPortfolioPosts). Les recentPosts des 4 profils passent par
+    getPostsByUser/getPostsBySalon -> couverts.
+  - **getPostById** : post archive -> **404** pour tout non-auteur, **200** pour l'auteur.
+  - **getArchivedPosts reecrit** : lit `isArchived = true` via
+    `findByAuthorIdAndIsArchivedTrueOrderByArchivedAtDesc` ; URL
+    (`GET /users/{userId}/archives`) et forme `Page<PostResponse>` INCHANGEES ->
+    l'ecran Archives RN ne change pas.
+  - **Tests curl (2 utilisateurs dedies en base : `archtest.auteur@frollot.test`
+    hairstylist / `archtest.lecteur@frollot.test` client — inscrits par INSERT direct car
+    EMAIL_ENABLED=false bloque la pre-inscription)** : avant archivage le post est
+    visible (feed=1, trending=1, users/{A}/posts=1, favoris de B=1) ; B archive le post
+    de A -> 403 ; A archive -> 200 ; apres : 0 partout, getPostById B -> 404, A -> 200,
+    archives de A -> Page avec le post (totalElements=1), archives de A demandees par
+    B -> 403 ; A desarchive -> 200 ; tout redevient 1. Cycle complet vert.
+  - **BUG PREEXISTANT decouvert (NON corrige, hors chantier)** : le feed Suivis
+    (`GET /feed/following`) est CASSE backend-wide — `follows.following_type` est
+    `enum('user','salon','coiffeur')` en DB (minuscules) mais l'enum Kotlin
+    `FollowingType` attend USER/SALON/COIFFEUR : l'ecriture passe (MySQL case-insensitive)
+    mais TOUTE lecture jette `No enum constant FollowingType.coiffeur` -> 400. Le filtre
+    archivage y est bien dans le code (getFollowingFeed). A traiter en increment dedie.
+
+- **>>> POINT DE BASCULE B33 backend -> SECOND TEMPS frontend (menu detail + pin B29). <<<**
+  En cas de crash : le backend ci-dessus est FAIT/teste/trace ; reprendre au frontend.
+
+- **B34 (2026-06-11) — SECOND TEMPS frontend : menu detail + epinglage B29. FAIT.**
+  - **B29 — URLs pin corrigees a la source** (`src/api/social.ts`) :
+    `unpinPost` = DELETE `/posts/{id}/pin` (l'ancien POST /unpin n'existait pas) ;
+    `getPinnedPosts` = GET `/users/{authorId}/pinned-posts` (l'ancien /posts/pinned/{id}
+    n'existait pas). NB : la limite backend de 3 pins jette IllegalStateException mappee
+    **HTTP 401** par le handler de SocialController — l'intercepteur axios fait un refresh
+    inutile puis rejette avec le message backend intact (pas de logout) ; message affiche en toast.
+  - **Dialog collection extrait** : `src/components/social/CollectionPickerModal.tsx`
+    (patron B22, props postId/onClose/onFeedback, flag ignore au cleanup), exporte via index.ts.
+    `social.tsx` nettoye (etats + dialog inline + styles supprimes), utilise le composant.
+  - **Menu « ... » au detail du post** (`app/post/[id].tsx`, patron B22), cartographie figee :
+    collection · archiver (isOwn -> archive puis goBack) · epingler/desepingler (isOwn) ·
+    signaler (-> /report entityType POST) · supprimer (isOwn, Alert confirmation -> goBack).
+    « Voir le post » omis (on y est deja).
+  - **Dettes corrigees au detail** : garde B24b (`goBack()` = canGoBack ? back : replace('/(tabs)'))
+    sur le header ET les retours post-action ; les 3 catch muets (loadMoreComments,
+    submitComment, deleteComment) affichent desormais un toast avec le message backend.
+  - **Epinglage B29 au fil ET au detail** : `handlePin` optimiste (bascule isPinned) +
+    rollback + toast ; PostCard recoit prop `onPin`, entree menu Epingler/Desepingler
+    (icone pin-outline/pin-off-outline) visible isOwn seulement.
+  - **Section « Posts epingles » en TETE du profil coiffeur** (`app/profile/coiffeur/[id].tsx`) :
+    la section existait deja (Promise.allSettled, non bloquante, masquee si vide) mais etait
+    MORTE a cause de l'URL fausse — ranimee par la correction B29 et deplacee juste apres
+    la profileCard (avant Bio).
+  - Verifs : `npx tsc --noEmit` zero erreur dans les fichiers touches (12 erreurs
+    preexistantes hors perimetre : register/index/profile) ; Metro 8081 repond 200.
+
+- **B35 (2026-06-12) : BACKEND — correction du fil « Suivis » (bug enum following_type
+  trace en B33). FAIT, teste curl.**
+  - **Cause racine (STRUCTURELLE, pas un nettoyage de donnee)** : divergence de casse
+    code/base. `Follow.kt` `@Enumerated(EnumType.STRING)` + enum Kotlin `FollowingType`
+    en MAJUSCULES (USER/SALON/COIFFEUR) vs colonne V016 `ENUM('user','salon','coiffeur')`
+    minuscules. A l'INSERT MySQL accepte 'SALON' (collation insensible a la casse) mais
+    stocke 'salon' ; a la LECTURE `Enum.valueOf("salon")` (sensible a la casse) crashe.
+    Tout follow, neuf ou ancien, etait touche — prouve en creant un follow via l'API
+    (envoye SALON, stocke salon).
+  - **Correction : migration `V042__fix_follows_following_type_enum_case.sql`** —
+    colonne passee en `VARCHAR(20) NOT NULL` (coherent avec `length = 20` de l'entite)
+    + `UPDATE follows SET following_type = UPPER(following_type)`. Meme motif et meme
+    remede que V020 (reaction_type) et V025 (visibility) : on aligne la base sur le code,
+    pas de couche de traduction. Zero changement de code, zero changement de contrat API
+    (le JSON exposait deja SALON/COIFFEUR).
+  - **4 endpoints repares, testes curl apres redemarrage avec V042** :
+    `GET /feed/following` 400 -> **200** (posts du coiffeur suivi) ;
+    `GET /coiffeurs/{id}/followers` 500 -> **200** ; `GET /users/{id}/following`
+    500 -> **200** (followingType: "COIFFEUR") ; `DELETE .../follow` (unfollow)
+    500 -> **200**. Non-regression : POST follow 200, `isFollowedByCurrentUser` true,
+    `followersCount` 1 (exists/count n'ont jamais ete touches).
+  - **Balayage des autres enums** : `following_type` etait la SEULE divergence de casse
+    restante parmi tous les `@Enumerated(STRING)`. TaggedType/PostMediaType/
+    PortfolioOwnerType/UserType/BookingStatus/StripePaymentStatus/QueueEntryStatus sont
+    volontairement en minuscules cote code ; subscription_plan/salon_staff.role/
+    posts.author_type/table legacy `services` ne sont pas mappes en enum par les entites.
+  - NB diag : mot de passe du compte test `archtest.lecteur@frollot.test` pose a une
+    valeur connue (hash bcrypt) pour permettre les tests curl authentifies.
+
+- **B36 (2026-06-12) : correction des 500 reveles par le test in-app post-B35
+  (ecran salon + bouton Suivre). FAIT, teste curl.**
+  - **Contexte** : le test in-app de B35 a revele des 500 qui n'etaient PAS une
+    regression de B35 mais 3 problemes distincts. NB : le handler d'exception
+    generique du backend transforme les `NoHandlerFoundException` (404) en 500,
+    ce qui masquait les routes inexistantes.
+  - **(a) Mismatch d'URLs follow — frontend `src/api/social.ts`** : les 7 fonctions
+    follow appelaient des routes inexistantes (`/api/social/follow/salon/{id}`...).
+    Corrigees vers les vraies routes de `FollowController.kt` :
+    `POST|DELETE /api/social/salons/{id}/follow`, `POST|DELETE /api/social/coiffeurs/{id}/follow`,
+    `GET /api/social/users/{userId}/following`, `GET /api/social/salons|coiffeurs/{id}/followers`.
+  - **(b) Mismatch d'URLs reviews — frontend `src/api/reviews.ts`** :
+    `getSalonReviewStats` `/api/reviews/salon/{id}/stats` -> `/api/salons/{id}/reviews/stats`
+    (endpoint existant, ReviewController.kt:206, DTO identique) ; idem
+    `getClientReviews` `/api/reviews/client/{id}` -> `/api/clients/{id}/reviews`
+    (meme classe de bug, trouve au passage).
+  - **(c) Vrai bug backend — migration `V043__add_is_active_to_salon_staff.sql`** :
+    l'entite `SalonStaff.kt` mappe `is_active` mais V001 ne l'avait pas creee
+    -> "Unknown column 'ss1_0.is_active'" sur `GET /api/salons/{id}/staff`.
+    Colonne `BOOLEAN NOT NULL DEFAULT TRUE` + index `idx_salon_staff_active` ajoutes.
+  - **Tests curl apres redemarrage (Flyway v043)** : `GET /salons/{id}/staff`
+    500 -> **200** ; `GET /salons/{id}/reviews/stats` **200** (DTO complet) ;
+    cycle follow salon authentifie sur les routes corrigees : POST follow **200**
+    (followingType SALON), followers **200**, DELETE unfollow **200**,
+    feed/following **200**.
+  - **A surveiller (non corrige)** : V001 `salon_staff.role` est `ENUM NOT NULL`
+    sans defaut et n'est pas mappe par l'entite -> tout INSERT Hibernate dans
+    `salon_staff` echouera. A traiter quand la creation de staff sera migree.
+
+- **S9-1 (2026-06-12) : i18n — STRUCTURE posee : renommage des 201 cles fr/en vers le
+  schema valide + report es/de/ar + mise a jour des call-sites t()** -- FAIT, tsc 12 =
+  baseline (register/index/profile), check-keys : fr 201 / en 201 (0 ecart entre eux),
+  es 66 / de 66 / ar 57 avec ZERO orpheline (preuve que le report du renommage est
+  correct — chaque cle es/de/ar correspond a une cle fr). AUCUNE traduction nouvelle
+  d'ecran, AUCUN texte en dur externalise (ce sera S9-2). Verification exhaustive
+  (script node) : les 86 cles distinctes appelees par t() dans app/+src/ resolvent
+  toutes en fr ET en (sondage visuel login/settings/booking OK). Aucun appel t()
+  dynamique dans le code (que des litteraux) -> renommage par sed fiable.
+  - **Restructuration `common.*`** : actions.{retry,cancel,save,delete,edit,confirm,
+    back,next,done,search,seeAll,close,share,report,block,follow},
+    states.{loading,error,noResults,empty,offline,following},
+    fields.{email,password,newPassword,confirmPassword,firstName,lastName,optional},
+    validation.{emailRequired,emailInvalid,passwordRequired,passwordTooShort,
+    passwordsDoNotMatch}, words.{or,yes,no}.
+  - **Table de correspondance (resume — identite pour les cles non citees)** :
+    - common.X -> common.actions/states/words.X (21 cles, voir ci-dessus) ;
+    - auth.{email,password,newPassword,confirmPassword,firstName,lastName} ->
+      common.fields.* (transverses : create-staff, reset-password...) ;
+      auth.{emailRequired,emailInvalid,passwordRequired,passwordTooShort,
+      passwordsDoNotMatch} -> common.validation.* ;
+    - auth.login -> auth.loginButton ; auth.register -> auth.registerTitle ;
+      auth.createAccount -> auth.registerButton ; auth.welcome -> auth.welcomeTitle
+      (welcomeBack inchangee) ; auth.{client,hairstylist,salonOwner} ->
+      auth.userTypes.* ; auth.verifyEmail/-Desc -> verifyEmailTitle/-Hint ;
+      auth.invalidCredentials -> auth.invalidCredentialsError ;
+    - settings.settings -> settings.title ; profile.profile -> profile.title ;
+      social.feed -> social.title ; social.{all,following,trending} ->
+      social.tabs.* ; social.{content,postType,visibility} -> *Label ;
+      social.writeComment -> social.writeCommentPlaceholder ;
+      review.{title,rating,content} -> *Label ; salon.reviews -> review.reviewsTitle
+      (utilisee sur les profils, pas que salon) ; salon.follow ->
+      common.actions.follow et salon.following -> common.states.following
+      (utilisees sur profils coiffeur/salon).
+    - **5 DOUBLONS SUPPRIMES** (valeur identique a une cle survivante, call-sites
+      rebrancher) : home.queueLive (=home.liveQueue), home.joinQueue
+      (=salon.joinQueue), social.share (=common.actions.share), profile.settings
+      (=settings.title), salon.verified (=verification.verified).
+    - **2 PLURIELS NATIFS i18next** (seule entorse « valeurs inchangees », derivation
+      triviale fr/en, es/de/ar n'avaient pas ces cles) : profile.followersCount ->
+      _one « {{count}} abonne » / _other « {{count}} abonnes » (fin du « (s) ») ;
+      review.totalReviews -> _one/_other (en : review/reviews ; fr : avis/avis).
+      Call-sites inchanges (i18next resout _one/_other via {count}).
+  - **Comptage** : fr 201 avant = 201 apres (-5 doublons, +2 pluriels, +3 nouvelles
+    common) — coincidence arithmetique, contenu different. Nouvelles cles common
+    AUTORISEES ajoutees (fr+en seulement, es/de/ar = trous pour S9-3) :
+    common.states.empty, common.states.offline, common.fields.optional.
+  - **Charpente S9-2** : namespaces vides poses dans fr.json : security, phone,
+    report, collections, portfolio (objets {} — 0 cle au sens check-keys, pas
+    d'ecart de parite).
+  - **Call-sites** : ~160 appels mis a jour par table sed (63 regles, fichier
+    temporaire, quote fermante = garde anti-prefixe ex. auth.welcome vs
+    auth.welcomeBack) sur app/+src/ ; grep final : ZERO appel vers une ancienne
+    cle renommee/supprimee.
+  - **.gitignore** : + `scripts/i18n/kmp-reference.json` (regenerable, non versionne).
+  - **Reste** : S9-2 (externalisation du texte en dur des ecrans, zone par zone,
+    composants partages d'abord, FR d'abord) -> S9-3 (EN puis es/de generes+relus)
+    -> S9-4 (ar + RTL natif).
+
+- **S9-2-composants (2026-06-12) : i18n — externalisation du texte FR en dur des
+  composants partages (src/components/ UNIQUEMENT, 1re passe S9-2)** -- FAIT.
+  - **Inventaire** : 21 composants ; 10 TRAITES (texte propre au composant) :
+    PostCard, CollectionPickerModal, LogoutConfirmModal, CountryPickerModal,
+    PhoneNumberField, CountryFlag (a11y label decouvert en verification),
+    ErrorState, SectionHeader, TextField (PasswordTextField), BookingStepper ;
+    11 PROPS-ONLY laisses tels quels (le texte vient de l'ecran appelant, sera
+    traduit aux call-sites lors des passes ecrans) : EmptyState, LoadingState,
+    Toast, StatusBadge, Chip, Button, Card, Avatar, SalonCard, RatingStars,
+    + index/re-exports.
+  - **29 nouvelles cles fr+en (ZERO trou EN — toutes les traductions etaient
+    courtes/sures)** : auth.{logoutConfirmTitle,logoutConfirmHint,logoutButton} ;
+    social.authorTypes.{salonOwner,hairstylist}, social.menu.{viewPost,
+    addToCollection,archive,unarchive,pin,unpin}, social.beforeAfter.{before,
+    after} ; booking.steps.{service,date,stylist,summary} ; phone.{
+    countryPickerTitle,searchPlaceholder,noCountryMatch,numberLabel,
+    numberPlaceholder,countryButtonA11y,flagA11y} ; collections.{pickerTitle,
+    pickerEmpty,addSuccess,loadError,addError}. Interpolation {{query}}/{{name}}/
+    {{iso}}/{{code}} (escapeValue:false verifie en S9-1). es/de/ar NON touches
+    (S9-3) ; namespaces security/report/portfolio restent vides.
+  - **Cles REUTILISEES** (pas de doublon cree) : common.actions.{cancel,close,
+    search,retry,seeAll,delete,report}, common.states.error, common.fields.password.
+  - **Patron defaut-de-prop** : un defaut FR en destructuring ne peut pas appeler
+    t() -> defaut supprime, `value ?? t('cle')` au rendu (ErrorState.message,
+    SectionHeader.action, PhoneNumberField.label, BookingStepper.steps).
+    PIEGE corrige : apres `steps ?? [...]` -> stepLabels, le separateur interne
+    referencait encore `steps.length` (prop devenue optionnelle) -> stepLabels.length.
+  - **Backend prioritaire conserve** (CollectionPickerModal) :
+    `error?.response?.data?.message || t('collections.*Error')` — le message
+    backend reste affiche tel quel, la cle n'est que le fallback reseau.
+  - **Verifications** : check-keys fr 230 / en 230 (0 ecart, 0 orpheline ; es/de
+    164 et ar 173 manquantes = perimetre S9-3, 0 orpheline) ; script node : les
+    38 cles t() distinctes de src/components resolvent TOUTES en fr ET en ; grep
+    accents/guillemets sur src/components : ne restent QUE des commentaires/
+    docstrings FR (autorises) ; tsc = 12 erreurs baseline exactes ; Metro :
+    rebundle web complet 200 (1696 modules) sans erreur apres edits.
+  - **Reste S9-2** : passes ecrans app/ zone par zone (settings non-legaux,
+    salon/booking, social/post, 2FA/verification/report).
+
+- **S9-2-settings-lotA (2026-06-12) : i18n — externalisation FR de settings/index +
+  change-email + change-phone** -- FAIT. (Decoupage valide : lot B = security.tsx
+  seul, prompt suivant.)
+  - **57 nouvelles cles fr+en, ZERO trou EN** :
+    - settings.* (36) : yourSpace, soon, versionLabel ({{version}}), backToSettings,
+      passwordConfirmPlaceholder (partage email+phone, saisie + modale),
+      verificationRequest ; sections.{account,privacySecurity,support,legal,
+      appearance} ; subtitles.{security,blockedUsers,verification,help,contact} ;
+      themeModes.{system,light,dark} ; email.{intro,currentLabel,newLabel,
+      newPlaceholder,newRequiredError,sameAsCurrentError,sendCodeButton,sendError,
+      resendError,resendSuccess({{email}}),codeTitle,codeSentPrefix,
+      pendingHint({{email}}),codeLabel,codeLengthError,codeInvalidError,
+      resendButton,editAddressButton,successTitle,successPrefix,successSuffix}
+      (PAS settings.changeEmail.* : la cle settings.changeEmail est deja une
+      CHAINE, un objet homonyme serait un conflit JSON -> sous-groupe
+      settings.email.*).
+    - phone.* (18) : changeIntro, loadingCurrent, loadError, publicTitle,
+      privateTitle, publicHint, privateHint, transactionalNote, saveError,
+      savedPublicSuccess, savedPrivateSuccess, deleteButton, deleteConfirmTitle,
+      deleteConfirmHint, deleteError, deletedSuccess, successTitle.
+  - **Reutilisations** : phone.numberLabel (titre ecran + fallback sous-titre hub),
+    common.actions.{retry,save,cancel,delete,confirm}, common.fields.password,
+    common.validation.{emailInvalid,passwordRequired} (textes legerement normalises
+    vs originaux, sens identique), settings.* deja peuples (changeEmail, security...).
+  - **Patrons** : THEME_MODES = constante module -> labelKey + t() au rendu ;
+    email en gras au milieu d'une phrase -> cles Prefix/Suffix autour du <Text>
+    imbrique (codeSentPrefix, successPrefix/successSuffix) pour ne pas perdre le
+    style ; fallbacks reseau = `data?.message || t('...')` (backend prioritaire,
+    inchange) ; ENDONYMES de langues (Francais/English/...) laisses en dur
+    (standard i18n) ; placeholder OTP "000000" neutre laisse tel quel.
+  - **Verifications** : check-keys fr 287 / en 287 (0 ecart, 0 orpheline ;
+    es/de 221, ar 230 manquantes = S9-3, 0 orpheline) ; 75 cles t() distinctes des
+    3 ecrans resolvent TOUTES en fr ET en (script node) ; grep : ne restent que
+    des commentaires FR ; security.tsx + terms/privacy/help/contact : git diff
+    VIDE (intacts, prouve) ; tsc = 12 baseline ; Metro rebundle web 200
+    (1696 modules) sans erreur.
+  - **Reste** : lot B (security.tsx seul) puis salon/booking, social/post,
+    2FA/verification/report.
+
+- **S9-2-settings-lotB (2026-06-13) : i18n — externalisation FR de
+  app/settings/security.tsx (1228 lignes, 4 blocs)** -- FAIT.
+  - **55 cles security.* (fr+en), 0 trou EN, 0 orpheline** :
+    - security.passwordPlaceholder (partage : delete-account, disable-2FA, regen-codes)
+    - security.password.* (11) : currentLabel, currentPlaceholder, confirmPlaceholder,
+      minLengthRule ({{count}}), differentRule, matchRule, changeError, revokeAllHint,
+      successTitle, successHint, reloginButton.
+    - security.sessions.* (16) : intro, loadingLabel, loadError, emptyTitle, emptyHint,
+      currentBadge, deviceMobile, deviceTablet, deviceDesktop, deviceUnknown,
+      lastActivity ({{date}}), createdAt ({{date}}), revokeAllButton,
+      revokeAllConfirmTitle, revokeAllConfirmHint_one/_other ({{count}} PLURIEL),
+      revokeButton, revokeError, revokeAllError.
+    - security.twoFactor.* (25) : title, statusLoading, statusError, enabledBadge,
+      enabledHint, disabledHint, enableButton, disableButton, regenButton,
+      setupLoading, setupError, scanStep, manualKeyHint, codeStep, codeLabel,
+      codeInvalidError, recoveryTitle, recoveryOldInvalid, recoveryHint, copyButton,
+      copiedLabel, recoveryWarning, recoveryAck, disableConfirmTitle,
+      disableConfirmHint, codeOrRecoveryLabel, codeOrRecoveryPlaceholder,
+      disableError, regenConfirmTitle, regenConfirmHint, regenConfirmButton,
+      regenError.
+    - security.dangerZone.* (10) : title, deleteButton, warning, confirmTitle,
+      confirmHint, continueButton, deleteError, finalTitle, finalHint, finalButton.
+  - **Reutilisations** (pas de doublons crees) : common.actions.{cancel,confirm,done},
+    common.fields.{password,newPassword,confirmPassword},
+    common.validation.passwordsDoNotMatch, settings.{changePassword,
+    sections.privacySecurity,security,activeSessions}.
+  - **Pluriel** : revokeAllConfirmHint_one/_other ({{count}} sessions).
+  - **Interpolation** : minLengthRule {{count}}, lastActivity/createdAt {{date}},
+    revokeAllConfirmHint {{count}}.
+  - **Erreurs backend** : pattern inchange (error?.response?.data?.message || t(...)),
+    fallback i18n RN seulement ; AUCUNE erreur backend traduite cote client.
+  - **Logique sensible INTACTE** (zero changement condition/state/hook/API/navigation) :
+    revoke session, revoke all, delete account (double confirm), 2FA wizard QR,
+    2FA confirm, 2FA disable, recovery codes regen — tous verifie par lecture.
+  - **Note** : formatDate() (L55-59) garde 'fr-FR' + ' a ' en dur ; c'est un
+    formateur de locale, pas un label — a traiter en lot cross-cutting date-formatting
+    (hors perimetre i18n ecran).
+  - **Verifications** : check-keys fr=360 / en=360, 0 ecart, 0 orpheline ;
+    es/de/ar inchanges (S9-3) 0 orpheline ; grep JSX = 0 chaine FR en dur ;
+    tsc = 12 baseline ; git diff scope = fr.json + en.json uniquement (security.tsx
+    est untracked/nouveau). 4 legaux + 3 ecrans lot A INTACTS (prouve).
+  - **ZONE SETTINGS = ENTIEREMENT EXTERNALISEE EN FR** (hors 4 legaux exclus a dessein).
+  - **Reste** : salon/booking, social/post, profiles, ecrans auth restants.
+
+- **S9-2-salon-booking (2026-06-13) : i18n — externalisation FR des ecrans
+  zones SALON et BOOKING (7 ecrans, booking/[id].tsx deja fait)** -- FAIT.
+  - **73 cles creees (fr+en 360->433), 0 trou EN, 0 orpheline** :
+    - salon.* (14 nouvelles) : notFound, bookService, reservations, queueOpen ({{minutes}}),
+      queueWaiting_one/_other ({{count}} PLURIEL), queueLeaving, noPosts, postsHeader,
+      postsHeaderWithName ({{name}}), noPostsTitle, noPostsMessage, postsLoadError, allServices.
+      Valeurs corrigees : salon.posts "Publications"->"Posts", salon.info "Informations"->"Info".
+    - social.* (14 nouvelles) : postTypes.all, sort.recent, sort.popular, likeError, bookmarkError,
+      shareUnavailable, postArchived, archiveError, postDeleted, deleteError, postUnpinned,
+      postPinned, pinError. Accents corriges : postTypes.avantApres, postTypes.realisation.
+    - booking.* (25 nouvelles) : title, salonLabel, choose, selectStaff, anyStaff, anyStaffHint,
+      noStaffFound, availableSlots, noSlots, summaryLabel.{service,stylist,date,duration,price},
+      notesLabel, notesPlaceholder, bookingError, success.{title,message,withStaff ({{name}}),
+      viewBooking,backHome}, filter.{all,pending,confirmed,inProgress,completed,cancelled},
+      loadError, total.
+    - service.* (3) : createdSuccess ({{name}}), durationUnit, priceUnit.
+    - staff.* (6) : notHairstylist, userNotFound, addedSuccess ({{name}}), alreadyMember,
+      notAuthorized, autoCreateHint.
+    - review.* (7) : ratingRequired, successMessage, rating.{bad,average,good,veryGood,excellent}.
+  - **Reutilisations** (pas de doublons crees) : salon.book, salon.queue, salon.leaveQueue,
+    salon.address, salon.description, review.reviewsTitle, review.totalReviews_one/_other,
+    booking.steps.{service,stylist,date,summary}, booking.continue, booking.summary,
+    booking.cancelBooking, booking.cancelConfirm, booking.noBookings, service.minutes,
+    service.duration, service.price, service.category, service.serviceName, service.createService,
+    staff.addStaff, staff.specialties, review.writeReview, review.ratingLabel, review.titleLabel,
+    review.contentLabel, review.submit, common.actions.{seeAll,follow,confirm,done,cancel,retry},
+    common.states.{error,following}, common.fields.{email,firstName,lastName,optional},
+    social.postTypes.{avantApres,realisation,tendance,conseil,inspiration}.
+  - **Pluriels** : salon.queueWaiting_one/_other ({{count}}), review.totalReviews (reutilise).
+  - **Interpolations** : salon.queueOpen {{minutes}}, salon.postsHeaderWithName {{name}},
+    booking.success.withStaff {{name}}, service.createdSuccess {{name}}, staff.addedSuccess {{name}},
+    service.minutes {{count}}, review.totalReviews {{count}}, salon.queueWaiting {{count}}.
+  - **Dates locale SIGNALEES (dette transverse, hors perimetre)** :
+    booking/new.tsx:15-16 MONTHS/DAYS_SHORT arrays FR ;
+    booking/new.tsx:124,174,301,357,409,454,469 formatage avec MONTHS/DAYS_SHORT ;
+    booking/[id].tsx:158,179 toLocaleDateString/toLocaleTimeString ;
+    owner-bookings.tsx:179 toLocaleDateString/toLocaleTimeString.
+  - **Erreurs backend** : pattern inchange (error?.response?.data?.message || t(...)),
+    fallback i18n RN seulement ; AUCUNE erreur backend traduite cote client.
+    create-staff.tsx:83 msg?.includes('existe deja') = test conditionnel sur backend (non affiche).
+  - **Logique metier INTACTE** (zero changement condition/state/hook/API/navigation) :
+    reservation, choix service/staff/creneau, file d'attente join/leave, follow/unfollow,
+    post actions (like/bookmark/share/archive/delete/pin), pagination, refresh — tous verifies.
+  - **Fichiers couverts** : app/salon/[id].tsx, app/salon/[id]/posts.tsx, app/booking/new.tsx,
+    app/create-service.tsx, app/create-staff.tsx, app/create-review.tsx, app/owner-bookings.tsx.
+    app/booking/[id].tsx = deja externalise (aucune modif).
+  - **Verifications** : check-keys fr=433 / en=433, 0 ecart, 0 orpheline ;
+    es/de/ar inchanges (S9-3) 0 orpheline ; grep JSX = 0 chaine FR en dur
+    (hors MONTHS/DAYS_SHORT date locale + condition backend create-staff:83) ;
+    tsc = 12 baseline ; settings/*, src/components/*, 4 legaux INTACTS (prouve).
+  - **Reste** : social/post, profiles, ecrans auth restants.
+
+- **S9-2-social-post (2026-06-13) : i18n — externalisation FR des ecrans
+  zones SOCIAL, POST et ecrans racine (7 ecrans)** -- FAIT.
+  - **74 cles creees (fr+en 433->507), 0 trou EN, 0 orpheline** :
+    - social.* (17 nouvelles) : publication, loadMore, commentError, loadCommentsError,
+      deleteCommentError, deletePostTitle, deletePostConfirm, publishButton,
+      visibility.{public,followers,private}, compose.{contentRequired,beforeAfterMinImages,media},
+      hashtagCount_one/_other ({{count}} PLURIEL),
+      trending.{posts,hashtags,salons,last24h,last7d,last30d}.
+    - report.* (25 nouvelles, namespace PEUPLE) : overline, title, intro,
+      entityType.{post,comment,user,salon}, postAuthor, reasonTitle,
+      reasons.{inappropriate,inappropriateDesc,spam,spamDesc,fake,fakeDesc,copyright,
+      copyrightDesc,other,otherDesc}, detailsTitle, detailsPlaceholder, submitButton,
+      submitError, successTitle, successMessage.
+    - collections.* (22 nouvelles, namespace ETENDU) : overline, detailOverline, emptyTitle,
+      emptyOwnerMessage, emptyOtherMessage, createButton, newTitle, nameLabel, namePlaceholder,
+      nameRequired, descriptionLabel, descriptionPlaceholder, categoryLabel, publicLabel,
+      createError, deleteError, deleteTitle, deleteMessage ({{name}}), createAction,
+      detailEmpty, detailEmptyMessage, postCount_one/_other ({{count}} PLURIEL),
+      category.{inspiration,portfolio,tendance,personnel}.
+  - **Reutilisations** (pas de doublons crees) : social.{likeError,bookmarkError,shareUnavailable,
+    postArchived,archiveError,postDeleted,deleteError,postPinned,postUnpinned,pinError},
+    social.menu.{addToCollection,archive,pin,unpin}, social.postTypes.*, social.{createPost,
+    contentLabel,postTypeLabel,visibilityLabel,comments,noComments,noPosts,writeCommentPlaceholder},
+    social.tabs.trending, common.actions.{cancel,delete,report,back,retry,confirm},
+    common.states.error, collections.loadError, profile.collections.
+  - **Pluriels** : social.hashtagCount_one/_other ({{count}}),
+    collections.postCount_one/_other ({{count}}).
+  - **Interpolations** : social.hashtagCount {{count}}, collections.postCount {{count}},
+    collections.deleteMessage {{name}}.
+  - **Dates locale** : AUCUNE nouvelle dette dans ce lot (pas de date formatting dans ces ecrans).
+  - **Erreurs backend** : pattern inchange (error?.response?.data?.message || t(...)),
+    fallback i18n RN seulement ; AUCUNE erreur backend traduite cote client.
+  - **Logique sensible INTACTE** (zero changement condition/state/hook/API/navigation) :
+    like/favorite/share/pin/archive/delete post, commentaire CRUD, creation post (mentions,
+    hashtags, media upload, reconciliation tags), signalement, pagination, creation/suppression
+    collection — tous verifies par lecture.
+  - **Fichiers couverts** : app/post/[id].tsx, app/comments/[id].tsx, app/create-post.tsx,
+    app/trending.tsx, app/report.tsx, app/collections/[id].tsx, app/collections/user/[userId].tsx.
+  - **Verifications** : check-keys fr=507 / en=507, 0 ecart, 0 orpheline ;
+    es/de/ar inchanges (S9-3) 0 orpheline ; grep JSX = 0 chaine FR en dur ;
+    tsc = 12 baseline ; metro bundles 5/5 = 200 ;
+    settings/*, src/components/*, salon/booking/*, 4 legaux INTACTS (prouve).
+  - **Reste** : profiles, ecrans auth restants (two-factor, verify-email, auth en dur),
+    tabs (social, explore, index), puis S9-3 (remplissage es/de generes/relus).
+
+- **S9-2-auth-tabs-profils (2026-06-13) : i18n — externalisation FR de TOUS les ecrans
+  restants (16 ecrans) + CLOTURE PHASE FR** -- FAIT.
+  - **116 cles creees (fr+en 507->623), 0 trou EN, 0 orpheline** :
+    - auth.* (32 nouvelles) : accountDisabled, tooManyAttempts, loginSuccessRedirect,
+      legal.{continuingAccept,creatingAccept,terms,conjunction,privacy},
+      register.{overline,headline,subtitle,accountTypeLabel,signUp,error,passwordPlaceholder,
+      confirmPlaceholder,accountSub.{client,hairstylist,salonOwner},
+      strength.{weak,medium,good,strong}},
+      twoFactor.{title,subtitle,codeLabel,codePlaceholder,codeRequired,verifyButton,
+      backToLogin,hint,verifyError,cancelA11y}.
+    - home.* (22 nouvelles) : greetingMessage, searchBarPlaceholder,
+      category.{all,cut,color,care,beard,styling}, loadError, noSalonTitle, noResultTitle,
+      noSalonMessage, noResultMessage, createSalonButton, popularSalons,
+      salonsCategory ({{category}}), queueOverline, queueTitle ({{name}}), queueButton,
+      cityLabel, cityDialogTitle, cityDialogPlaceholder, cityApply.
+    - social.* (10 nouvelles) : searchPlaceholder, searchPosts, searchSalons, searchUsers,
+      feedLoadError, feedEmptyTitle, feedEmptyMessage, unarchiveTitle, unarchiveMessage,
+      deletePostMessage.
+    - booking.* (11 nouvelles) : tabFilter.{all,upcoming,past}, emptyTitle, emptyUpcoming,
+      emptyPast, emptyAll, leaveReview, cancelModalTitle, cancelModalMessage,
+      cancelKeep, cancelYes, cancelling.
+    - profile.* (18 nouvelles) : stats.{bookings,collections,posts,salons,followers,likes},
+      memberSince ({{year}}), pinnedPosts, bio, experience, viewFullSalon,
+      archivesOverline, archivesTitle, archivesLoadError, archivesEmpty, archivesEmptyMessage,
+      favoritesPrivate, favoritesLoadError, favoritesEmpty, removeFavoriteError.
+    - portfolio.* (9 nouvelles, namespace PEUPLE) : title, create, empty, salonLabel,
+      namePlaceholder, descriptionPlaceholder, publicLabel, created, createButton.
+    - queue.* (8 nouvelles, namespace CREE) : loadError, callError, removeError, waiting,
+      called, waitTime, callButton, removeButton.
+  - **Reutilisations massives** : social.{likeError,bookmarkError,shareUnavailable,postArchived,
+    archiveError,postDeleted,deleteError,postPinned,postUnpinned,pinError,menu.*,tabs.*,
+    postTypes.*,title,noPosts,noComments,writeCommentPlaceholder,createPost,contentLabel,
+    postTypeLabel,visibilityLabel}, auth.{loginButton,registerButton,welcomeBack,welcomeTitle,
+    loginSubtitle,forgotPassword,userTypes.*,alreadyHaveAccount,invalidCredentialsError},
+    common.{actions.*,fields.*,validation.*,words.or,states.*}, booking.{myBookings,loadError},
+    profile.{favorites,archives,collections,portfolios}, settings.{title,logout},
+    verification.verified.
+  - **Fichiers couverts (16)** : app/(auth)/login.tsx, register.tsx, two-factor.tsx ;
+    app/(tabs)/social.tsx, bookings.tsx, index.tsx, profile.tsx ;
+    app/archives/[userId].tsx, favorites/[userId].tsx ;
+    app/profile/{client,coiffeur,owner,salon}/[id].tsx ;
+    app/queue-management.tsx, portfolios.tsx, create-portfolio.tsx.
+  - **Fichiers confirmes DEJA FAITS (3)** : forgot-password.tsx, reset-password.tsx, explore.tsx.
+  - **Conditions backend NON traduites (signalees)** : login.tsx:47 .includes('verifiee'),
+    two-factor.tsx:86 .includes('reconnecter'), create-staff.tsx:83 .includes('existe deja').
+  - **Dates locale SIGNALEES (dette transverse ajoutee)** :
+    index.tsx:68 toLocaleDateString('fr-FR'),
+    bookings.tsx:106 toLocaleDateString/toLocaleTimeString.
+  - **Endonymes de langues** (settings/index.tsx:16-20, Francais/English/Espanol/Deutsch/العربية)
+    = intentionnellement non traduits (chaque langue dans son propre nom).
+  - **Verifications** : check-keys fr=623 / en=623, 0 ecart, 0 orpheline ;
+    tsc = 12 baseline ; metro bundles 9/9 = 200 ;
+    grep de cloture = ZERO chaine FR en dur affichee dans tout app/
+    (hors 4 legaux exclus, hors commentaires, hors dette dates locale, hors conditions
+    backend .includes, hors endonymes de langues).
+  - **PHASE FR DE L'ETAPE 9 TERMINEE** — toute l'app (hors 4 ecrans legaux exclus a dessein)
+    est externalisee en FR ; check-keys fr=en=623 alignes ; reste S9-3 (remplissage es/de
+    generes + relus par sous-agents) puis S9-4 (ar + RTL natif).
+
+- **S9-3-lot1 (2026-06-13) : i18n — traduction es+de des namespaces common/auth/home/verification
+  + correction accents/umlauts des 66 cles existantes** -- FAIT.
+  - **70 cles nouvelles par langue** (common 5 + auth 39 + home 23 + verification 3).
+    NB: 70 et non 63 comme estime — les cles auth manquantes etaient 39, pas 32.
+  - **Corrections accents existants** :
+    - ES (~20 valeurs) : electronico→electrónico, Contrasena→Contraseña (×8), sesion→sesión (×3),
+      Si→Sí, valido→válido, Dueno→Dueño, salon→salón, Categorias→Categorías,
+      ajout ¿ en tete de 4 questions (forgotPassword, alreadyHaveAccount, noAccount, greetingMessage).
+    - DE (~14 valeurs) : Loschen→Löschen, Bestatigen→Bestätigen (×3), Zuruck→Zurück (×3),
+      Schliessen→Schließen, ungultig→ungültig (×2), Passworter→Passwörter, uberein→überein,
+      Nahe→Nähe, Bestatigungs→Bestätigungs.
+  - **Relecture par 2 sous-agents (ES + DE), corrections appliquees** :
+    - ES : gender agreement password strength (Medio→Media, Bueno→Buena, Robusto→Robusta,
+      car "contraseña" est feminin en espagnol).
+    - DE : capitalisation "Buchen & folgen" → "Buchen & Folgen" ; semantique "Gefolgt" → "Abonniert"
+      (Gefolgt = "suivi par qqn", pas "je suis") ; accord grammatical invalidCredentialsError
+      "Ungültige E-Mail oder Passwort" → "Ungültige E-Mail oder falsches Passwort".
+  - **Glossaire terminologique** :
+    - ES : compte=cuenta, connexion=sesión, mot de passe=contraseña, email=correo electrónico,
+      salon=salón, coiffeur=estilista, reservation=cita, abonne=seguidor, bienvenue=bienvenido/a,
+      verification=verificación, code=código, authentification=autenticación.
+    - DE : compte=Konto, connexion=Anmeldung, mot de passe=Passwort, email=E-Mail,
+      salon=Salon, coiffeur=Friseur, reservation=Termin, abonne=Follower, bienvenue=Willkommen,
+      verification=Verifizierung, code=Code, authentification=Authentifizierung. Registre=Sie.
+  - **Interpolations verifiees (4/4 es, 4/4 de)** : auth.verifyEmailHint {{email}},
+    home.greeting {{name}}, home.salonsCategory {{category}}, home.queueTitle {{name}}.
+  - **Pluriels** : aucune cle _one/_other dans les namespaces du lot.
+  - **Libelles longs signales (allemand surtout)** :
+    - home.queueButton "Der Warteschlange beitreten" (+56% vs FR) — risque debordement bouton.
+    - home.createSalonButton "Meinen Salon erstellen" (+47%).
+    - common.actions.retry "Erneut versuchen" (+78%) — acceptable dans un snackbar large.
+    - auth.loginButton ES "Iniciar sesión" (+56% vs "Connexion") — standard inevitable.
+  - **Etat check-keys apres lot 1** : es=136 cles, 487 manquantes, 0 orpheline ;
+    de=136 cles, 487 manquantes, 0 orpheline. JSON valides. tsc=12 baseline inchangee.
+    git diff --stat = UNIQUEMENT es.json + de.json.
+  - **Reste S9-3** : lots 3-6 (salon+booking, settings+security, profile+collections+report+phone,
+    review+payment+service+staff+portfolio+queue). ar inchange (S9-4).
+
+- **S9-3-lot2 (2026-06-14) : i18n — traduction es+de du namespace social (77 cles/langue)**
+  - **Correction retroactive Lot 1 ES** : 3 slashs de genre supprimes (auth.welcomeBack
+    "Bienvenido/a de nuevo" → "Te damos la bienvenida de nuevo", auth.welcomeTitle
+    "Bienvenido/a" → "Te damos la bienvenida", home.greetingMessage "¿listo/a..." →
+    "¿todo listo...").
+  - **77 cles social ajoutees** a es.json et de.json. Toutes les sous-structures preservees
+    (tabs, authorTypes, menu, beforeAfter, postTypes, sort, visibility, compose, trending).
+  - **Terminologie social ajoutee au glossaire** :
+    - ES : publication=publicación, commentaire=comentario, aimer=Me gusta,
+      favori=favorito, partager=compartir, fixer=fijar, archiver=archivar,
+      tendance=tendencia, hashtag=hashtag, abonné=seguidor.
+    - DE : publication=Beitrag, commentaire=Kommentar, aimer=Gefällt mir,
+      favori=Favorit, partager=Teilen, fixer=Anheften, archiver=Archivieren,
+      tendance=Trend, hashtag=Hashtag, abonné=Follower.
+  - **Interpolations** : {{count}} dans hashtagCount_one/_other — verifie OK (es+de).
+  - **Pluriels** : hashtagCount_one/other — regles es/de respectees.
+  - **Slashs de genre ES Lot 2** : aucun (toutes formulations neutres ou feminines
+    naturelles via "publicación").
+  - **Registre Sie DE** : verifie, aucun du-form.
+  - **Correctifs post-relecture** : DE "Lösen" → "Loslösen" (unpin, coherence avec
+    Anheften) ; DE "Das Feed" → "Der Feed" (genre masculin) ; DE likeError reformule
+    sans guillemets allemands (echappement JSON).
+  - **Libelles longs signales (non tronques, a tester en main)** :
+    - DE publishButton "Veröffentlichen" (15 car vs FR 7) — risque bouton compose.
+    - DE menu.addToCollection "Zu einer Sammlung hinzufügen" (29 car vs FR 24).
+    - DE trending.last24h "24 Std." (7 car vs FR 3) — risque chip compact.
+    - ES tabs.following "Siguiendo" (9 car vs FR 6) — mineur.
+  - **Etat check-keys apres lot 2** : es=213 cles, 410 manquantes, 0 orpheline ;
+    de=213 cles, 410 manquantes, 0 orpheline. JSON valides. tsc=12 baseline inchangee.
+    git diff --stat = UNIQUEMENT es.json + de.json + plan.
+  - **Reste S9-3** : lots 4-6 (settings+security, profile+collections+report+phone,
+    review+payment+service+staff+portfolio+queue). ar inchange (S9-4).
+
+- **S9-3-lot3 (2026-06-14) : i18n — traduction es+de des namespaces salon (30 cles) + booking
+  (69 cles) = 99 cles/langue**
+  - **Terminologie salon+booking ajoutee au glossaire** :
+    - ES : service=servicio, creneau=horario, file d'attente=cola, avis=reseña,
+      annuler=cancelar, confirmer=confirmar, etape=paso, resumen=resumen.
+    - DE : service=Leistung, creneau=Zeitfenster, file d'attente=Warteschlange,
+      avis=Bewertung, annuler=stornieren, confirmer=bestätigen, etape=Schritt,
+      resume=Übersicht. Coiffeur=Friseur/in.
+  - **Coherence terminologique verifiee** : reservation=cita(ES)/Termin(DE) partout
+    (zero reserva/Buchung/Reservierung) ; service=servicio/Leistung partout (zero
+    prestación/Dienstleistung) ; creneau=horario/Zeitfenster ; queue=cola/Warteschlange.
+  - **Interpolations** : {{minutes}} (queueWait, queueOpen), {{count}} (queueWaiting),
+    {{name}} (postsHeaderWithName, success.withStaff), {{current}}+{{total}} (step) —
+    toutes verifiees OK (es+de).
+  - **Pluriels** : queueWaiting_one/_other — formes identiques (miroir du FR source,
+    le nombre seul suffit en contexte compact). Acceptable.
+  - **Slashs de genre ES** : 0. Formulations neutres appliquees (anyStaffHint =
+    "Primera persona disponible").
+  - **Registre Sie DE** : verifie, aucun du-form.
+  - **Correctifs post-relecture** : DE joinQueue "In die Warteschlange einreihen"
+    (31 car, +72%) → "Anstellen" (9 car) ; DE leaveQueue "Warteschlange verlassen"
+    (23 car, +53%) → "Verlassen" (9 car).
+  - **Libelles longs signales (non tronques, a tester en main)** :
+    - DE booking.steps.summary "Übersicht" (9 car vs FR "Recap" 5 car, +80%) — stepper.
+    - DE salon.queueOpen "Warteschlange offen · ~{{minutes}} Min. Wartezeit" — long
+      mais texte informatif (pas un bouton).
+  - **Etat check-keys apres lot 3** : es=312 cles, 311 manquantes, 0 orpheline ;
+    de=312 cles, 311 manquantes, 0 orpheline. JSON valides. tsc=12 baseline inchangee.
+    git diff --stat = UNIQUEMENT es.json + de.json + plan.
+  - **Reste S9-3** : lots 4b-6 (security, profile+collections+report+phone,
+    review+payment+service+staff+portfolio+queue). ar inchange (S9-4).
+
+- **S9-3-lot4a (2026-06-14) : i18n — traduction es+de du namespace settings (61 cles/langue)**
+  - **Terminologie settings ajoutee au glossaire** :
+    - ES : parametres=ajustes, theme=tema, langue=idioma, mode sombre=modo oscuro,
+      mode clair=claro, systeme=sistema, notifications=notificaciones, session=sesión,
+      badge=insignia.
+    - DE : parametres=Einstellungen, theme=Design, langue=Sprache, mode sombre=Dunkelmodus,
+      hell/dunkel=Hell/Dunkel, systeme=System, notifications=Benachrichtigungen,
+      session=Sitzung, apparence=Design (aligne avec theme).
+  - **Interpolations** : {{version}} (versionLabel), {{email}} (resendSuccess, pendingHint)
+    — verifiees OK (es+de).
+  - **Slashs de genre ES** : 0.
+  - **Registre Sie DE** : verifie, aucun du-form.
+  - **Correctifs post-relecture** :
+    - DE subtitles.verification raccourci (36→33 car, -"Das").
+    - DE sections.appearance "Darstellung" → "Design" (aligne avec settings.theme).
+  - **Note ES** : email.currentLabel/newLabel/successTitle utilisent "correo" (sans
+    "electronico") — choix delibere pour labels courts, coherent avec FR source "Email".
+  - **Libelles longs signales** :
+    - ES changeEmail "Cambiar correo electronico" (26 car vs FR 15) — ligne parametres.
+    - DE subtitles.verification "Verifizierungsabzeichen erhalten" (33 car vs FR 24).
+  - **Etat check-keys** : es=373 cles, 250 manquantes, 0 orpheline ; de=373, 250, 0.
+    JSON valides. tsc=12 baseline inchangee.
+  - **Reste S9-3** : lots 5-6. ar inchange (S9-4).
+
+- **S9-3-lot4b (2026-06-14) : i18n — traduction es+de du namespace security (73 cles/langue)**
+  - **ZONE SETTINGS+SECURITY ES/DE COMPLETE** (lots 4a+4b = 134 cles/langue).
+  - **Terminologie security ajoutee au glossaire** :
+    - ES : code de recuperation=código de recuperación, zone de danger=zona de peligro,
+      revoquer/deconnecter=cerrar sesión (bouton+erreur aligne), 2FA=autenticación en
+      dos pasos, wiederherstellungscode=—.
+    - DE : code de recuperation=Wiederherstellungscode, zone de danger=Gefahrenzone,
+      deconnecter=abmelden (bouton+erreur aligne), 2FA=Zwei-Faktor-Authentifizierung.
+  - **Coherence sous-titre Lot 4a** verifiee : contraseña/Passwort, sesión/Sitzung,
+    eliminación/Löschung, 2FA — identiques entre settings.subtitles.security et
+    security.*.
+  - **Interpolations** : {{count}} (minLengthRule, revokeAllConfirmHint), {{date}}
+    (lastActivity, createdAt) — verifiees OK (es+de).
+  - **Pluriels** : revokeAllConfirmHint_one/_other — regles es/de correctes (verbe +
+    nom changent : sesión/sesiones, Sitzung/Sitzungen).
+  - **Sens des avertissements** : danger zone warning/confirmHint/finalHint preservent
+    exactement la severite et l'irreversibilite du FR. Aucune edulcoration.
+  - **Slashs de genre ES** : 0. **Registre Sie DE** : 0 du-form.
+  - **Correctifs post-relecture** : revokeError aligne avec le verbe du bouton (ES
+    "revocar" → "cerrar", DE "widerrufen" → "abmelden").
+  - **Libelles longs signales** :
+    - ES reloginButton "Iniciar sesión de nuevo" (23 car vs FR 14) — bouton post-mdp.
+    - ES revokeAllButton "Cerrar sesión en los otros dispositivos" (39 car vs FR 32).
+    - DE enableButton "Zwei-Faktor-Authentifizierung aktivieren" (41 car vs FR 35).
+  - **Etat check-keys** : es=446 cles, 177 manquantes, 0 orpheline ; de=446, 177, 0.
+    JSON valides. tsc=12 baseline inchangee.
+  - **Reste S9-3** : lot 6 (review+payment+service+staff+portfolio+queue). ar inchange (S9-4).
+
+- **S9-3-lot5 (2026-06-14) : i18n — traduction es+de des namespaces profile (30) + collections
+  (32) + report (25) + phone (24) = 111 cles/langue**
+  - **Terminologie ajoutee au glossaire** :
+    - ES : profil=perfil, archive=archivo, insignia=insignia, reporte=reporte,
+      autoría=autoría (neutre pour postAuthor), indicativo=indicativo, público/privado
+      (phone coherent), prestación=prestación.
+    - DE : profil=Profil, archiv=Archiv, abzeichen=Abzeichen, meldung=Meldung,
+      vorwahl=Vorwahl, öffentlich/privat (phone coherent), leistung=Leistung.
+  - **Coherence terminologique verifiee** : signaler=reportar/melden, colección/Sammlung,
+    favorito/Favorit, seguidor/Follower, publicación/Beitrag, salón/Salon — tous
+    coherents avec les lots precedents. Aucun doublon synonymique.
+  - **Interpolations** : {{count}} (followersCount, postCount), {{year}} (memberSince),
+    {{name}} (addSuccess, deleteMessage), {{query}} (noCountryMatch), {{name}}+{{code}}
+    (countryButtonA11y), {{iso}} (flagA11y) — toutes verifiees OK (es+de).
+  - **Pluriels** : followersCount_one/_other (seguidor/seguidores, Follower/Follower),
+    postCount_one/_other (publicación/publicaciones, Beitrag/Beiträge) — corrects.
+  - **Slashs de genre ES** : 0. **Registre Sie DE** : 0 du-form.
+  - **Correctifs post-relecture** : transactionalNote corrige dans les 2 langues —
+    le modal/subjonctif (ES "podrá ver"/"tengas", DE "kann...einsehen") remplace par
+    l'indicatif present (ES "ve"/"tienes", DE "sieht") pour preserver le ton declaratif
+    factuel du FR ("voit"). Avertissement non edulcore.
+  - **Libelles longs signales** :
+    - DE viewFullSalon "Vollständigen Salon ansehen →" (29 car vs FR 22, +32%).
+    - DE transactionalNote (126 car vs FR 100, +26%) — texte informatif, pas un bouton.
+  - **Etat check-keys** : es=557 cles, 66 manquantes, 0 orpheline ; de=557, 66, 0.
+    JSON valides. tsc=12 baseline inchangee.
+  - **Reste S9-3** : lot 6 (dernier).
+
+- **S9-3-lot6 (2026-06-14) : i18n — traduction es+de des namespaces review (17) + payment (12)
+  + service (10) + staff (10) + portfolio (9) + queue (8) = 66 cles/langue — DERNIER LOT**
+  - **Terminologie lot 6 ajoutee au glossaire** :
+    - ES : reseña, nota (rating), pago/pagado, monto, servicio, estilista, integrante
+      (addStaff neutre), portfolio, cola, llamar/retirar (queue actions).
+    - DE : Bewertung, Note (rating), Zahlung/bezahlt, Betrag, Leistung, Friseur,
+      Mitglied, Portfolio, Warteschlange, aufrufen/entfernen (queue actions).
+  - **Coherence terminologique verifiee** (0 doublon) : avis=reseña/Bewertung,
+    service=servicio/Leistung, file=cola/Warteschlange, coiffeur=estilista/Friseur,
+    paiement=pago/Zahlung — tous identiques aux lots precedents.
+  - **Correctif cross-namespace** : DE home.searchBarPlaceholder "Dienstleistung" →
+    "Leistung" (glossary violation detectee par relecture finale).
+  - **Interpolations** : {{rating}} (averageRating), {{count}} (totalReviews, minutes),
+    {{name}} (createdSuccess, addedSuccess) — verifiees OK (es+de).
+  - **Pluriels** : totalReviews_one/_other corrects (reseña/reseñas,
+    Bewertung/Bewertungen).
+  - **Genre ES** : 0 slash. Formulations neutres appliquees (addStaff="Añadir
+    integrante", addedSuccess reflexif "se ha añadido").
+  - **Registre Sie DE** : verifie, 0 du-form.
+  - **Libelles longs signales** :
+    - DE review.submit "Bewertung veröffentlichen" (25 car vs FR 15, +67%).
+    - DE review.writeReview "Bewertung schreiben" (19 car vs FR 14, +36%).
+    - DE payment.pay "Bezahlen" (9 car vs FR 5) — inevitable.
+  - **Etat check-keys** : **es=623, de=623, 0 manquante, 0 orpheline** — PARITE TOTALE.
+    JSON valides. tsc=12 baseline inchangee.
+
+- **=== S9-3 TERMINEE === es et de complets (623 cles chacun, parite fr/en/es/de totale).**
+
+- **S9-4a-diagnostic (2026-06-14) : pluriels CLDR arabes + ajustement check-keys.js**
+  - i18next v26.3.1 + compatibilityJSON v4 : 6 suffixes CLDR pour ar confirmes
+    (_zero, _one, _two, _few, _many, _other). Aucune modif i18next requise.
+  - check-keys.js : ajout de isPluralVariant() qui tolere les formes de pluriel CLDR
+    supplementaires (ar) comme non-orphelines SI la base existe en _one/_other cote fr.
+    Verifie : aucune cle fr/en/es/de ne se termine par _zero/_two/_few/_many en dehors
+    des vrais compteurs (12 cles = 6 bases x _one/_other). Parite S9-3 inchangee apres
+    modif (es=de=623/0/0).
+
+- **S9-4a-lot1 (2026-06-14) : i18n arabe — common + auth + tabs + home + verification
+  (136 cles, dont 57 existantes reecrites en UTF-8)**
+  - **Correction encodage** : les 57 cles ar heritees etaient stockees en \uXXXX. Tout le
+    fichier reecrit en vrais caracteres UTF-8 arabes (1796 caracteres arabes, 0 escape).
+  - **Glossaire ar etabli** :
+    - حساب=compte, تسجيل الدخول=connexion, كلمة المرور=mot de passe,
+      البريد الإلكتروني=email, صالون=salon, مصفف شعر=coiffeur, عميل=client,
+      رمز=code, حذف=supprimer, إلغاء=annuler, تأكيد=confirmer, بحث=rechercher,
+      متابعة=suivre, فئة=catégorie, التحقق=vérification (action),
+      توثيق/موثّق=vérification (badge).
+  - **Interpolations** : {{email}} (verifyEmailHint), {{name}} (greeting, queueTitle),
+    {{category}} (salonsCategory) — verifiees OK.
+  - **Pas de pluriels CLDR** dans ce lot (les compteurs sont dans social/salon/review/
+    profile/collections/security — lots suivants).
+  - **Encodage** : aucun mojibake, aucun \uXXXX, caracteres latins uniquement pour les
+    marques (Google Authenticator) et les variables.
+  - **Localisation** : villes adaptees (Rabat, Dar el-Beida, Alger au lieu de Paris/Lyon).
+  - **Relecture** : 0 critique, 2 notes mineures (states.following masculin singulier =
+    convention app arabe standard ; greetingMessage مستعد masculin = defaut standard).
+  - **Etat check-keys** : ar=136 cles, 487 manquantes, 0 orpheline. JSON valide.
+    tsc=12 baseline inchangee.
+  - **Reste S9-4a** : lots 3-6 ar. Puis S9-4b : RTL natif.
+
+- **S9-4a-lot2 (2026-06-14) : i18n arabe — namespace social (77 cles + 4 formes CLDR)**
+  - **Premier compteur CLDR arabe** : social.hashtagCount — 6 formes generees et validees :
+    - _zero: {{count}} منشور (n=0, singulier)
+    - _one: {{count}} منشور (n=1, singulier)
+    - _two: {{count}} منشوران (n=2, duel)
+    - _few: {{count}} منشورات (n=3-10, pluriel brise)
+    - _many: {{count}} منشورًا (n=11-99, tamyiz accusatif — la forme la plus difficile)
+    - _other: {{count}} منشور (n=100+, singulier)
+  - **Glossaire ar social ajoute** : منشور=publication, تعليق=commentaire, إعجاب=like,
+    المفضلة=favori, أرشفة=archiver, تثبيت=épingler, الرائج=tendance, الهاشتاغات=hashtags,
+    المتابعون=abonnés, الموجز=fil/feed, وسائط=média.
+  - **Interpolations** : {{count}} present dans les 6 formes CLDR. 0 mismatch.
+  - **Encodage** : 0 escape, 0 mojibake. Diacritiques corrects (tanwin, shadda).
+  - **Relecture** : 0 critique, 0 warning. Coherence lot1 confirmee.
+  - **Etat check-keys** : ar=217 cles (136+77+4 CLDR), 410 manquantes, 0 orpheline.
+    JSON valide. tsc=12 baseline inchangee.
+  - **Reste S9-4a** : lots 4-6 ar. Puis S9-4b : RTL natif.
+
+- **S9-4a-lot3 (2026-06-14) : i18n arabe — salon (30) + booking (69) = 99 cles + 4 CLDR**
+  - **2e compteur CLDR** : salon.queueWaiting — 6 formes avec منتظر (waiting person) :
+    - _zero: {{count}} منتظر (singulier)
+    - _one: {{count}} منتظر (singulier)
+    - _two: {{count}} منتظران (duel ـان)
+    - _few: {{count}} منتظرين (pluriel masculin 3-10)
+    - _many: {{count}} منتظرًا (tamyiz accusatif 11-99)
+    - _other: {{count}} منتظر (singulier 100+)
+  - **Glossaire ar metier ajoute** : موعد/مواعيد=rendez-vous(chose),
+    حجز=reservation(action), خدمة=service, فترة=creneau, طابور=file d'attente
+    (coherent avec home.liveQueue lot1), مصفف=coiffeur (coherent), تقييم=avis.
+  - **Coherence terminologique** : distinction correcte موعد(appointment)/حجز(booking)
+    miroir du FR rendez-vous/reservation. 0 doublon synonymique.
+  - **Interpolations** : {{minutes}} x2, {{name}} x2, {{current}}+{{total}}, {{count}} x6
+    — toutes verifiees OK.
+  - **Encodage** : 0 escape, 0 mojibake. Diacritiques corrects.
+  - **Relecture** : 0 critique, 0 bloquant. CLDR valide.
+  - **Etat check-keys** : ar=320 cles, 311 manquantes, 0 orpheline. tsc=12.
+  - **Reste S9-4a** : lots 4b-6 ar (250 cles + CLDR restants). Puis S9-4b : RTL.
+
+- **S9-4a-lot4a (2026-06-14) : i18n arabe — namespace settings (61 cles)**
+  - **Glossaire ar settings** : الإعدادات=parametres, المظهر=theme/apparence,
+    اللغة=langue, الإشعارات=notifications, الوضع الداكن=mode sombre, فاتح=clair,
+    داكن=sombre, النظام=systeme, الأمان=securite, الجلسة=session, الحذف=suppression,
+    التحقق بخطوتين=2FA (aligne avec auth.twoFactor.title lot1).
+  - **Correctif post-relecture** : subtitles.security المصادقة الثنائية → التحقق بخطوتين
+    (coherence avec auth.twoFactor.title deja etabli au lot1).
+  - **Interpolations** : {{version}} (versionLabel), {{email}} x2 (resendSuccess,
+    pendingHint) — verifiees OK.
+  - **Encodage** : 0 escape, 0 mojibake.
+  - **Etat check-keys** : ar=381 cles, 250 manquantes, 0 orpheline. tsc=12.
+  - **Reste S9-4a** : lots 5-6 ar. Puis S9-4b : RTL.
+
+- **S9-4a-lot4b (2026-06-14) : i18n arabe — namespace security (73 cles + 4 CLDR)**
+  - **ZONE SETTINGS+SECURITY ar COMPLETE** (lots 4a+4b = 134 cles + 4 CLDR).
+  - **3e compteur CLDR** : revokeAllConfirmHint — 6 formes avec جلسة (FEMININ) :
+    - _zero: {{count}} جلسة (singulier feminin)
+    - _one: {{count}} جلسة (singulier)
+    - _two: {{count}} جلستان (duel feminin ـتان)
+    - _few: {{count}} جلسات (pluriel feminin sain 3-10)
+    - _many: {{count}} جلسةً (tamyiz accusatif feminin 11-99)
+    - _other: {{count}} جلسة (singulier 100+)
+  - **Glossaire ar security** : رمز استرداد=code de recuperation, منطقة الخطر=zone de
+    danger, فصل=deconnecter (boutons security), إلغاء=revoquer (settings-level).
+  - **Coherence sous-titre lot 4a** verifiee : كلمة المرور, التحقق بخطوتين, الجلسات,
+    الحذف — identiques.
+  - **Avertissements** : severity/irreversibilite preservees fidellement (فوري ونهائي,
+    لا يمكن التراجع, لا رجعة فيه, لا توجد أي طريقة لاستردادها).
+  - **Interpolations** : {{count}} (minLengthRule + 6 CLDR), {{date}} x2 — OK.
+  - **Encodage** : 0 escape, 0 mojibake.
+  - **Etat check-keys** : ar=458 cles, 177 manquantes, 0 orpheline. tsc=12.
+  - **Reste S9-4a** : lot 6 ar (dernier). Puis S9-4b : RTL.
+
+- **S9-4a-lot5 (2026-06-14) : i18n arabe — profile (30) + collections (32) + report (25)
+  + phone (24) = 111 cles + 8 CLDR (followersCount + postCount)**
+  - **4e+5e compteurs CLDR** :
+    - followersCount (متابع, masculin) : _zero/_one متابع, _two متابعان, _few متابعين,
+      _many متابعًا, _other متابع.
+    - postCount (منشور) : IDENTIQUE a hashtagCount lot2 (verifie programmatiquement).
+  - **Glossaire ar ajoute** : الملف الشخصي=profil, المفضلة=favoris, الأرشيف=archives,
+    المجموعات=collections, الشارات=badges, معارض الأعمال=portfolios, نبذة=bio,
+    الإشراف=moderation, إبلاغ=signaler (coherent common.actions.report), بلاغ=signalement,
+    عام=public, خاص=prive (coherent social.visibility), رقم الهاتف=telephone.
+  - **Phone transactionalNote** : ton declaratif preserve ("يرى الصالون" = le salon VOIT,
+    indicatif present, pas de modal). Coherent avec le correctif es/de du lot5.
+  - **Interpolations** : {{year}}, {{name}} x2, {{query}}, {{name}}+{{code}}, {{iso}},
+    {{count}} x12 (CLDR) — toutes verifiees OK.
+  - **Encodage** : 0 escape, 0 mojibake.
+  - **Etat check-keys** : ar=577 cles, 66 manquantes, 0 orpheline. tsc=12.
+  - **Reste S9-4a** : lot 6 (dernier).
+
+- **S9-4a-lot6 (2026-06-14) : i18n arabe — review (17) + payment (12) + service (10)
+  + staff (10) + portfolio (9) + queue (8) = 66 cles + 4 CLDR — DERNIER LOT AR**
+  - **6e et dernier compteur CLDR** : totalReviews (تقييم, masculin) :
+    - _zero: {{count}} تقييم (singulier)
+    - _one: {{count}} تقييم (singulier)
+    - _two: {{count}} تقييمان (duel)
+    - _few: {{count}} تقييمات (pluriel sain feminin — standard pour تقييم)
+    - _many: {{count}} تقييمًا (tamyiz accusatif)
+    - _other: {{count}} تقييم (singulier)
+  - **Glossaire ar lot6** : تقييم=avis (coherent lot3), خدمة=service (coherent lot3),
+    طابور=file d'attente (coherent), مصفف=coiffeur (coherent), دفع=paiement,
+    المبلغ=montant, مدفوعات=paiements, عضو=membre, التخصصات=specialites,
+    معرض أعمال=portfolio (coherent lot5).
+  - **Coherence** : 0 doublon synonymique sur 6 lots.
+  - **Interpolations** : {{rating}}, {{count}} x7 (minutes + 6 CLDR), {{name}} x2 — OK.
+  - **Encodage** : 0 escape, 0 mojibake.
+  - **Etat check-keys** : **ar=647 cles (623 + 24 CLDR), 0 manquante, 0 orpheline.
+    OK (0 ecart). PARITE TOTALE 5 langues.**
+    tsc=12 baseline inchangee.
+
+- **=== S9-4a TERMINEE === arabe complet (623 cles de reference + 24 formes CLDR
+  supplementaires = 647 cles). Parite TOTALE fr/en/es/de/ar, 5 langues a parite.
+  6 compteurs CLDR en 6 formes chacun (hashtagCount, queueWaiting, revokeAllConfirmHint,
+  followersCount, postCount, totalReviews). 3 genres declines : masculin (منشور, متابع,
+  تقييم), feminin (جلسة), masculin participe actif (منتظر).
+  Reste S9-4b : RTL natif (I18nManager.forceRTL + audit flexDirection des ecrans) —
+  phase CODE, le dernier morceau de l'etape 9.**
+
+- **S9-4b-diagnostic (2026-06-14) : audit RTL — lecture + test faisabilite + cartographie**
+
+  **(A) ETAT DU SOCLE i18n/RTL :**
+  1. src/i18n/index.ts : langue choisie par getLocales()[0].languageCode (expo-localization)
+     au boot, AUCUN usage de I18nManager. L'arabe est declare en ressource mais aucune
+     logique RTL n'existe.
+  2. preferencesStore.ts : langue persistee en AsyncStorage (frollot_language), lue au
+     demarrage, appliquee via i18next.changeLanguage(). AUCUN forceRTL nulle part dans le
+     codebase (0 occurrence de I18nManager/forceRTL/allowRTL/isRTL).
+  3. app/_layout.tsx : root layout initialise auth+prefs stores, charge les fonts, AUCUNE
+     logique RTL. C'est ici (ou dans preferencesStore.initialize) que forceRTL doit aller.
+  4. Expo SDK 56.0.9, React Native 0.85.3, lance via Expo Go (npx expo start).
+
+  **(B) FAISABILITE forceRTL — CONCLUSION :**
+  - I18nManager.forceRTL est disponible dans RN 0.85 / Expo SDK 56.
+  - **Expo Go SUFFIT** pour voir le vrai rendu RTL (pas besoin de development build).
+  - CONTRAINTE : forceRTL est un flag natif qui ne prend effet qu'au REDEMARRAGE de l'app
+    (pas au hot reload). En Expo Go : fermer l'app completement + rouvrir = redemarrage.
+  - IMPLEMENTATION REQUISE :
+    * preferencesStore.initialize : appeler I18nManager.allowRTL(true) +
+      I18nManager.forceRTL(lang === 'ar') au boot, AVANT le premier rendu.
+    * preferencesStore.setLanguage : appeler forceRTL(lang === 'ar') + declencher un
+      redemarrage (Updates.reloadAsync() ou demander a l'utilisateur de relancer).
+    * NE PAS appeler forceRTL dans un useEffect (trop tard, l'arbre est deja rendu).
+  - RESULTAT : **Expo Go suffit. Pas de build natif necessaire. Le test visuel est
+    possible apres un redemarrage manuel de l'app dans Expo Go.**
+
+  **(C) CARTOGRAPHIE DE L'AUDIT LAYOUT :**
+  - **70 fichiers** au total : 50 ecrans (app/) + 20 composants (src/components/).
+  - **Occurrences de patterns RTL-sensibles :**
+    | Pattern | Occurrences | Fichiers |
+    |---|---|---|
+    | flexDirection: 'row' | 218 | 57 |
+    | marginLeft/Right, paddingLeft/Right | 89 | 31 |
+    | left:/right: (positions absolues) | 27 | 15 |
+    | textAlign: 'left'/'right' | 2 | 2 |
+    | Icones directionnelles (chevron/arrow) | 60 | 38 |
+    | I18nManager.isRTL (existant) | 0 | 0 |
+    | **TOTAL** | **~396** | **~65 uniques** |
+
+  - **PROPOSITION DE DECOUPAGE EN VAGUES :**
+    | Vague | Zone | Ecrans | Fichiers |
+    |---|---|---|---|
+    | V1 | Auth | login, register, forgot-pwd, reset-pwd, 2FA, email-verif | 6 |
+    | V2 | Tabs | home, social, explore, bookings, profile | 5 |
+    | V3 | Salon+Booking | salon/[id], salon/posts, booking/[id], booking/new, create-salon | 5 |
+    | V4 | Social/Post | create-post, post/[id], comments, trending, report | 5 |
+    | V5 | Settings | index, security, change-email, change-phone, contact, help, terms, privacy | 8 |
+    | V6 | Profile/Collections | 4 profils + collections/[id] + collections/user + favorites + archives | 8 |
+    | V7 | Misc | create-review/service/staff/portfolio, portfolios, portfolio/[id], owner-bookings, queue-mgmt | 8 |
+    | V8 | Composants partages | PostCard, SalonCard, BookingStepper, PhoneNumberField, Button, TextField, Toast, Chip, etc. | 20 |
+    | | **Total** | | **65** |
+
+    NOTE : V8 (composants) devrait etre fait EN PREMIER car les corrections se propagent
+    a tous les ecrans qui les utilisent, reduisant le travail des vagues 1-7. Apres V8,
+    une passe de verification par vague est plus legere.
+
+- **S9-4b-vague1 (2026-06-14) : RTL — activation forceRTL + composants partages**
+  - **Activation forceRTL** :
+    * preferencesStore.ts : applyRTL(lang) appele dans initialize() AVANT le 1er rendu
+      (I18nManager.allowRTL + forceRTL).
+    * setLanguage : detecte si un changement de direction est necessaire
+      (lang==='ar' !== I18nManager.isRTL), appelle applyRTL, et affiche un Alert
+      demandant de fermer/rouvrir l'app (expo-updates absent -> pas de reloadAsync).
+    * Pour les 4 langues LTR : forceRTL(false) = zero regression.
+  - **Composants traites (20 fichiers, 5 modifies)** :
+    | Composant | Correction |
+    |---|---|
+    | PostCard.tsx | left→start (baLabel+swapIcon), paddingRight→paddingEnd (menuOverlay) |
+    | SalonCard.tsx | right→end (favoriteBtn position) |
+    | CountryPickerModal.tsx | marginLeft→marginStart (separator) |
+    | PhoneNumberField.tsx | paddingLeft/Right→Start/End, borderRightWidth→borderEndWidth, borderRightColor→borderEndColor, marginRight→marginEnd |
+    | Toast.tsx | left/right→start/end (position absolue symetrique) |
+    | Avatar.tsx | INCHANGE (deja neutre) |
+    | BookingStepper.tsx | INCHANGE (deja neutre) |
+    | Button.tsx | INCHANGE (paddingHorizontal symetrique) |
+    | Card.tsx | INCHANGE (padding symetrique) |
+    | Chip.tsx | INCHANGE (paddingHorizontal symetrique) |
+    | CollectionPickerModal.tsx | INCHANGE (textAlign center) |
+    | CountryFlag.tsx | INCHANGE |
+    | EmptyState.tsx | INCHANGE (centre) |
+    | ErrorState.tsx | INCHANGE (centre) |
+    | LoadingState.tsx | INCHANGE (centre) |
+    | LogoutConfirmModal.tsx | INCHANGE (textAlign center) |
+    | RatingStars.tsx | INCHANGE (etoiles symetriques) |
+    | SectionHeader.tsx | INCHANGE (row auto-inverse) |
+    | StatusBadge.tsx | INCHANGE (paddingHorizontal) |
+    | TextField.tsx | INCHANGE (paddingHorizontal) |
+  - **Aucun isRTL conditionnel** dans cette vague (pas d'icone directionnelle dans les
+    composants partages — les chevrons/fleches sont dans les ecrans app/).
+  - **tsc** : 12 baseline inchangee. **check-keys** : parite inchangee. **JSON** : intouche.
+  - **Reste S9-4b** : vagues V1-V7 (50 ecrans app/). Les composants partages sont
+    desormais RTL-safe, les corrections se propagent automatiquement.
+
+- **S9-4b-vague-v1 (2026-06-14) : RTL — ecrans Auth (6 fichiers + _layout)**
+  - **_layout.tsx** : INCHANGE (pure navigation Stack, pas de layout directionnel).
+  - **login.tsx** : brandContainer left→start, heroPlaceholder left/right→start/end.
+  - **register.tsx** : arrow-left isRTL conditionnel (back), arrow-right isRTL (submit),
+    heroPlaceholder/heroActions left/right→start/end, heroBrand left→start,
+    typeCheck right→end. Import I18nManager ajoute.
+  - **forgot-password.tsx** : INCHANGE (bouton retour textuel, formulaire centre).
+  - **reset-password.tsx** : INCHANGE (formulaire centre, paddingHorizontal symetrique).
+  - **two-factor.tsx** : arrow-left isRTL conditionnel (back). Import I18nManager ajoute.
+  - **email-verification.tsx** : arrow-left isRTL conditionnel (retour login).
+    Import I18nManager ajoute.
+  - **Icones isRTL introduites** : 4 icones dans 3 fichiers (register back + submit,
+    two-factor back, email-verification back).
+  - **Positions logiques** : 5 corrections left/right→start/end (login + register).
+  - **tsc** : 12 baseline inchangee. **check-keys** : parite intacte. **JSON** : intouche.
+  - **Reste S9-4b** : vagues V3-V7 (39 ecrans app/).
+
+- **S9-4b-vague-v2 (2026-06-14) : RTL — ecrans Tabs (5 + _layout)**
+  - **_layout.tsx** : INCHANGE (Tabs navigation, layout symetrique).
+  - **index.tsx (home)** : chevron-right isRTL conditionnel (salon list items).
+    Import I18nManager ajoute.
+  - **social.tsx** : searchSpinner right→end, tabIndicator left/right→start/end.
+  - **explore.tsx** : marginLeft→marginStart (verified badge + salonInfo).
+  - **bookings.tsx** : marginLeft→marginStart x2 (date meta + duration).
+  - **profile.tsx** : chevron-right isRTL conditionnel (menu items), marginLeft→
+    marginStart x3 (verified, menuItem text, logout), editBadge right→end.
+    Import I18nManager ajoute.
+  - **Icones isRTL** : 2 (index.tsx chevron salon list, profile.tsx chevron menu).
+  - **Proprietes logiques** : 7 marginLeft→marginStart + 3 position right/left→end/start.
+  - **tsc** : 12 baseline inchangee. **check-keys** : parite intacte. **JSON** : intouche.
+  - **Chaines FR en dur reperees (pas corrigees, passe finale)** : aucune nouvelle dans
+    ces 5 ecrans (email-verification.tsx deja note en vague v1).
+  - **Reste S9-4b** : vagues V4-V7 (34 ecrans app/).
+
+- **S9-4b-vague-v3 (2026-06-14) : RTL — ecrans Salon+Booking (5)**
+  - **salon/[id].tsx** : arrow-left + arrow-right isRTL (back + see-all),
+    coverActions/coverEditBadge/tabIndicator/floatingBar left/right→start/end,
+    coverBtn marginLeft→marginStart.
+  - **salon/[id]/posts.tsx** : arrow-left isRTL (back), coverName left/right→start/end,
+    fab right→end.
+  - **booking/[id].tsx** : arrow-back→arrow-forward isRTL, chevron-right isRTL,
+    6x marginLeft→marginStart (title, salon, service, date, staff, price).
+  - **booking/new.tsx** : arrow-left isRTL (back), 2x chevron-right isRTL (any-staff +
+    staff-list), chevron-left/right isRTL (week nav prev/next).
+  - **create-salon.tsx** : arrow-left isRTL (back).
+  - **STEPPER (BookingStepper)** : VERIFIE — flexDirection:'row' s'inverse
+    automatiquement (step 1 a droite en RTL), connecteurs et check-icon non-
+    directionnels. **RTL-safe sans modification.** Pas de fleche suivant/precedent
+    dans le stepper lui-meme (les boutons continuer/retour sont dans booking/new).
+  - **Icones isRTL** : 10 dans 5 fichiers (salon back+see-all, salon/posts back,
+    booking back+chevron, booking/new back+2xchevron+2xweek-nav, create-salon back).
+  - **Positions logiques** : 10 corrections left/right→start/end + 7 marginLeft→marginStart.
+  - **Chaines FR en dur (SIGNALEES, pas corrigees)** :
+    - booking/new.tsx:15 MONTHS=['Janvier',...] + DAYS_SHORT=['DIM',...]
+    - create-salon.tsx:62,74,75,88,89,101,102,110,114,118,122,128,131,135,139,146,150,173
+      (~18 chaines FR en dur).
+  - **tsc** : 12 baseline inchangee. **check-keys** : parite intacte. **JSON** : intouche.
+  - **Reste S9-4b** : vagues V4-V7 (34 ecrans app/).
+
+- **S9-4b-vague-v4 (2026-06-14) : RTL — ecrans Social/Post (5)**
+  - **create-post.tsx** : 5x marginLeft→marginStart, 2x marginRight→marginEnd,
+    paddingRight→paddingEnd, 2x position right/left→end/start. Pas d'icone directionnelle
+    (utilise "close" symetrique).
+  - **post/[id].tsx** : arrow-back isRTL (MaterialIcons), 4x marginLeft→marginStart,
+    paddingRight→paddingEnd.
+  - **comments/[id].tsx** : arrow-back isRTL (MaterialIcons), 2x marginLeft→marginStart.
+  - **trending.tsx** : arrow-back isRTL (MaterialIcons), 6x marginLeft→marginStart.
+  - **report.tsx** : arrow-back isRTL (MaterialIcons), marginLeft→marginStart,
+    textAlign:'right' → isRTL conditionnel (compteur caracteres, bord de fuite).
+  - **Icones isRTL** : 4 (post back, comments back, trending back, report back) —
+    toutes MaterialIcons arrow-back↔arrow-forward.
+  - **Proprietes logiques** : 17 marginLeft→marginStart + 2 marginRight→marginEnd +
+    2 paddingRight→paddingEnd + 2 positions left/right→start/end + 1 textAlign isRTL.
+  - **Chaines FR en dur** : aucune nouvelle reperee dans ces 5 ecrans.
+  - **tsc** : 12 baseline inchangee. **check-keys** : parite intacte. **JSON** : intouche.
+  - **Reste S9-4b** : vagues V5-V7 (29 ecrans app/).
+
+- **S9-4b-vague-v5 (2026-06-14) : RTL — ecrans Settings applicatifs (4)**
+  - Perimetre : index.tsx, security.tsx, change-email.tsx, change-phone.tsx
+  - EXCLUS (decision validee) : terms.tsx, privacy.tsx, help.tsx, contact.tsx (ecrans legaux FR-only)
+  - Corrections appliquees :
+    - index.tsx : I18nManager import, 2 chevrons isRTL, 1 fleche retour isRTL, marginLeft->marginStart (logout btn, sectionTitle, separator)
+    - security.tsx : I18nManager import, 1 fleche retour isRTL. Pas de marginLeft/Right (gap partout). secretText textAlign:'left' = intentionnel (code TOTP, non directionnel)
+    - change-email.tsx : I18nManager import, 1 fleche retour isRTL. Pas de marge directionnelle
+    - change-phone.tsx : I18nManager import, 1 fleche retour isRTL, marginLeft->marginStart (delete btn)
+  - Jeu d'icones : MaterialIcons partout (arrow-back/forward, chevron-left/right)
+  - Chaines FR en dur croisees (SIGNALEES, PAS corrigees) : security.tsx:58 formatDate locale 'fr-FR' + ' a '
+  - tsc = 12 (baseline), check-keys = 0 ecart, ecrans legaux INTACTS
+  - **Reste S9-4b** : vagues V6-V7 (25 ecrans app/).
+
+- **S9-4b-vague-v6 (2026-06-14) : RTL — ecrans Profil/Collections (8)**
+  - Perimetre : profile/client/[id], profile/coiffeur/[id], profile/owner/[id], profile/salon/[id],
+    collections/[id], collections/user/[userId], favorites/[userId], archives/[userId]
+  - Corrections appliquees :
+    - profile/client/[id].tsx : fleche retour isRTL, marginLeft->marginStart (header title, collection row), chevron isRTL
+    - profile/coiffeur/[id].tsx : fleche retour isRTL, marginLeft->marginStart (header title, verified badge, rating, post meta x3)
+    - profile/owner/[id].tsx : fleche retour isRTL, marginLeft->marginStart (header title, verified badge, salon row, verified icon, collection name), 2 chevrons isRTL
+    - profile/salon/[id].tsx : fleche retour isRTL, marginLeft->marginStart (header title, city, verified badge, rating)
+    - collections/[id].tsx : 2 fleches retour isRTL (error + main), chevron isRTL
+    - collections/user/[userId].tsx : fleche retour isRTL, FAB right->end
+    - favorites/[userId].tsx : fleche retour isRTL, marginLeft->marginStart (header title, likes count, thumb)
+    - archives/[userId].tsx : fleche retour isRTL (MaterialCommunityIcons arrow-left/right)
+  - Jeux d'icones : MaterialIcons (arrow-back/forward, chevron-left/right) pour 7 fichiers ; MaterialCommunityIcons (arrow-left/right) pour archives
+  - Chaines FR en dur SIGNALEES (PAS corrigees) : archives/[userId].tsx:80-81 (messages erreur desarchiver/supprimer)
+  - tsc = 12 (baseline), check-keys = 0 ecart, aucun composant partage touche
+  - **Reste S9-4b** : vague V7 misc (~8 ecrans app/).
+
+- **S9-4b-vague-v7 (2026-06-14) : RTL — ecrans Misc (8 traites + 1 inchange) = DERNIERE VAGUE**
+  - Perimetre : create-review, create-service, create-staff, create-portfolio, portfolios,
+    portfolio/[id], owner-bookings, queue-management, verify-email (inchange)
+  - Corrections appliquees :
+    - create-review.tsx : fleche retour isRTL, marginLeft->marginStart (header title)
+    - create-service.tsx : fleche retour isRTL, marginLeft->marginStart (header title), right->end (checkIcon)
+    - create-staff.tsx : fleche retour isRTL, marginLeft->marginStart (header title, info box text), right->end (checkIcon)
+    - create-portfolio.tsx : fleche retour isRTL, marginLeft->marginStart (header title, radio label)
+    - portfolios.tsx : fleche retour isRTL, marginLeft->marginStart (header title), FAB right->end
+    - portfolio/[id].tsx : fleche retour isRTL, marginLeft->marginStart (header title, post meta x3)
+    - owner-bookings.tsx : fleche retour isRTL, marginLeft->marginStart (header title, meta rows x2)
+    - queue-management.tsx : fleche retour isRTL, marginLeft->marginStart (header title, entry info, entry meta)
+    - verify-email.tsx : INCHANGE (layout centre, pas d'icone directionnelle ni de marge laterale)
+  - Jeu d'icones : MaterialIcons (arrow-back/forward) pour tous les 8 fichiers traites
+  - Chaines FR en dur SIGNALEES (PAS corrigees) :
+    - verify-email.tsx:16 'Lien invalide : aucun token fourni.'
+    - verify-email.tsx:25 'Ce lien est invalide ou a expire.'
+    - verify-email.tsx:37 'Activation de votre compte...'
+    - verify-email.tsx:48 'Verification echouee'
+    - verify-email.tsx:51 'Retour a la connexion'
+    - verify-email.tsx:62 'Compte active !'
+    - verify-email.tsx:63-64 'Votre adresse email...'
+    - verify-email.tsx:67 'Se connecter'
+    - portfolios.tsx:44 'posts' (mot EN en dur)
+    - portfolio/[id].tsx:63 'posts' (mot EN en dur)
+  - tsc = 12 (baseline), check-keys = 0 ecart, aucun composant partage touche
+
+- **S9-4b TERMINEE — RTL natif applique a tout app/ (hors 4 legaux exclus) + 20 composants + activation forceRTL**
+  - BALAYAGE DE CLOTURE : 49 fichiers .tsx dans app/. Tous couverts :
+    - 35 fichiers ont I18nManager (corrections directionnelles appliquees vagues 1-7)
+    - 10 fichiers sans I18nManager car AUCUNE propriete directionnelle a corriger :
+      app/_layout.tsx, app/index.tsx, (auth)/_layout, (auth)/login, (auth)/forgot-password,
+      (auth)/reset-password, (tabs)/_layout, (tabs)/bookings, (tabs)/explore, (tabs)/social
+    - 4 ecrans EXCLUS (legaux FR-only, decision validee) : settings/{terms,privacy,help,contact}
+  - Reste : passe de diagnostic/nettoyage des chaines FR oubliees (inventaire constitue ci-dessous)
+  - INVENTAIRE CONSOLIDE des chaines FR en dur a traiter :
+    - verify-email.tsx (~8 chaines)
+    - archives/[userId].tsx:80-81 (2 messages erreur)
+    - security.tsx:58 (formatDate 'fr-FR' + ' a ' = dette dates)
+    - booking/new.tsx (MONTHS/DAYS_SHORT = dette dates)
+    - create-salon.tsx (~18 chaines)
+    - email-verification.tsx (quelques chaines)
+    - portfolios.tsx:44, portfolio/[id].tsx:63 ('posts' EN en dur)
+
+- **S9-5-diagnostic (2026-06-14) : inventaire des chaines non externalisees**
+  - Methode : grep statique sur tout app/ + src/ (hors 4 legaux exclus, hors i18n/*.json)
+  - Baselines inchangees : tsc = 12, check-keys = 0 ecart. AUCUN fichier modifie.
+
+  TABLEAU DES TROUVAILLES :
+
+  | # | Fichier:ligne | Litteral (tronque) | Contexte | Cat. |
+  |---|---|---|---|---|
+  | 1 | app/verify-email.tsx:16 | 'Lien invalide : aucun token fourni.' | errorMessage fallback | A |
+  | 2 | app/verify-email.tsx:25 | 'Ce lien est invalide ou a expire.' | errorMessage fallback | A |
+  | 3 | app/verify-email.tsx:37 | 'Activation de votre compte...' | Text enfant (loading) | A |
+  | 4 | app/verify-email.tsx:48 | 'Verification echouee' | Text enfant (title) | A |
+  | 5 | app/verify-email.tsx:51 | 'Retour a la connexion' | bouton Text enfant | A |
+  | 6 | app/verify-email.tsx:62 | 'Compte active !' | Text enfant (title) | A |
+  | 7 | app/verify-email.tsx:63-64 | 'Votre adresse email...' | Text enfant (desc) | A |
+  | 8 | app/verify-email.tsx:67 | 'Se connecter' | bouton Text enfant | A |
+  | 9 | app/(auth)/email-verification.tsx:19 | 'Verifiez votre email' | Text enfant (title) | A |
+  | 10 | app/(auth)/email-verification.tsx:23-25 | 'Un email de verification...' + 'votre adresse' fallback | Text enfant (desc) | A |
+  | 11 | app/(auth)/email-verification.tsx:31 | 'Si vous n avez pas recu...' | Text enfant (info) | A |
+  | 12 | app/(auth)/email-verification.tsx:40 | 'Retour a la connexion' | bouton Text enfant | A |
+  | 13 | app/create-salon.tsx:62 | 'Erreur lors de la creation du salon.' | error fallback | A |
+  | 14 | app/create-salon.tsx:74 | 'Salon cree !' | Text enfant (success title) | A |
+  | 15 | app/create-salon.tsx:75 | 'Votre salon a ete cree...' | Text enfant (success desc) | A |
+  | 16 | app/create-salon.tsx:88 | 'Nouveau salon' | Text enfant (header title) | A |
+  | 17 | app/create-salon.tsx:89 | 'Configurez votre etablissement' | Text enfant (header sub) | A |
+  | 18 | app/create-salon.tsx:101 | 'Photo de couverture' | Text enfant (cover label) | A |
+  | 19 | app/create-salon.tsx:102 | 'Recommande : 1200 x 400 px' | Text enfant (cover hint) | A |
+  | 20 | app/create-salon.tsx:110 | label="Nom du salon *" | TextField label prop | A |
+  | 21 | app/create-salon.tsx:114 | placeholder="Ex : Salon Lumiere" | TextField placeholder | A |
+  | 22 | app/create-salon.tsx:118 | label="Adresse *" | TextField label prop | A |
+  | 23 | app/create-salon.tsx:122 | placeholder="12 rue de la Paix" | TextField placeholder | A |
+  | 24 | app/create-salon.tsx:128 | label="Ville *" | TextField label prop | A |
+  | 25 | app/create-salon.tsx:131 | placeholder="Paris" | TextField placeholder | A |
+  | 26 | app/create-salon.tsx:136 | label="Code postal *" | TextField label prop | A |
+  | 27 | app/create-salon.tsx:139 | placeholder="75002" | TextField placeholder | A |
+  | 28 | app/create-salon.tsx:146 | label="Description" | TextField label prop | A |
+  | 29 | app/create-salon.tsx:150 | placeholder="Decrivez votre salon..." | TextField placeholder | A |
+  | 30 | app/create-salon.tsx:173 | 'Creer mon salon' | PrimaryButton Text enfant | A |
+  | 31 | app/archives/[userId].tsx:80 | 'Impossible de desarchiver...' | actionError fallback | A |
+  | 32 | app/archives/[userId].tsx:81 | 'Impossible de supprimer...' | actionError fallback | A |
+  | 33 | app/portfolios.tsx:44 | '{item.postsCount} posts' | Text enfant (EN en dur) | A |
+  | 34 | app/portfolio/[id].tsx:63 | '{portfolio.postsCount} posts' | Text enfant (EN en dur) | A |
+  | 35 | app/queue-management.tsx:190 | '{item.status}' | Text enfant (enum brut WAITING/CALLED/...) | A |
+  | 36 | app/queue-management.tsx:197 | '~{...} min' | Text enfant (unite en dur) | A |
+  | 37 | app/create-portfolio.tsx:58 | text: 'OK' | Alert bouton label | A |
+  | 38 | app/create-review.tsx:57 | text: 'OK' | Alert bouton label | A |
+  | 39 | app/create-service.tsx:52 | text: 'OK' | Alert bouton label | A |
+  | 40 | app/create-staff.tsx:80 | text: 'OK' | Alert bouton label | A |
+  | 41 | app/(auth)/register.tsx:115 | placeholder="Camille" | TextField placeholder (prenom FR) | A |
+  | 42 | app/(auth)/register.tsx:118 | placeholder="Roussel" | TextField placeholder (nom FR) | A |
+  | 43 | app/(auth)/register.tsx:127 | placeholder="camille@email.com" | placeholder (email exemple FR) | A |
+  | 44 | src/stores/preferencesStore.ts:45 | 'Redemarrage requis' (+ AR) | Alert.alert titre | A |
+  | 45 | src/stores/preferencesStore.ts:47-48 | 'Fermez et rouvrez...' (+ AR) | Alert.alert message | A |
+  | 46 | src/types/salon.ts:47-53 | SERVICE_CATEGORY_META labels x7 | label affiche (FR en dur) | A |
+  |---|---|---|---|---|
+  | 47 | app/booking/new.tsx:15 | MONTHS=['Janvier',...,'Decembre'] | tableau 12 mois FR | B |
+  | 48 | app/booking/new.tsx:16 | DAYS_SHORT=['DIM','LUN',...] | tableau 7 jours FR | B |
+  | 49 | app/booking/new.tsx:124,174,346,357,409,454,469 | usages MONTHS/DAYS_SHORT dans texte | concatenations date affichees (x7) | B |
+  | 50 | app/(tabs)/index.tsx:69 | toLocaleDateString('fr-FR',...) | date accueil forcee FR | B |
+  | 51 | app/(tabs)/bookings.tsx:106 | toLocaleDateString() + toLocaleTimeString() | date sans locale explicite | B |
+  | 52 | app/booking/[id].tsx:159 | toLocaleDateString() - toLocaleTimeString() | date + separateur ' - ' | B |
+  | 53 | app/owner-bookings.tsx:180 | toLocaleDateString() + toLocaleTimeString() | date sans locale explicite | B |
+  | 54 | app/settings/security.tsx:58-60 | formatDate('fr-FR') + ' a ' | date session forcee FR | B |
+
+  NOTE SUPPLEMENTAIRE (hors perimetre i18n classique) :
+  - src/utils/countries.ts : 245 noms de pays en francais (telephone picker). Delibere a la
+    conception mais techniquement non traduit. Chantier majeur (245x5 langues) a decider separement.
+
+  DECOMPTE :
+  - Total trouvailles : 54
+  - Categorie A (cles simples) : 46
+  - Categorie B (dette dates/formatage) : 8 (couvrant ~15 usages dans le code)
+  - Fichiers concernes : 16 (dont 1 dans src/types, 1 dans src/stores)
+
+  PROPOSITION DE DECOUPAGE :
+  - LOT A1 — verify-email.tsx + email-verification.tsx : 12 cles, 2 fichiers. Ecrans autonomes,
+    zero dependance. ~8 cles FR a creer + traduire 5 langues.
+  - LOT A2 — create-salon.tsx : 18 cles, 1 fichier. Le plus gros ecran. Tout est FR en dur.
+  - LOT A3 — archives + portfolios + portfolio + queue-management : 6 cles, 4 fichiers. Petits
+    correctifs (messages erreur, 'posts', enum status, unite 'min').
+  - LOT A4 — Alerts 'OK' x4 + register placeholders x3 + preferencesStore Alert x2 : 9 cles,
+    6 fichiers. Eparpilles mais simples.
+  - LOT A5 — SERVICE_CATEGORY_META (src/types/salon.ts) : 7 labels de categorie. Necessite un
+    refactor : les labels statiques doivent devenir des cles i18n, les composants consommateurs
+    (create-service, create-staff) doivent appeler t() au rendu.
+  - LOT B — Dette dates/formatage locale-aware : 8 trouvailles dans 5 fichiers. Chantier separe
+    necessitant une approche coherente (ex. helper formatDate locale-aware base sur i18n.language,
+    remplacement des tableaux MONTHS/DAYS par Intl.DateTimeFormat ou cles i18n). A cadrer avant
+    d'agir.
+
+  IMPACT PARITE : chaque cle categorie A ajoutee au fr.json devra etre traduite dans en/es/de/ar
+  pour que check-keys reste a 0 ecart. Estimation : ~46 cles nouvelles x 5 langues = ~230 entrees
+  a creer dans les JSON.
+
+---
+
+- **S9-5-lotA2 (2026-06-14) : externaliser create-salon.tsx — 13 cles creees**
+  - N = 13 cles nouvelles sous salon.create.*. Parite : fr/en/es/de = 636, ar = 660, 0 ecart.
+  - 5 cles REUTILISEES (pas de creation) : salon.salonName, salon.address, salon.city,
+    salon.postalCode, salon.description — deja presentes dans fr.json (et toutes langues).
+  - Cles creees (valeur FR) :
+    salon.create.title = "Nouveau salon"
+    salon.create.subtitle = "Configurez votre etablissement"
+    salon.create.coverLabel = "Photo de couverture"
+    salon.create.coverHint = "Recommande : 1200 x 400 px"
+    salon.create.namePlaceholder = "Ex : Salon Lumiere"
+    salon.create.addressPlaceholder = "12 rue de la Paix"
+    salon.create.cityPlaceholder = "Paris"
+    salon.create.postalCodePlaceholder = "75002"
+    salon.create.descriptionPlaceholder = "Decrivez votre salon, vos specialites..."
+    salon.create.submit = "Creer mon salon"
+    salon.create.successTitle = "Salon cree !"
+    salon.create.successDesc = "Votre salon a ete cree avec succes. Redirection..."
+    salon.create.error = "Erreur lors de la creation du salon."
+  - Choix placeholders par langue (exemples localement plausibles) :
+    EN: "Bella Hair Studio", "123 Main Street", "London", "SW1A 1AA"
+    ES: "Salon Belleza", "Calle Mayor, 12", "Madrid", "28001"
+    DE: "Salon Schonheit", "Hauptstrasse 12", "Berlin", "10115"
+    AR: "صالون الجمال", "شارع الرئيسي 12", "الدار البيضاء", "20000"
+  - tsc = 12, check-keys = 0 ecart, grep controle = 0 litteral FR dans create-salon.tsx
+  - **Reste S9-5** : lots A1, A3, A4, A5, B.
+
+- **S9-5-lotA1 (2026-06-14) : externaliser verify-email + email-verification — 9 cles creees**
+  - N = 9 cles nouvelles sous auth.verifyEmail.*. Parite : fr/en/es/de = 645, ar = 669, 0 ecart.
+  - Cles REUTILISEES (pas de creation) :
+    - auth.twoFactor.backToLogin ("Retour a la connexion") -> les 2 ecrans
+    - auth.verifyEmailTitle ("Verifiez votre email") -> email-verification.tsx
+    - auth.verifyEmailHint (avec {{email}}) -> email-verification.tsx
+  - Gestion fallback email : t('auth.verifyEmailHint', { email: email || t('auth.verifyEmail.yourAddress') })
+    Le fallback "votre adresse" est une cle dediee passee comme valeur d'interpolation.
+  - Cles creees (valeur FR) :
+    auth.verifyEmail.invalidLink = "Lien invalide : aucun token fourni."
+    auth.verifyEmail.expiredLink = "Ce lien est invalide ou a expire."
+    auth.verifyEmail.activating = "Activation de votre compte..."
+    auth.verifyEmail.failedTitle = "Verification echouee"
+    auth.verifyEmail.successTitle = "Compte active !"
+    auth.verifyEmail.successDesc = "Votre adresse email... (avec \n)"
+    auth.verifyEmail.loginButton = "Se connecter"
+    auth.verifyEmail.yourAddress = "votre adresse"
+    auth.verifyEmail.spamHint = "Si vous n avez pas recu l email..."
+  - tsc = 12, check-keys = 0 ecart, grep controle = 0 litteral FR dans les 2 ecrans
+  - **Reste S9-5** : lots A3, A4, A5, B.
+
+- **S9-5-lotA3 (2026-06-14) : archives/portfolios/queue — 5 cles creees**
+  - N = 5 cles nouvelles. Parite : fr/en/es/de = 650, ar = 674, 0 ecart.
+  - Cles REUTILISEES (pas de creation) :
+    - collections.postCount (avec formes CLDR arabes) -> portfolios.tsx + portfolio/[id].tsx
+    - queue.waiting, queue.called -> STATUS_LABELS map dans queue-management.tsx
+  - Cles creees :
+    social.unarchiveError = "Impossible de desarchiver ce post. Reessayez."
+    social.deletePostError = "Impossible de supprimer ce post. Reessayez."
+    queue.cancelled = "Annule"
+    queue.completed = "Termine"
+    queue.estimatedWait = "~{{count}} min"
+  - Enum status map EXPLICITE (queue-management.tsx) :
+    STATUS_LABELS: Record<QueueEntryStatus, string> = {
+      WAITING -> t('queue.waiting'), CALLED -> t('queue.called'),
+      CANCELLED -> t('queue.cancelled'), COMPLETED -> t('queue.completed')
+    } avec fallback item.status si valeur inattendue.
+  - Unite 'min' : cle queue.estimatedWait encapsule le format complet "~{{count}} min" (abreviation
+    invariable, pas de pluriel necessaire ; DE utilise "Min." par convention).
+  - tsc = 12, check-keys = 0 ecart, grep = 0 litteral FR/EN en dur dans les 4 ecrans
+  - **Reste S9-5** : lots A4, A5, B.
+
+- **S9-5-lotA4 (2026-06-14) : Alerts OK + register placeholders + preferencesStore — 6 cles creees**
+  - N = 6 cles nouvelles. Parite : fr/en/es/de = 656, ar = 680, 0 ecart.
+  - Cles creees :
+    common.actions.ok = "OK" (FR/EN/ES/DE: "OK", AR: "حسنًا")
+    common.states.restartRequired = "Redemarrage requis"
+    common.states.restartHint = "Fermez et rouvrez l application..."
+    auth.register.firstNamePlaceholder = "Camille" (EN: Jane, ES: Maria, DE: Anna, AR: فاطمة)
+    auth.register.lastNamePlaceholder = "Dupont" (EN: Smith, ES: Garcia, DE: Muller, AR: أحمد)
+    auth.register.emailPlaceholder = "camille@email.com" (EN: jane@, ES: maria@, DE: anna@, AR: fatima@)
+  - Fichiers modifies : 4 create-* (Alert OK), register.tsx (3 placeholders),
+    src/stores/preferencesStore.ts (Alert FR/AR -> i18next.t())
+  - preferencesStore : i18next.t() utilise directement (pas de hook, store Zustand ; i18next deja
+    importe et changeLanguage() appele AVANT l Alert -> la bonne langue est active)
+  - tsc = 12, check-keys = 0 ecart, grep = 0 litteral en dur
+  - **Reste S9-5** : lots A5, B.
+
+- **S9-5-lotA5 (2026-06-14) : refactor SERVICE_CATEGORY_META — 7 cles creees**
+  - N = 7 cles nouvelles sous service.categories.*. Parite : fr/en/es/de = 663, ar = 687, 0 ecart.
+  - Refactor : SERVICE_CATEGORY_META.label (string FR) -> .labelKey (cle i18n). Les 2 ecrans
+    consommateurs (create-service, create-staff) appellent t(cat.labelKey) au rendu.
+  - Cles creees :
+    service.categories.coupe = "Coupe & Taille" (EN: Cut & Trim, ES: Corte y Recorte, DE: Schnitt & Trimm, AR: قص وتشذيب)
+    service.categories.coloration = "Coloration" (EN: Colouring, ES: Coloracion, DE: Farbung, AR: صبغة)
+    service.categories.soin = "Soins" (EN: Hair Care, ES: Cuidados, DE: Haarpflege, AR: عناية بالشعر)
+    service.categories.coiffage = "Coiffage" (EN: Styling, ES: Peinado, DE: Styling, AR: تصفيف)
+    service.categories.barbe = "Barbier" (EN: Barber, ES: Barberia, DE: Barbier, AR: حلاقة)
+    service.categories.technique = "Techniques Speciales" (EN: Special Techniques, ES: Tecnicas Especiales, DE: Spezialtechniken, AR: تقنيات خاصة)
+    service.categories.autre = "Autres Prestations" (EN: Other Services, ES: Otros Servicios, DE: Sonstige Leistungen, AR: خدمات أخرى)
+  - Fichiers modifies : src/types/salon.ts, app/create-service.tsx, app/create-staff.tsx, 5 JSON
+  - tsc = 12, check-keys = 0 ecart, grep = 0 label FR en dur
+  - **S9-5 CATEGORIE A TERMINEE** — 46 trouvailles traitees en 5 lots (A1-A5), 40 cles creees +
+    nombreuses reutilisations. Parite finale cat. A : fr/en/es/de = 663, ar = 687.
+  - **Reste S9-5** : lot B (dette dates/formatage locale-aware, 8 trouvailles, chantier separe).
+
+- **S9-5-lotB-diagnostic (2026-06-14) : test Intl + recensement formatage dates**
+  - **Test Intl** : Node ICU 77.1 (equivalent Android API 36 ICU 76) confirme Intl.DateTimeFormat OK
+    pour les 5 locales (fr/en/es/de/ar) y compris dateStyle/timeStyle. Arabe rend correctement les
+    noms de mois arabes. Hermes RN 0.85 delegue a l'ICU plateforme (Android/iOS), aucun polyfill
+    requis. Build natif non concluant (CMake manquant puis file lock) — diagnostic documente.
+  - **CONCLUSION** : approche Intl.DateTimeFormat(i18n.language) VALIDEE. Pas besoin de polyfill
+    (@formatjs/intl-datetimeformat) ni de cles manuelles common.months.*.
+  - **Recensement** : 6 fichiers, 8 points de formatage (detail dans trace ci-dessous).
+  - **Helper propose** : src/utils/formatDate.ts (4 fonctions, base sur i18n.language).
+  - tsc = 12, check-keys = 0 ecart, git propre.
+  - **EN ATTENTE** validation humaine avant implementation.
+
+- **S9-5-lotB (2026-06-14) : helper formatDate Intl + migration 6 ecrans**
+  - CREE src/utils/formatDate.ts : 6 fonctions (formatDateLong, formatDateTime, formatDateTimeShort,
+    formatMonthYear, formatDayShort, formatMonthName) + garde-fou runtime intlArabicOK (probe arabe).
+  - MIGRE 6 fichiers : (tabs)/index.tsx, booking/new.tsx (MONTHS+DAYS_SHORT supprimes), (tabs)/
+    bookings.tsx, booking/[id].tsx, owner-bookings.tsx, settings/security.tsx.
+  - Zero cle i18n creee (check-keys inchange 663/687/0). tsc = 12 inchange.
+  - Grep controle : aucun 'fr-FR', MONTHS, DAYS_SHORT, toLocaleDateString, toLocaleTimeString, ni
+    separateur date FR dans les 6 fichiers.
+  - **S9-5 TERMINEE** (sous reserve test de rendu ci-dessous).
+
+- **ETAT DES LIEUX POST-ETAPE 9 (2026-06-15)** : cartographie pure, aucun code modifie.
+  - Etapes 1-9 (incl. 6B) FAITES. Etape 8 famille C : 2/4 faits (security, change-phone),
+    reste S10 (verification, frontend seul) et S11 (blocage, full-stack).
+  - Etapes 10-15 PAS COMMENCEES.
+  - tsc = 12 erreurs baseline inchangees (register fieldLabel, index averageRating/reviewCount,
+    profile statistics x9).
+  - check-keys = fr/en/es/de 663, ar 687, 0 ecart.
+  - Dettes documentees : templates email FR only, countries.ts 245 noms FR, 3 .includes()
+    sur messages backend FR, salon_staff.role ENUM, repartage-profil, resendVerification,
+    overlays dark mode, MediaController 10.0.2.2, pin HTTP 401.
+  - Candidats prochain chantier proposes : (1) Etape 10 navigation avancee, (2) S10+S11
+    ecrans manquants restants, (3) correction 12 erreurs tsc baseline.
+  - Decision en attente validation humaine.
 
 ---
 

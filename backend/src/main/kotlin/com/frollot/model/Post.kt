@@ -60,6 +60,13 @@ data class Post(
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
 
+    // V041 - Archivage global (façon Instagram) : masqué pour tous, réversible par l'auteur
+    @Column(name = "is_archived", nullable = false)
+    var isArchived: Boolean = false,
+
+    @Column(name = "archived_at")
+    var archivedAt: LocalDateTime? = null,
+
     @OneToMany(mappedBy = "post", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
     var likes: MutableList<PostLike> = mutableListOf(),

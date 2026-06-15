@@ -48,6 +48,7 @@ data class StaffResponse(
     val userEmail: String,
     /** URL de la photo de profil du coiffeur */
     val userAvatarUrl: String?,
+    val role: String,
     val specialties: List<ServiceCategory>,
     val specialtyLabels: List<String>,
     val isActive: Boolean,
@@ -85,6 +86,7 @@ data class StaffResponse(
                 userLastName = staff.user?.lastName ?: "",
                 userEmail = staff.user?.email ?: "",
                 userAvatarUrl = staff.user?.avatarUrl,
+                role = staff.role,
                 specialties = staff.specialties,
                 specialtyLabels = staff.specialties.map { it.getDisplayName() },
                 isActive = staff.isActive,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -59,7 +59,7 @@ export default function CreateSalonScreen() {
       setSuccess(true);
       setTimeout(() => router.back(), 2000);
     } catch (e: any) {
-      setError(e?.response?.data?.message || 'Erreur lors de la création du salon.');
+      setError(e?.response?.data?.message || t('salon.create.error'));
     } finally {
       setIsLoading(false);
     }
@@ -71,8 +71,8 @@ export default function CreateSalonScreen() {
         <View style={[styles.successIcon, { backgroundColor: colors.successContainer }]}>
           <MaterialCommunityIcons name="check-circle" size={56} color={colors.success} />
         </View>
-        <Text style={[styles.successTitle, { color: colors.onSurface }]}>Salon créé !</Text>
-        <Text style={[styles.successDesc, { color: colors.onSurfaceVariant }]}>Votre salon a été créé avec succès. Redirection...</Text>
+        <Text style={[styles.successTitle, { color: colors.onSurface }]}>{t('salon.create.successTitle')}</Text>
+        <Text style={[styles.successDesc, { color: colors.onSurfaceVariant }]}>{t('salon.create.successDesc')}</Text>
       </View>
     );
   }
@@ -82,11 +82,11 @@ export default function CreateSalonScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.onSurface} />
+          <MaterialCommunityIcons name={I18nManager.isRTL ? "arrow-right" : "arrow-left"} size={24} color={colors.onSurface} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Nouveau salon</Text>
-          <Text style={[styles.headerSub, { color: colors.onSurfaceVariant }]}>Configurez votre établissement</Text>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>{t('salon.create.title')}</Text>
+          <Text style={[styles.headerSub, { color: colors.onSurfaceVariant }]}>{t('salon.create.subtitle')}</Text>
         </View>
       </View>
 
@@ -98,8 +98,8 @@ export default function CreateSalonScreen() {
           ) : (
             <View style={[styles.coverPlaceholder, { backgroundColor: colors.surfaceContainerHigh }]}>
               <MaterialCommunityIcons name="image-plus" size={40} color={colors.onSurfaceVariant} />
-              <Text style={[styles.coverLabel, { color: colors.onSurfaceVariant }]}>Photo de couverture</Text>
-              <Text style={[styles.coverHint, { color: colors.outline }]}>Recommandé : 1200 × 400 px</Text>
+              <Text style={[styles.coverLabel, { color: colors.onSurfaceVariant }]}>{t('salon.create.coverLabel')}</Text>
+              <Text style={[styles.coverHint, { color: colors.outline }]}>{t('salon.create.coverHint')}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -107,47 +107,47 @@ export default function CreateSalonScreen() {
         {/* Fields */}
         <View style={styles.fields}>
           <TextField
-            label="Nom du salon *"
+            label={t('salon.salonName') + ' *'}
             icon="storefront"
             value={name}
             onChangeText={setName}
-            placeholder="Ex : Salon Lumière"
+            placeholder={t('salon.create.namePlaceholder')}
           />
 
           <TextField
-            label="Adresse *"
+            label={t('salon.address') + ' *'}
             icon="map-marker-outline"
             value={address}
             onChangeText={setAddress}
-            placeholder="12 rue de la Paix"
+            placeholder={t('salon.create.addressPlaceholder')}
           />
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
               <TextField
-                label="Ville *"
+                label={t('salon.city') + ' *'}
                 value={city}
                 onChangeText={setCity}
-                placeholder="Paris"
+                placeholder={t('salon.create.cityPlaceholder')}
               />
             </View>
             <View style={{ flex: 1 }}>
               <TextField
-                label="Code postal *"
+                label={t('salon.postalCode') + ' *'}
                 value={postalCode}
                 onChangeText={setPostalCode}
-                placeholder="75002"
+                placeholder={t('salon.create.postalCodePlaceholder')}
                 keyboardType="numeric"
               />
             </View>
           </View>
 
           <TextField
-            label="Description"
+            label={t('salon.description')}
             icon="text-box-outline"
             value={description}
             onChangeText={setDescription}
-            placeholder="Décrivez votre salon, vos spécialités..."
+            placeholder={t('salon.create.descriptionPlaceholder')}
             multiline
             numberOfLines={4}
           />
@@ -170,7 +170,7 @@ export default function CreateSalonScreen() {
           disabled={!isFormValid}
           style={styles.submitBtn}
         >
-          Créer mon salon
+          {t('salon.create.submit')}
         </PrimaryButton>
       </ScrollView>
     </KeyboardAvoidingView>

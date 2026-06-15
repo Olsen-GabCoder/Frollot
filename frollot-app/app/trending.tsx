@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  I18nManager,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -19,10 +20,10 @@ import { PostResponse, HairHashtagResponse, Salon, TrendPeriod } from '../src/ty
 
 type Section = 'posts' | 'hashtags' | 'salons';
 
-const PERIODS: { key: TrendPeriod; label: string }[] = [
-  { key: TrendPeriod.LAST_24H, label: '24h' },
-  { key: TrendPeriod.LAST_7D, label: '7 jours' },
-  { key: TrendPeriod.LAST_30D, label: '30 jours' },
+const PERIOD_KEYS: { key: TrendPeriod; i18nKey: string }[] = [
+  { key: TrendPeriod.LAST_24H, i18nKey: 'social.trending.last24h' },
+  { key: TrendPeriod.LAST_7D, i18nKey: 'social.trending.last7d' },
+  { key: TrendPeriod.LAST_30D, i18nKey: 'social.trending.last30d' },
 ];
 
 export default function TrendingScreen() {
@@ -118,10 +119,10 @@ export default function TrendingScreen() {
     } catch {}
   };
 
-  const sections: { key: Section; label: string }[] = [
-    { key: 'posts', label: 'Posts' },
-    { key: 'hashtags', label: 'Hashtags' },
-    { key: 'salons', label: 'Salons' },
+  const sections: { key: Section; i18nKey: string }[] = [
+    { key: 'posts', i18nKey: 'social.trending.posts' },
+    { key: 'hashtags', i18nKey: 'social.trending.hashtags' },
+    { key: 'salons', i18nKey: 'social.trending.salons' },
   ];
 
   return (
@@ -129,10 +130,10 @@ export default function TrendingScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>
-          {t('social.trending')}
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>
+          {t('social.tabs.trending')}
         </Text>
       </View>
 
@@ -149,7 +150,7 @@ export default function TrendingScreen() {
             <Text style={[typo.labelMedium, {
               color: section === s.key ? colors.onPrimaryContainer : colors.onSurfaceVariant,
             }]}>
-              {s.label}
+              {t(s.i18nKey)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -160,7 +161,7 @@ export default function TrendingScreen() {
         <>
           {/* Period filters */}
           <View style={styles.periodRow}>
-            {PERIODS.map((p) => (
+            {PERIOD_KEYS.map((p) => (
               <TouchableOpacity
                 key={p.key}
                 style={[styles.periodChip, {
@@ -172,7 +173,7 @@ export default function TrendingScreen() {
                 <Text style={[typo.labelMedium, {
                   color: period === p.key ? colors.onPrimary : colors.onSurfaceVariant,
                 }]}>
-                  {p.label}
+                  {t(p.i18nKey)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -195,7 +196,7 @@ export default function TrendingScreen() {
                         {(item.authorName?.[0] || '?').toUpperCase()}
                       </Text>
                     </View>
-                    <Text style={[typo.titleSmall, { color: colors.onSurface, flex: 1, marginLeft: 8 }]}>
+                    <Text style={[typo.titleSmall, { color: colors.onSurface, flex: 1, marginStart: 8 }]}>
                       {item.authorName}
                     </Text>
                   </View>
@@ -212,13 +213,13 @@ export default function TrendingScreen() {
                         size={20}
                         color={item.isLikedByCurrentUser ? colors.error : colors.onSurfaceVariant}
                       />
-                      <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
+                      <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
                         {item.likesCount}
                       </Text>
                     </TouchableOpacity>
                     <View style={styles.iconBtn}>
                       <MaterialIcons name="chat-bubble-outline" size={20} color={colors.onSurfaceVariant} />
-                      <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
+                      <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
                         {item.commentsCount}
                       </Text>
                     </View>
@@ -252,14 +253,14 @@ export default function TrendingScreen() {
                 <View style={[styles.hashIcon, { backgroundColor: colors.primaryContainer }]}>
                   <Text style={[typo.titleMedium, { color: colors.onPrimaryContainer }]}>#</Text>
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, marginStart: 12 }}>
                   <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{item.name}</Text>
                   {item.category && (
                     <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{item.category}</Text>
                   )}
                 </View>
                 <Text style={[typo.labelMedium, { color: colors.onSurfaceVariant }]}>
-                  {item.usageCount} posts
+                  {t('social.hashtagCount', { count: item.usageCount })}
                 </Text>
               </TouchableOpacity>
             )}
@@ -286,7 +287,7 @@ export default function TrendingScreen() {
                     <Image source={{ uri: resolveMediaUrl(item.coverPhotoUrl) }} style={styles.salonThumb} contentFit="cover" />
                   )}
                 </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, marginStart: 12 }}>
                   <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{item.name}</Text>
                   <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{item.address}</Text>
                 </View>

@@ -6,6 +6,7 @@ import {
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { I18nManager } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../src/stores/authStore';
 import { salonsApi } from '../../src/api';
@@ -14,14 +15,15 @@ import { SalonCard } from '../../src/components/salon';
 import { EmptyState, ErrorState, LoadingState } from '../../src/components/lists';
 import { Salon } from '../../src/types';
 import { useTheme } from '../../src/theme';
+import { formatDateLong } from '../../src/utils/formatDate';
 
-const CATEGORIES = [
-  { icon: 'view-grid' as const, label: 'Tous', value: undefined },
-  { icon: 'content-cut' as const, label: 'Coupe', value: 'COUPE' },
-  { icon: 'palette' as const, label: 'Coloration', value: 'COLORATION' },
-  { icon: 'spa' as const, label: 'Soin', value: 'SOIN' },
-  { icon: 'face-man' as const, label: 'Barbe', value: 'BARBE' },
-  { icon: 'auto-fix' as const, label: 'Coiffage', value: 'COIFFAGE' },
+const CATEGORY_KEYS = [
+  { icon: 'view-grid' as const, i18nKey: 'home.category.all', value: undefined },
+  { icon: 'content-cut' as const, i18nKey: 'home.category.cut', value: 'COUPE' },
+  { icon: 'palette' as const, i18nKey: 'home.category.color', value: 'COLORATION' },
+  { icon: 'spa' as const, i18nKey: 'home.category.care', value: 'SOIN' },
+  { icon: 'face-man' as const, i18nKey: 'home.category.beard', value: 'BARBE' },
+  { icon: 'auto-fix' as const, i18nKey: 'home.category.styling', value: 'COIFFAGE' },
 ];
 
 export default function HomeScreen() {
@@ -40,7 +42,7 @@ export default function HomeScreen() {
 
   // Load salons when category or city filter changes
   const [refreshTick, setRefreshTick] = useState(0);
-  const handleRefresh = () => { setRefreshing(true); setRefreshTick(t => t + 1); };
+  const handleRefresh = () => { setRefreshing(true); setRefreshTick(n => n + 1); };
 
   useEffect(() => {
     let ignore = false;
@@ -48,7 +50,7 @@ export default function HomeScreen() {
       setIsLoading(true);
       setHasError(false);
       try {
-        const category = CATEGORIES[selectedCategory]?.value;
+        const category = CATEGORY_KEYS[selectedCategory]?.value;
         const city = cityFilter || undefined;
         const data = category || city
           ? await salonsApi.getSalons({ category, city })
@@ -65,7 +67,7 @@ export default function HomeScreen() {
   }, [selectedCategory, cityFilter, refreshTick]);
 
   const firstName = user?.firstName || 'vous';
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const today = formatDateLong(new Date());
   const isOwner = user?.userType === 'salon_owner';
 
   const applyCityFilter = () => {
@@ -93,7 +95,7 @@ export default function HomeScreen() {
         </View>
         <TouchableOpacity style={[styles.searchBar, { backgroundColor: colors.surfaceContainerHigh }]} onPress={() => router.push('/(tabs)/explore')}>
           <MaterialCommunityIcons name="magnify" size={22} color={colors.onSurfaceVariant} />
-          <Text style={[styles.searchPlaceholder, { color: colors.onSurfaceVariant }]}>Salon, coiffeur, prestation…</Text>
+          <Text style={[styles.searchPlaceholder, { color: colors.onSurfaceVariant }]}>{t('home.searchBarPlaceholder')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -107,18 +109,18 @@ export default function HomeScreen() {
         <View style={styles.greetingSection}>
           <Text style={[styles.overline, { color: colors.secondary }]}>{today}</Text>
           <Text style={[styles.greetingTitle, { color: colors.onBackground }]}>
-            Bonjour {firstName},{'\n'}prêt(e) à vous sublimer ?
+            {t('home.greeting', { name: firstName })}{'\n'}{t('home.greetingMessage')}
           </Text>
         </View>
 
         {/* Categories */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesRow}>
-          {CATEGORIES.map((cat, i) => (
+          {CATEGORY_KEYS.map((cat, i) => (
             <TouchableOpacity key={i} onPress={() => setSelectedCategory(i)} style={styles.categoryItem}>
               <View style={[styles.categoryIcon, i === selectedCategory ? [styles.catActive, { backgroundColor: colors.primary }] : [styles.catInactive, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]]}>
                 <MaterialCommunityIcons name={cat.icon} size={26} color={i === selectedCategory ? colors.onPrimary : colors.primary} />
               </View>
-              <Text style={[styles.categoryLabel, { color: i === selectedCategory ? colors.primary : colors.onSurfaceVariant }]}>{cat.label}</Text>
+              <Text style={[styles.categoryLabel, { color: i === selectedCategory ? colors.primary : colors.onSurfaceVariant }]}>{t(cat.i18nKey)}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -131,7 +133,7 @@ export default function HomeScreen() {
           >
             <MaterialCommunityIcons name="map-marker" size={16} color={cityFilter ? colors.onPrimaryContainer : colors.onSurfaceVariant} />
             <Text style={[styles.cityChipText, { color: cityFilter ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>
-              {cityFilter || 'Ville'}
+              {cityFilter || t('home.cityLabel')}
             </Text>
             {cityFilter ? (
               <TouchableOpacity onPress={clearCityFilter} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -145,20 +147,20 @@ export default function HomeScreen() {
         {isLoading && !refreshing ? (
           <LoadingState />
         ) : hasError ? (
-          <ErrorState message="Impossible de charger les salons" onRetry={() => setRefreshTick(t => t + 1)} />
+          <ErrorState message={t('home.loadError')} onRetry={() => setRefreshTick(n => n + 1)} />
         ) : salons.length === 0 ? (
           <EmptyState
             icon={isOwner ? 'store-plus' : 'store-search'}
-            title={isOwner ? 'Aucun salon' : 'Aucun résultat'}
-            message={isOwner ? 'Créez votre premier salon pour commencer.' : 'Aucun salon trouvé pour ces critères.'}
-            actionLabel={isOwner ? 'Créer mon salon' : undefined}
+            title={isOwner ? t('home.noSalonTitle') : t('home.noResultTitle')}
+            message={isOwner ? t('home.noSalonMessage') : t('home.noResultMessage')}
+            actionLabel={isOwner ? t('home.createSalonButton') : undefined}
             onAction={isOwner ? () => router.push(`/create-salon?ownerId=${user?.id}`) : undefined}
           />
         ) : (
           <>
             {/* Salon list */}
             <SectionHeader
-              title={CATEGORIES[selectedCategory]?.value ? `Salons — ${CATEGORIES[selectedCategory].label}` : 'Salons populaires'}
+              title={CATEGORY_KEYS[selectedCategory]?.value ? t('home.salonsCategory', { category: t(CATEGORY_KEYS[selectedCategory].i18nKey) }) : t('home.popularSalons')}
               onActionPress={() => router.push('/(tabs)/explore')}
             />
             <FlatList
@@ -190,7 +192,7 @@ export default function HomeScreen() {
                   <Text style={[styles.salonListName, { color: colors.onSurface }]}>{item.name}</Text>
                   <Text style={[styles.salonListCity, { color: colors.onSurfaceVariant }]}>{item.city}</Text>
                 </View>
-                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+                <MaterialCommunityIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={22} color={colors.onSurfaceVariant} />
               </TouchableOpacity>
             ))}
 
@@ -198,11 +200,11 @@ export default function HomeScreen() {
             <View style={styles.bannerWrap}>
               {/* design-fixed — self-contained branded gradient banner, colors relative to gradient not theme */}
               <LinearGradient colors={['#6B4E78', '#4f3a5b']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.banner}>
-                <Text style={styles.bannerOverline}>File d'attente en direct</Text>
-                <Text style={styles.bannerTitle}>{salons[0]?.name || 'Salon Lumière'} vous reçoit dans ~15 min</Text>
+                <Text style={styles.bannerOverline}>{t('home.queueOverline')}</Text>
+                <Text style={styles.bannerTitle}>{t('home.queueTitle', { name: salons[0]?.name || 'Salon' })}</Text>
                 <TouchableOpacity style={styles.bannerBtn} onPress={() => salons[0] && router.push(`/salon/${salons[0].id}`)}>
                   <MaterialCommunityIcons name="login" size={18} color="#6B4E78" />{/* design-fixed */}
-                  <Text style={styles.bannerBtnText}>Rejoindre la file</Text>
+                  <Text style={styles.bannerBtnText}>{t('home.queueButton')}</Text>
                 </TouchableOpacity>
               </LinearGradient>
             </View>
@@ -215,10 +217,10 @@ export default function HomeScreen() {
         <Pressable style={styles.dialogOverlay} onPress={() => setShowCityDialog(false)}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <Pressable onPress={(e) => e.stopPropagation()} style={[styles.dialogCard, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.dialogTitle, { color: colors.onSurface }]}>Filtrer par ville</Text>
+              <Text style={[styles.dialogTitle, { color: colors.onSurface }]}>{t('home.cityDialogTitle')}</Text>
               <TextInput
                 style={[styles.dialogInput, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-                placeholder="Ex: Paris, Lyon, Marseille…"
+                placeholder={t('home.cityDialogPlaceholder')}
                 placeholderTextColor={colors.onSurfaceVariant}
                 value={cityInput}
                 onChangeText={setCityInput}
@@ -226,10 +228,10 @@ export default function HomeScreen() {
               />
               <View style={styles.dialogActions}>
                 <TouchableOpacity onPress={() => setShowCityDialog(false)} style={styles.dialogBtn}>
-                  <Text style={[styles.dialogBtnText, { color: colors.onSurfaceVariant }]}>Annuler</Text>
+                  <Text style={[styles.dialogBtnText, { color: colors.onSurfaceVariant }]}>{t('common.actions.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={applyCityFilter} style={[styles.dialogBtn, { backgroundColor: colors.primary, borderRadius: 999 }]}>
-                  <Text style={[styles.dialogBtnText, { color: colors.onPrimary }]}>Appliquer</Text>
+                  <Text style={[styles.dialogBtnText, { color: colors.onPrimary }]}>{t('home.cityApply')}</Text>
                 </TouchableOpacity>
               </View>
             </Pressable>

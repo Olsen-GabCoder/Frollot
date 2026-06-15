@@ -23,6 +23,7 @@ import com.frollot.service.EmailSendResult
 import com.frollot.service.EmailSendException
 import com.frollot.service.PreRegistrationResult
 import com.frollot.service.PasswordResetService
+import com.frollot.service.TwoFactorService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -50,8 +51,11 @@ class UserController(
     private val refreshTokenService: RefreshTokenService,
     private val rateLimitFilter: RateLimitFilter,
     private val emailVerificationService: EmailVerificationService,
-    private val passwordResetService: PasswordResetService
+    private val passwordResetService: PasswordResetService,
+    private val twoFactorService: TwoFactorService
 ) {
+
+    private val logger = org.slf4j.LoggerFactory.getLogger(UserController::class.java)
 
     // ========== MÉTHODES UTILITAIRES ==========
 
@@ -78,7 +82,8 @@ class UserController(
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     fun getAllUsers(): ResponseEntity<List<UserResponse>> {
-        val users = userService.getAllUsers().map { UserResponse.fromEntity(it) }
+        // Vue ADMIN : le numéro reste visible quelle que soit la visibilité choisie (V045)
+        val users = userService.getAllUsers().map { UserResponse.fromEntity(it, includePrivatePhone = true) }
         return ResponseEntity.ok(users)
     }
 
@@ -236,13 +241,12 @@ class UserController(
     ): ResponseEntity<AuthResponse> {
         val clientIp = getClientIpAddress(httpRequest)
 
-        println("🔵 [UserController] === TENTATIVE DE CONNEXION ===")
-        println("🔵 [UserController] Email: ${request.email}")
-        println("🔵 [UserController] IP: $clientIp")
+        // Hygiène S9b : plus aucun email/IP en clair au niveau INFO ; PII réservée au DEBUG
+        logger.debug("Tentative de connexion depuis {}", clientIp)
 
         val user = userRepository.findByEmail(request.email)
         if (user == null) {
-            println("❌ [UserController] Utilisateur non trouvé: ${request.email}")
+            logger.debug("Connexion refusée : email inconnu")
             // Enregistrer l'échec pour le rate limiting
             rateLimitFilter.recordLoginFailure(clientIp)
             return ResponseEntity
@@ -253,29 +257,9 @@ class UserController(
         // FORCER LE RECHARGEMENT DEPUIS LA BASE POUR ÉVITER LES PROBLÈMES DE CACHE
         // Cela garantit que emailVerified est à jour après vérification email
         val refreshedUser = userRepository.findById(user.id!!).orElse(user)
-        println("🔄 [UserController] Utilisateur rechargé depuis base:")
-        println("   └─ ID: ${refreshedUser.id}")
-        println("   └─ Email: ${refreshedUser.email}")
-        println("   └─ Email vérifié (après refresh): ${refreshedUser.emailVerified}")
-        println("   └─ Vérifié professionnellement (après refresh): ${refreshedUser.isVerified}")
-
-        println("✅ [UserController] Utilisateur trouvé:")
-        println("   └─ ID: ${refreshedUser.id}")
-        println("   └─ Email: ${refreshedUser.email}")
-        println("   └─ Email vérifié: ${refreshedUser.emailVerified}")
-        println("   └─ Vérifié professionnellement: ${refreshedUser.isVerified}")
-        println("   └─ Actif: ${refreshedUser.isActive}")
-        println("   └─ Type: ${refreshedUser.userType}")
-
-        // LOGS CRITIQUES POUR DEBUGGER LE PROBLÈME DE REDIRECTION
-        println("🔴 [CRITICAL] État de vérification au moment de la récupération:")
-        println("🔴 [CRITICAL] refreshedUser.emailVerified = ${refreshedUser.emailVerified}")
-        println("🔴 [CRITICAL] refreshedUser.isVerified = ${refreshedUser.isVerified}")
-        println("🔴 [CRITICAL] refreshedUser.email = ${refreshedUser.email}")
-        println("🔴 [CRITICAL] refreshedUser.id = ${refreshedUser.id}")
 
         if (!refreshedUser.isActive) {
-            println("❌ [UserController] Compte désactivé: ${request.email}")
+            logger.warn("Connexion refusée : compte désactivé (userId={})", refreshedUser.id)
             return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(AuthResponse.error("Compte désactivé"))
@@ -283,14 +267,12 @@ class UserController(
 
         // Vérifier que l'email est vérifié (obligatoire pour utiliser le compte)
         if (!refreshedUser.emailVerified) {
-            println("❌ [UserController] Email NON vérifié: ${request.email} (emailVerified = ${refreshedUser.emailVerified})")
+            logger.debug("Connexion refusée : email non vérifié (userId={})", refreshedUser.id)
             // Permettre à l'utilisateur de recevoir un nouveau code de vérification
             return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(AuthResponse.error("Votre adresse email n'a pas été vérifiée. Veuillez utiliser l'endpoint /api/users/me/resend-verification pour recevoir un nouveau code de vérification."))
         }
-
-        println("✅ [UserController] Email vérifié, vérification du mot de passe...")
 
         if (!userService.checkPassword(request.password, refreshedUser.passwordHash)) {
             // Enregistrer l'échec pour le rate limiting
@@ -299,10 +281,22 @@ class UserController(
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(AuthResponse.error("Email ou mot de passe incorrect"))
         }
-        
+
         // Login réussi - réinitialiser le compteur d'échecs
         rateLimitFilter.clearLoginFailures(clientIp)
-        
+
+        // === S9b : INTERCEPTION 2FA ===
+        // Point exact identifié au diagnostic : APRÈS la validation du mot de passe
+        // (et clearLoginFailures), AVANT toute émission de token. Pour un compte
+        // 2FA-activé : AUCUN access token, AUCUNE ligne refresh_tokens — seulement
+        // un jeton de défi 2fa_pending (5 min), accepté uniquement par
+        // POST /api/users/login/2fa (rejeté partout ailleurs par JwtAuthenticationFilter).
+        if (twoFactorService.isEnabled(refreshedUser.id!!)) {
+            val (twoFactorToken, _) = jwtTokenProvider.generateTwoFactorPendingToken(refreshedUser.id!!)
+            logger.debug("Défi 2FA émis (userId={})", refreshedUser.id)
+            return ResponseEntity.ok(AuthResponse.twoFactorChallenge(twoFactorToken))
+        }
+
         // Récupérer les informations du device
         val userAgent = httpRequest.getHeader("User-Agent") ?: "Unknown"
 
@@ -313,23 +307,7 @@ class UserController(
             ipAddress = clientIp
         )
 
-        // === LOGS DÉTAILLÉS DE LA RÉPONSE ENVOYÉE AU FRONTEND ===
-        println("=== RÉPONSE ENVOYÉE AU FRONTEND ===")
-        println("Access Token: ${accessToken.take(20)}...")
-        println("Refresh Token: ${refreshToken.take(20)}...")
-        println("User ID: ${refreshedUser.id}")
-        println("Email: ${refreshedUser.email}")
-        println("User Type: ${refreshedUser.userType}")
-        println("First Name: ${refreshedUser.firstName}")
-        println("Last Name: ${refreshedUser.lastName}")
-        println("Email Verified (base): ${refreshedUser.emailVerified}")
-        println("Is Verified (base): ${refreshedUser.isVerified}")
-        println("Is Active: ${refreshedUser.isActive}")
-
-        // LOGS DE DEBUG CRITIQUES POUR LE PROBLÈME DE REDIRECTION
-        println("🔍 [DEBUG] AVANT AuthResponse.fromUser():")
-        println("🔍 [DEBUG] refreshedUser.emailVerified = ${refreshedUser.emailVerified}")
-        println("🔍 [DEBUG] refreshedUser.isVerified = ${refreshedUser.isVerified}")
+        logger.debug("Connexion réussie (userId={})", refreshedUser.id)
 
         val response = AuthResponse.fromUser(
             user = refreshedUser,
@@ -338,32 +316,97 @@ class UserController(
             message = "Connexion réussie"
         )
 
-        // LOGS DE DEBUG APRÈS CRÉATION DE L'AuthResponse
-        println("🔍 [DEBUG] APRÈS AuthResponse.fromUser():")
-        println("🔍 [DEBUG] response.isVerified = ${response.isVerified}")
-        println("🔍 [DEBUG] response.email = ${response.email}")
-
-        println("=== VALEURS DANS L'OBJET AuthResponse ===")
-        println("response.isVerified: ${response.isVerified}")
-        println("=====================================")
-
-        // LOGS DÉTAILLÉS DEMANDÉS
-        println("=== RÉPONSE LOGIN ===")
-        println("accessToken : ${response.accessToken.take(20)}...")
-        println("refreshToken : ${response.refreshToken.take(20)}...")
-        println("userId : ${response.userId}")
-        println("email : ${response.email}")
-        println("userType : ${response.userType}")
-        println("firstName : ${response.firstName}")
-        println("lastName : ${response.lastName}")
-        println("isVerified : ${response.isVerified}")
-        println("isActive : ${response.isActive}")
-        println("avatarUrl : ${response.avatarUrl}")
-        println("message : ${response.message}")
-        println("emailSendStatus : ${response.emailSendStatus}")
-        println("====================")
-
         return ResponseEntity.ok(response)
+    }
+
+    /**
+     * Étape 2 du login pour les comptes 2FA (S9b) : transforme un défi 2FA en vrais tokens.
+     *
+     * Endpoint PUBLIC (pas de Bearer) : l'authentification repose sur le jeton
+     * 2fa_pending (signé, 5 min, type vérifié) + un code TOTP courant OU un code
+     * de récupération non utilisé (usage unique strict).
+     *
+     * Anti-brute-force : 5 tentatives max par jti (compteur RateLimitFilter),
+     * puis le jeton est invalidé — il faut repasser par /login (lui-même rate-limité).
+     * L'IP est aussi couverte par le bucket login du RateLimitFilter.
+     *
+     * L'émission finale passe par le chemin EXISTANT (generateToken +
+     * createRefreshTokenWithDeviceInfo) : le plafond S8b de 5 sessions s'applique
+     * automatiquement. Le device est capturé sur CETTE requête.
+     */
+    @Operation(
+        summary = "Vérification 2FA du login",
+        description = "Valide le code TOTP (ou un code de récupération) et émet les tokens définitifs"
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(responseCode = "200", description = "Code valide, tokens émis"),
+            ApiResponse(responseCode = "401", description = "Jeton 2FA invalide/expiré/épuisé ou code incorrect")
+        ]
+    )
+    @PostMapping("/login/2fa")
+    fun loginTwoFactor(
+        @Valid @RequestBody request: TwoFactorLoginRequest,
+        httpRequest: HttpServletRequest
+    ): ResponseEntity<AuthResponse> {
+        val clientIp = getClientIpAddress(httpRequest)
+
+        // 1. Valider le jeton de défi LUI-MÊME (signature + type=2fa_pending + non expiré).
+        //    Tout autre token (access, refresh, expiré, malformé) -> 401.
+        val pending = jwtTokenProvider.validateTwoFactorPendingToken(request.twoFactorToken)
+            ?: return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(AuthResponse.error("Jeton de vérification invalide ou expiré. Veuillez vous reconnecter."))
+        val (userId, jti) = pending
+
+        // 2. Compteur anti-brute-force par jti : 5 tentatives max sur la vie du jeton (5 min)
+        if (!rateLimitFilter.registerTwoFactorAttempt(jti)) {
+            logger.warn("Jeton 2FA épuisé après 5 tentatives (userId={})", userId)
+            return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(AuthResponse.error("Trop de tentatives. Veuillez vous reconnecter."))
+        }
+
+        // 3. Valider le code : TOTP courant (fenêtre ±1) OU code de récupération non utilisé
+        if (!twoFactorService.verifyLoginCode(userId, request.code)) {
+            return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(AuthResponse.error("Code de vérification incorrect."))
+        }
+
+        // 4. Code valide : invalider le jeton de défi (usage unique) puis émettre les
+        //    vrais tokens par le chemin EXISTANT (plafond S8b appliqué automatiquement)
+        rateLimitFilter.consumeTwoFactorChallenge(jti)
+
+        val user = userRepository.findById(userId).orElse(null)
+            ?: return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(AuthResponse.error("Utilisateur non trouvé."))
+
+        if (!user.isActive) {
+            return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(AuthResponse.error("Compte désactivé"))
+        }
+
+        val userAgent = httpRequest.getHeader("User-Agent") ?: "Unknown"
+        val accessToken = jwtTokenProvider.generateToken(user)
+        val refreshToken = refreshTokenService.createRefreshTokenWithDeviceInfo(
+            userId = user.id!!,
+            userAgent = userAgent,
+            ipAddress = clientIp
+        )
+
+        logger.debug("Connexion 2FA réussie (userId={})", user.id)
+
+        return ResponseEntity.ok(
+            AuthResponse.fromUser(
+                user = user,
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+                message = "Connexion réussie"
+            )
+        )
     }
     
     @Operation(
@@ -514,7 +557,8 @@ class UserController(
         val freshUser = userRepository.findById(authenticatedUser.id!!)
             .orElseThrow { IllegalStateException("Utilisateur non trouvé en base de données") }
         
-        return ResponseEntity.ok(UserResponse.fromEntity(freshUser))
+        // Vue PROPRIÉTAIRE : il voit toujours son propre numéro (V045)
+        return ResponseEntity.ok(UserResponse.fromEntity(freshUser, includePrivatePhone = true))
     }
 
     /**
@@ -541,7 +585,8 @@ class UserController(
     ): ResponseEntity<UserResponse> {
         val authenticatedUser = getAuthenticatedUser()
         val updatedUser = userService.updateUserProfile(authenticatedUser.id!!, request)
-        return ResponseEntity.ok(UserResponse.fromEntity(updatedUser))
+        // Vue PROPRIÉTAIRE : includePrivatePhone=true (V045)
+        return ResponseEntity.ok(UserResponse.fromEntity(updatedUser, includePrivatePhone = true))
     }
 
     /**
@@ -710,7 +755,8 @@ class UserController(
         }
         
         val updatedUser = userService.updateUserAvatar(userId, request.avatarUrl)
-        return ResponseEntity.ok(UserResponse.fromEntity(updatedUser))
+        // Vue PROPRIÉTAIRE : includePrivatePhone=true (V045)
+        return ResponseEntity.ok(UserResponse.fromEntity(updatedUser, includePrivatePhone = true))
     }
 
     // ========== SÉCURITÉ ==========
@@ -997,13 +1043,19 @@ class UserController(
         val user = getAuthenticatedUser()
         
         try {
-            val updatedUser = userService.changePhone(user.id!!, request.newPhone, request.password)
-            
+            val updatedUser = userService.changePhone(
+                user.id!!, request.newPhone, request.phonePublic, request.password
+            )
+
             return ResponseEntity.ok(
                 ChangePhoneResponse(
                     success = true,
-                    message = "Numéro de téléphone changé avec succès",
-                    newPhone = updatedUser.phoneNumber
+                    message = if (updatedUser.phoneNumber == null)
+                        "Numéro de téléphone supprimé avec succès"
+                    else
+                        "Numéro de téléphone changé avec succès",
+                    newPhone = updatedUser.phoneNumber,
+                    phonePublic = updatedUser.phonePublic
                 )
             )
         } catch (e: IllegalArgumentException) {

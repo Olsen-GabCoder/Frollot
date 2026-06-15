@@ -10,6 +10,7 @@
     "@react-native-async-storage/async-storage": "^3.1.1",
     "axios": "^1.17.0",
     "expo": "~56.0.9",
+    "expo-clipboard": "~56.0.4",
     "expo-constants": "^56.0.17",
     "expo-font": "~56.0.5",
     "expo-image": "^56.0.10",
@@ -22,15 +23,18 @@
     "expo-splash-screen": "^56.0.10",
     "expo-status-bar": "~56.0.4",
     "i18next": "^26.3.1",
+    "libphonenumber-js": "^1.13.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.78.0",
     "react-i18next": "^17.0.8",
     "react-native": "0.85.3",
     "react-native-gesture-handler": "^3.0.0",
+    "react-native-qrcode-svg": "^6.3.21",
     "react-native-reanimated": "^4.4.1",
     "react-native-safe-area-context": "^5.8.0",
     "react-native-screens": "^4.25.2",
+    "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
@@ -41,8 +45,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "private": true

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme';
 
 interface BookingStepperProps {
@@ -8,11 +9,18 @@ interface BookingStepperProps {
   currentStep?: number;
 }
 
-export function BookingStepper({ steps = ['Service', 'Date', 'Coiffeur', 'Recap'], currentStep = 0 }: BookingStepperProps) {
+export function BookingStepper({ steps, currentStep = 0 }: BookingStepperProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
+  const stepLabels = steps ?? [
+    t('booking.steps.service'),
+    t('booking.steps.date'),
+    t('booking.steps.stylist'),
+    t('booking.steps.summary'),
+  ];
   return (
     <View style={styles.container}>
-      {steps.map((step, i) => {
+      {stepLabels.map((step, i) => {
         const done = i < currentStep;
         const active = i === currentStep;
         return (
@@ -38,7 +46,7 @@ export function BookingStepper({ steps = ['Service', 'Date', 'Coiffeur', 'Recap'
                 {step}
               </Text>
             </View>
-            {i < steps.length - 1 && (
+            {i < stepLabels.length - 1 && (
               <View style={[styles.line, { backgroundColor: done ? colors.success : colors.outlineVariant }]} />
             )}
           </React.Fragment>

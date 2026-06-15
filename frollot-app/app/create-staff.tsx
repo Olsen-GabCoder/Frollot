@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -55,12 +56,12 @@ export default function CreateStaffScreen() {
         const existing = users.find((u) => u.email === email.trim());
         if (existing) {
           if (existing.userType !== 'hairstylist') {
-            setError("Cet utilisateur existe mais n'est pas de type 'coiffeur'.");
+            setError(t('staff.notHairstylist'));
             return;
           }
           userId = existing.id;
         } else {
-          setError("Utilisateur non trouve avec cet email.");
+          setError(t('staff.userNotFound'));
           return;
         }
       } else {
@@ -75,17 +76,17 @@ export default function CreateStaffScreen() {
         isActive: true,
       });
 
-      Alert.alert(t('common.done'), `${firstName.trim()} ${lastName.trim()} ajoute avec succes`, [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert(t('common.actions.done'), t('staff.addedSuccess', { name: `${firstName.trim()} ${lastName.trim()}` }), [
+        { text: t('common.actions.ok'), onPress: () => router.back() },
       ]);
     } catch (e: any) {
       const msg = e?.response?.data?.message;
       if (msg?.includes('existe deja') || e?.response?.status === 409) {
-        setError('Ce coiffeur fait deja partie de l\'equipe de ce salon.');
+        setError(t('staff.alreadyMember'));
       } else if (e?.response?.status === 403) {
-        setError('Vous n\'etes pas autorise a ajouter du staff a ce salon.');
+        setError(t('staff.notAuthorized'));
       } else {
-        setError(msg || t('common.error'));
+        setError(msg || t('common.states.error'));
       }
     } finally {
       setIsCreating(false);
@@ -101,28 +102,28 @@ export default function CreateStaffScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>{t('staff.addStaff')}</Text>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{t('staff.addStaff')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.row}>
           <TextInput style={[styles.input, styles.half, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-            placeholder={t('auth.firstName') + ' *'} placeholderTextColor={colors.onSurfaceVariant} value={firstName} onChangeText={setFirstName} />
+            placeholder={t('common.fields.firstName') + ' *'} placeholderTextColor={colors.onSurfaceVariant} value={firstName} onChangeText={setFirstName} />
           <TextInput style={[styles.input, styles.half, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-            placeholder={t('auth.lastName') + ' *'} placeholderTextColor={colors.onSurfaceVariant} value={lastName} onChangeText={setLastName} />
+            placeholder={t('common.fields.lastName') + ' *'} placeholderTextColor={colors.onSurfaceVariant} value={lastName} onChangeText={setLastName} />
         </View>
 
         <TextInput style={[styles.input, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-          placeholder={t('auth.email') + ' *'} placeholderTextColor={colors.onSurfaceVariant} value={email} onChangeText={setEmail}
+          placeholder={t('common.fields.email') + ' *'} placeholderTextColor={colors.onSurfaceVariant} value={email} onChangeText={setEmail}
           keyboardType="email-address" autoCapitalize="none" />
 
         {/* Info box */}
         <View style={[styles.infoBox, { backgroundColor: colors.infoContainer }]}>
           <MaterialIcons name="info-outline" size={18} color={colors.onInfoContainer} />
-          <Text style={[typo.bodySmall, { color: colors.onInfoContainer, marginLeft: 8, flex: 1 }]}>
-            Si l'utilisateur n'existe pas, un compte coiffeur sera cree automatiquement.
+          <Text style={[typo.bodySmall, { color: colors.onInfoContainer, marginStart: 8, flex: 1 }]}>
+            {t('staff.autoCreateHint')}
           </Text>
         </View>
 
@@ -142,7 +143,7 @@ export default function CreateStaffScreen() {
               >
                 <Text style={{ fontSize: 20 }}>{cat.emoji}</Text>
                 <Text style={[typo.labelSmall, { color: selected ? colors.onPrimaryContainer : colors.onSurfaceVariant, marginTop: 4 }]}>
-                  {cat.label}
+                  {t(cat.labelKey)}
                 </Text>
                 {selected && <MaterialIcons name="check-circle" size={16} color={colors.primary} style={styles.checkIcon} />}
               </TouchableOpacity>
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
   infoBox: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, marginBottom: 12 },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   categoryCard: { width: '48%', padding: 12, borderRadius: 12, borderWidth: 1, alignItems: 'center', position: 'relative' },
-  checkIcon: { position: 'absolute', top: 8, right: 8 },
+  checkIcon: { position: 'absolute', top: 8, end: 8 },
   errorCard: { padding: 12, borderRadius: 12, marginBottom: 12 },
   submitBtn: { height: 52, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
 });

@@ -9,6 +9,7 @@ import {
   Pressable,
   Switch,
   RefreshControl,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -25,11 +26,11 @@ import { EmptyState } from '../../../src/components/lists/EmptyState';
 import { TextField } from '../../../src/components/ui/TextField';
 import { PrimaryButton, TextButton } from '../../../src/components/ui/Button';
 
-const CATEGORIES: { value: CollectionCategory; label: string }[] = [
-  { value: CollectionCategory.INSPIRATION, label: 'Inspiration' },
-  { value: CollectionCategory.PORTFOLIO, label: 'Portfolio' },
-  { value: CollectionCategory.TENDANCE, label: 'Tendance' },
-  { value: CollectionCategory.PERSONNEL, label: 'Personnel' },
+const CATEGORY_KEYS: { value: CollectionCategory; i18nKey: string }[] = [
+  { value: CollectionCategory.INSPIRATION, i18nKey: 'collections.category.inspiration' },
+  { value: CollectionCategory.PORTFOLIO, i18nKey: 'collections.category.portfolio' },
+  { value: CollectionCategory.TENDANCE, i18nKey: 'collections.category.tendance' },
+  { value: CollectionCategory.PERSONNEL, i18nKey: 'collections.category.personnel' },
 ];
 
 export default function CollectionsListScreen() {
@@ -68,7 +69,7 @@ export default function CollectionsListScreen() {
       const data = await collectionsApi.getCollectionsByUser(userId, isOwner);
       setCollections(data);
     } catch (error: any) {
-      setLoadError(error?.response?.data?.message || 'Impossible de charger les collections.');
+      setLoadError(error?.response?.data?.message || t('collections.loadError'));
     } finally {
       asRefresh ? setRefreshing(false) : setIsLoading(false);
     }
@@ -84,7 +85,7 @@ export default function CollectionsListScreen() {
         const data = await collectionsApi.getCollectionsByUser(userId, isOwner);
         if (!ignore) setCollections(data);
       } catch (error: any) {
-        if (!ignore) setLoadError(error?.response?.data?.message || 'Impossible de charger les collections.');
+        if (!ignore) setLoadError(error?.response?.data?.message || t('collections.loadError'));
       } finally {
         if (!ignore) setIsLoading(false);
       }
@@ -103,7 +104,7 @@ export default function CollectionsListScreen() {
   const handleCreate = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      setCreateError('Le nom est requis.');
+      setCreateError(t('collections.nameRequired'));
       return;
     }
     setCreating(true);
@@ -119,7 +120,7 @@ export default function CollectionsListScreen() {
       setShowCreate(false);
       resetCreateForm();
     } catch (error: any) {
-      setCreateError(error?.response?.data?.message || 'Impossible de créer la collection.');
+      setCreateError(error?.response?.data?.message || t('collections.createError'));
     } finally {
       setCreating(false);
     }
@@ -137,7 +138,7 @@ export default function CollectionsListScreen() {
       setDeleteTarget(null);
     } catch (error: any) {
       setCollections(previous);
-      setDeleteError(error?.response?.data?.message || 'Impossible de supprimer la collection.');
+      setDeleteError(error?.response?.data?.message || t('collections.deleteError'));
     } finally {
       setDeleting(false);
     }
@@ -152,8 +153,10 @@ export default function CollectionsListScreen() {
     }
   };
 
-  const categoryLabel = (cat: CollectionCategory) =>
-    CATEGORIES.find((c) => c.value === cat)?.label ?? cat;
+  const categoryLabel = (cat: CollectionCategory) => {
+    const key = CATEGORY_KEYS.find((c) => c.value === cat)?.i18nKey;
+    return key ? t(key) : cat;
+  };
 
   const renderCollection = ({ item }: { item: CollectionResponse }) => {
     const cover = resolveMediaUrl(item.coverImageUrl);
@@ -199,7 +202,7 @@ export default function CollectionsListScreen() {
             </Text>
           )}
           <Text style={[typo.labelMedium, { color: colors.primary, marginTop: 6 }]}>
-            {item.postsCount} {item.postsCount > 1 ? 'posts' : 'post'}
+            {t('collections.postCount', { count: item.postsCount })}
           </Text>
         </View>
       </TouchableOpacity>
@@ -214,12 +217,12 @@ export default function CollectionsListScreen() {
           style={[styles.backBtn, { backgroundColor: colors.surfaceContainerHigh }]}
           onPress={goBack}
         >
-          <MaterialIcons name="arrow-back" size={22} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.onSurface} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.titleBlock}>
-        <Text style={[typo.overline, { color: colors.secondary }]}>Inspiration</Text>
+        <Text style={[typo.overline, { color: colors.secondary }]}>{t('collections.overline')}</Text>
         <Text style={[typo.headlineMedium, { color: colors.onBackground, marginTop: 4 }]}>
           {t('profile.collections')}
         </Text>
@@ -232,11 +235,11 @@ export default function CollectionsListScreen() {
       ) : collections.length === 0 ? (
         <EmptyState
           icon="bookmark-multiple-outline"
-          title="Aucune collection"
+          title={t('collections.emptyTitle')}
           message={isOwner
-            ? 'Créez votre première collection pour organiser vos posts favoris.'
-            : "Cet utilisateur n'a pas encore de collections."}
-          actionLabel={isOwner ? 'Créer une collection' : undefined}
+            ? t('collections.emptyOwnerMessage')
+            : t('collections.emptyOtherMessage')}
+          actionLabel={isOwner ? t('collections.createButton') : undefined}
           onAction={isOwner ? () => { resetCreateForm(); setShowCreate(true); } : undefined}
         />
       ) : (
@@ -267,35 +270,35 @@ export default function CollectionsListScreen() {
       <Modal visible={showCreate} transparent animationType="fade" onRequestClose={() => setShowCreate(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => !creating && setShowCreate(false)}>
           <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: colors.surface }]}>
-            <Text style={[typo.overline, { color: colors.secondary, textAlign: 'center' }]}>Collections</Text>
+            <Text style={[typo.overline, { color: colors.secondary, textAlign: 'center' }]}>{t('profile.collections')}</Text>
             <Text style={[typo.headlineSmall, { color: colors.onSurface, textAlign: 'center', marginBottom: 16 }]}>
-              Nouvelle collection
+              {t('collections.newTitle')}
             </Text>
 
             <TextField
-              label="Nom"
+              label={t('collections.nameLabel')}
               icon="bookmark-outline"
               value={name}
               onChangeText={(v) => { setName(v); if (createError) setCreateError(''); }}
-              placeholder="Ex : Coupes courtes"
+              placeholder={t('collections.namePlaceholder')}
               maxLength={200}
             />
             <View style={styles.fieldGap}>
               <TextField
-                label="Description (optionnel)"
+                label={t('collections.descriptionLabel')}
                 value={description}
                 onChangeText={setDescription}
-                placeholder="À quoi sert cette collection ?"
+                placeholder={t('collections.descriptionPlaceholder')}
                 multiline
                 maxLength={2000}
               />
             </View>
 
             <Text style={[typo.labelMedium, { color: colors.onSurfaceVariant, marginTop: 16, marginBottom: 8 }]}>
-              Catégorie
+              {t('collections.categoryLabel')}
             </Text>
             <View style={styles.chipRow}>
-              {CATEGORIES.map((cat) => {
+              {CATEGORY_KEYS.map((cat) => {
                 const on = category === cat.value;
                 return (
                   <TouchableOpacity
@@ -307,7 +310,7 @@ export default function CollectionsListScreen() {
                     onPress={() => setCategory(cat.value)}
                   >
                     <Text style={[typo.labelMedium, { color: on ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>
-                      {cat.label}
+                      {t(cat.i18nKey)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -315,7 +318,7 @@ export default function CollectionsListScreen() {
             </View>
 
             <View style={styles.switchRow}>
-              <Text style={[typo.titleSmall, { color: colors.onSurface }]}>Collection publique</Text>
+              <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{t('collections.publicLabel')}</Text>
               <Switch
                 value={isPublic}
                 onValueChange={setIsPublic}
@@ -334,9 +337,9 @@ export default function CollectionsListScreen() {
             )}
 
             <View style={styles.modalActions}>
-              <TextButton onPress={() => !creating && setShowCreate(false)}>Annuler</TextButton>
+              <TextButton onPress={() => !creating && setShowCreate(false)}>{t('common.actions.cancel')}</TextButton>
               <PrimaryButton loading={creating} disabled={!name.trim()} onPress={handleCreate}>
-                Créer
+                {t('collections.createAction')}
               </PrimaryButton>
             </View>
           </Pressable>
@@ -356,11 +359,10 @@ export default function CollectionsListScreen() {
               <MaterialIcons name="delete-outline" size={28} color={colors.error} />
             </View>
             <Text style={[typo.headlineSmall, { color: colors.onSurface, textAlign: 'center', marginTop: 12 }]}>
-              Supprimer la collection ?
+              {t('collections.deleteTitle')}
             </Text>
             <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }]}>
-              « {deleteTarget?.name} » sera définitivement supprimée. Les posts qu'elle contient ne
-              seront pas supprimés.
+              {t('collections.deleteMessage', { name: deleteTarget?.name })}
             </Text>
 
             {!!deleteError && (
@@ -373,8 +375,8 @@ export default function CollectionsListScreen() {
             )}
 
             <View style={styles.modalActions}>
-              <TextButton onPress={() => !deleting && setDeleteTarget(null)}>Annuler</TextButton>
-              <PrimaryButton loading={deleting} onPress={handleDelete}>Supprimer</PrimaryButton>
+              <TextButton onPress={() => !deleting && setDeleteTarget(null)}>{t('common.actions.cancel')}</TextButton>
+              <PrimaryButton loading={deleting} onPress={handleDelete}>{t('common.actions.delete')}</PrimaryButton>
             </View>
           </Pressable>
         </Pressable>
@@ -406,7 +408,7 @@ const styles = StyleSheet.create({
   categoryBadge: { paddingVertical: 3, paddingHorizontal: 10, borderRadius: 999 },
   // FAB
   fab: {
-    position: 'absolute', right: 20, bottom: 28,
+    position: 'absolute', end: 20, bottom: 28,
     width: 56, height: 56, borderRadius: 28,
     alignItems: 'center', justifyContent: 'center',
     elevation: 4,

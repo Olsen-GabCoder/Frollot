@@ -173,6 +173,11 @@ app:
       expiration-hours: ${JWT_EXPIRATION_HOURS:24}
       expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
       issuer: frollot-backend
+    totp:
+      # S9a — Clé de chiffrement des secrets TOTP (2FA) au repos.
+      # OBLIGATOIRE, AUCUN fallback : le backend refuse de démarrer sans elle.
+      # Génération : openssl rand -base64 32 (32 octets Base64, distincte de JWT_SECRET)
+      encryption-key: ${TOTP_ENCRYPTION_KEY:}
 
   upload:
     max-file-size: 10MB

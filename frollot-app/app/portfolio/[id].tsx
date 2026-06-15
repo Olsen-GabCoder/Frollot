@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, I18nManager } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
@@ -46,13 +46,13 @@ export default function PortfolioDetailScreen() {
   };
 
   if (isLoading) return <View style={[styles.centered, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.primary} /></View>;
-  if (!portfolio) return <View style={[styles.centered, { backgroundColor: colors.background }]}><Text style={[typo.bodyLarge, { color: colors.error }]}>{t('common.error')}</Text></View>;
+  if (!portfolio) return <View style={[styles.centered, { backgroundColor: colors.background }]}><Text style={[typo.bodyLarge, { color: colors.error }]}>{t('common.states.error')}</Text></View>;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => router.back()}><MaterialIcons name="arrow-back" size={24} color={colors.onSurface} /></TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16, flex: 1 }]} numberOfLines={1}>{portfolio.title}</Text>
+        <TouchableOpacity onPress={() => router.back()}><MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} /></TouchableOpacity>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16, flex: 1 }]} numberOfLines={1}>{portfolio.title}</Text>
       </View>
       <FlatList data={posts} keyExtractor={(i) => i.id}
         ListHeaderComponent={() => (
@@ -60,7 +60,7 @@ export default function PortfolioDetailScreen() {
             {portfolio.coverImageUrl && <Image source={{ uri: resolveMediaUrl(portfolio.coverImageUrl) }} style={styles.coverImg} contentFit="cover" />}
             <Text style={[typo.headlineSmall, { color: colors.onBackground, marginTop: 12 }]}>{portfolio.title}</Text>
             {portfolio.description && <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 4 }]}>{portfolio.description}</Text>}
-            <Text style={[typo.labelMedium, { color: colors.onSurfaceVariant, marginTop: 8 }]}>{portfolio.postsCount} posts</Text>
+            <Text style={[typo.labelMedium, { color: colors.onSurfaceVariant, marginTop: 8 }]}>{t('collections.postCount', { count: portfolio.postsCount })}</Text>
           </View>
         )}
         renderItem={({ item }) => (
@@ -69,9 +69,9 @@ export default function PortfolioDetailScreen() {
             <Text style={[typo.bodyMedium, { color: colors.onSurface, padding: 12 }]} numberOfLines={2}>{item.content}</Text>
             <View style={styles.postMeta}>
               <MaterialIcons name="favorite" size={14} color={colors.onSurfaceVariant} />
-              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>{item.likesCount}</Text>
-              <MaterialIcons name="chat-bubble-outline" size={14} color={colors.onSurfaceVariant} style={{ marginLeft: 12 }} />
-              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>{item.commentsCount}</Text>
+              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>{item.likesCount}</Text>
+              <MaterialIcons name="chat-bubble-outline" size={14} color={colors.onSurfaceVariant} style={{ marginStart: 12 }} />
+              <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>{item.commentsCount}</Text>
             </View>
           </TouchableOpacity>
         )}

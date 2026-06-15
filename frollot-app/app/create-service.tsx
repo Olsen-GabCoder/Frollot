@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -47,11 +48,11 @@ export default function CreateServiceScreen() {
         price: price.trim(),
         category,
       });
-      Alert.alert(t('common.done'), `${name.trim()} cree avec succes`, [
-        { text: 'OK', onPress: () => router.back() },
+      Alert.alert(t('common.actions.done'), t('service.createdSuccess', { name: name.trim() }), [
+        { text: t('common.actions.ok'), onPress: () => router.back() },
       ]);
     } catch (e: any) {
-      setError(e?.response?.data?.message || t('common.error'));
+      setError(e?.response?.data?.message || t('common.states.error'));
     } finally {
       setIsCreating(false);
     }
@@ -66,9 +67,9 @@ export default function CreateServiceScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>{t('service.createService')}</Text>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{t('service.createService')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
@@ -80,12 +81,12 @@ export default function CreateServiceScreen() {
 
         <View style={styles.row}>
           <View style={styles.half}>
-            <Text style={[typo.labelMedium, { color: colors.onSurface, marginBottom: 4 }]}>{t('service.duration')} (min)</Text>
+            <Text style={[typo.labelMedium, { color: colors.onSurface, marginBottom: 4 }]}>{t('service.duration')} ({t('service.durationUnit')})</Text>
             <TextInput style={[styles.input, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
               value={duration} onChangeText={(v) => setDuration(v.replace(/[^0-9]/g, ''))} keyboardType="numeric" />
           </View>
           <View style={styles.half}>
-            <Text style={[typo.labelMedium, { color: colors.onSurface, marginBottom: 4 }]}>{t('service.price')} (EUR)</Text>
+            <Text style={[typo.labelMedium, { color: colors.onSurface, marginBottom: 4 }]}>{t('service.price')} ({t('service.priceUnit')})</Text>
             <TextInput style={[styles.input, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
               value={price} onChangeText={(v) => setPrice(v.replace(/[^0-9.]/g, ''))} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={colors.onSurfaceVariant} />
           </View>
@@ -105,7 +106,7 @@ export default function CreateServiceScreen() {
             >
               <Text style={{ fontSize: 24 }}>{cat.emoji}</Text>
               <Text style={[typo.labelSmall, { color: category === cat.key ? colors.onPrimaryContainer : colors.onSurfaceVariant, marginTop: 4 }]}>
-                {cat.label}
+                {t(cat.labelKey)}
               </Text>
               {category === cat.key && (
                 <MaterialIcons name="check-circle" size={16} color={colors.primary} style={styles.checkIcon} />
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     width: '48%', padding: 16, borderRadius: 12, borderWidth: 1,
     alignItems: 'center', position: 'relative',
   },
-  checkIcon: { position: 'absolute', top: 8, right: 8 },
+  checkIcon: { position: 'absolute', top: 8, end: 8 },
   errorCard: { padding: 12, borderRadius: 12, marginBottom: 12 },
   submitBtn: { height: 52, borderRadius: 28, justifyContent: 'center', alignItems: 'center', marginTop: 8 },
 });

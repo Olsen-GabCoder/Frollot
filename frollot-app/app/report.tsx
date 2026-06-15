@@ -1,36 +1,38 @@
 import { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  TextInput, ActivityIndicator, KeyboardAvoidingView, Platform,
+  TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../src/theme';
 import { moderationApi } from '../src/api/moderation';
 import { socialApi } from '../src/api/social';
 import { resolveMediaUrl } from '../src/utils/media';
 import { ReportedEntityType, ReportReason, PostResponse } from '../src/types';
 
-const ENTITY_LABELS: Record<ReportedEntityType, string> = {
-  [ReportedEntityType.POST]: 'Post',
-  [ReportedEntityType.COMMENT]: 'Commentaire',
-  [ReportedEntityType.USER]: 'Utilisateur',
-  [ReportedEntityType.SALON]: 'Salon',
+const ENTITY_TYPE_KEYS: Record<ReportedEntityType, string> = {
+  [ReportedEntityType.POST]: 'report.entityType.post',
+  [ReportedEntityType.COMMENT]: 'report.entityType.comment',
+  [ReportedEntityType.USER]: 'report.entityType.user',
+  [ReportedEntityType.SALON]: 'report.entityType.salon',
 };
 
-const REASONS: { reason: ReportReason; label: string; description: string }[] = [
-  { reason: ReportReason.INAPPROPRIE, label: 'Contenu inapproprié', description: 'Violence, harcèlement ou contenu choquant' },
-  { reason: ReportReason.SPAM, label: 'Spam publicitaire', description: 'Publicité non sollicitée ou contenu répétitif' },
-  { reason: ReportReason.FAUX, label: 'Faux avant / après', description: 'Résultat trompeur ou photos falsifiées' },
-  { reason: ReportReason.COPYRIGHT, label: 'Violation de droits d\u2019auteur', description: 'Contenu publié sans autorisation de son auteur' },
-  { reason: ReportReason.AUTRE, label: 'Autre', description: 'Un problème qui ne figure pas dans cette liste' },
+const REASON_KEYS: { reason: ReportReason; labelKey: string; descKey: string }[] = [
+  { reason: ReportReason.INAPPROPRIE, labelKey: 'report.reasons.inappropriate', descKey: 'report.reasons.inappropriateDesc' },
+  { reason: ReportReason.SPAM, labelKey: 'report.reasons.spam', descKey: 'report.reasons.spamDesc' },
+  { reason: ReportReason.FAUX, labelKey: 'report.reasons.fake', descKey: 'report.reasons.fakeDesc' },
+  { reason: ReportReason.COPYRIGHT, labelKey: 'report.reasons.copyright', descKey: 'report.reasons.copyrightDesc' },
+  { reason: ReportReason.AUTRE, labelKey: 'report.reasons.other', descKey: 'report.reasons.otherDesc' },
 ];
 
 const MAX_INFO_LENGTH = 1000;
 
 export default function ReportScreen() {
   const params = useLocalSearchParams<{ entityType?: string; entityId?: string }>();
+  const { t } = useTranslation();
   const { colors, typography: typo } = useTheme();
 
   const entityType = (params.entityType as ReportedEntityType) || ReportedEntityType.POST;
@@ -70,7 +72,7 @@ export default function ReportScreen() {
       });
       setIsSubmitted(true);
     } catch (error: any) {
-      setErrorMessage(error?.response?.data?.message || 'Impossible d\u2019envoyer le signalement. Réessayez.');
+      setErrorMessage(error?.response?.data?.message || t('report.submitError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -88,13 +90,13 @@ export default function ReportScreen() {
           <MaterialIcons name="check" size={40} color={colors.success} />
         </View>
         <Text style={[typo.headlineSmall, { color: colors.onBackground, textAlign: 'center', marginTop: 24 }]}>
-          Signalement envoyé
+          {t('report.successTitle')}
         </Text>
         <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 8, maxWidth: 280 }]}>
-          Merci de veiller sur la communauté. Notre équipe de modération examinera ce contenu rapidement.
+          {t('report.successMessage')}
         </Text>
         <TouchableOpacity style={[styles.successBtn, { backgroundColor: colors.primary }]} onPress={goBack}>
-          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>Retour</Text>
+          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>{t('common.actions.back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -108,15 +110,15 @@ export default function ReportScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={[styles.backBtn, { backgroundColor: colors.surfaceContainerHigh }]} onPress={goBack}>
-          <MaterialIcons name="arrow-back" size={22} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.onSurface} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-        <Text style={[typo.overline, { color: colors.secondary }]}>Modération</Text>
-        <Text style={[typo.headlineMedium, { color: colors.onBackground, marginTop: 4 }]}>Signaler</Text>
+        <Text style={[typo.overline, { color: colors.secondary }]}>{t('report.overline')}</Text>
+        <Text style={[typo.headlineMedium, { color: colors.onBackground, marginTop: 4 }]}>{t('report.title')}</Text>
         <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 8 }]}>
-          Votre signalement est confidentiel. La personne concernée ne saura pas qui est à l'origine du signalement.
+          {t('report.intro')}
         </Text>
 
         {/* Contexte du contenu signalé */}
@@ -135,10 +137,10 @@ export default function ReportScreen() {
                   <Text style={[typo.titleSmall, { color: colors.onSurface }]} numberOfLines={1}>
                     {reportedPost.authorName}
                   </Text>
-                  <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>Auteur du post</Text>
+                  <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{t('report.postAuthor')}</Text>
                 </View>
                 <View style={[styles.entityBadge, { backgroundColor: colors.primaryContainer }]}>
-                  <Text style={[typo.labelSmall, { color: colors.onPrimaryContainer }]}>{ENTITY_LABELS[entityType]}</Text>
+                  <Text style={[typo.labelSmall, { color: colors.onPrimaryContainer }]}>{t(ENTITY_TYPE_KEYS[entityType])}</Text>
                 </View>
               </View>
               {!!reportedPost.content && (
@@ -154,8 +156,8 @@ export default function ReportScreen() {
         )}
 
         {/* Motif */}
-        <Text style={[typo.overline, styles.sectionTitle, { color: colors.secondary }]}>Motif du signalement</Text>
-        {REASONS.map((r) => {
+        <Text style={[typo.overline, styles.sectionTitle, { color: colors.secondary }]}>{t('report.reasonTitle')}</Text>
+        {REASON_KEYS.map((r) => {
           const on = selectedReason === r.reason;
           return (
             <TouchableOpacity
@@ -174,10 +176,10 @@ export default function ReportScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[typo.titleSmall, { color: on ? colors.onPrimaryContainer : colors.onSurface }]}>
-                  {r.label}
+                  {t(r.labelKey)}
                 </Text>
                 <Text style={[typo.bodySmall, { color: on ? colors.onPrimaryContainer : colors.onSurfaceVariant, marginTop: 2 }]}>
-                  {r.description}
+                  {t(r.descKey)}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -185,14 +187,14 @@ export default function ReportScreen() {
         })}
 
         {/* Détails */}
-        <Text style={[typo.overline, styles.sectionTitle, { color: colors.secondary }]}>Détails (facultatif)</Text>
+        <Text style={[typo.overline, styles.sectionTitle, { color: colors.secondary }]}>{t('report.detailsTitle')}</Text>
         <TextInput
           style={[styles.infoInput, typo.bodyMedium, {
             backgroundColor: colors.surface,
             borderColor: colors.outlineVariant,
             color: colors.onSurface,
           }]}
-          placeholder="Décrivez brièvement le problème..."
+          placeholder={t('report.detailsPlaceholder')}
           placeholderTextColor={colors.onSurfaceVariant}
           multiline
           value={additionalInfo}
@@ -200,7 +202,7 @@ export default function ReportScreen() {
           editable={!isSubmitting}
         />
         {additionalInfo.length > 0 && (
-          <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, textAlign: 'right', marginTop: 4 }]}>
+          <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, textAlign: I18nManager.isRTL ? 'left' : 'right', marginTop: 4 }]}>
             {additionalInfo.length}/{MAX_INFO_LENGTH}
           </Text>
         )}
@@ -220,7 +222,7 @@ export default function ReportScreen() {
             onPress={goBack}
             disabled={isSubmitting}
           >
-            <Text style={[typo.labelLarge, { color: colors.onSurface }]}>Annuler</Text>
+            <Text style={[typo.labelLarge, { color: colors.onSurface }]}>{t('common.actions.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, {
@@ -233,7 +235,7 @@ export default function ReportScreen() {
               <ActivityIndicator size="small" color={colors.onPrimary} />
             ) : (
               <Text style={[typo.labelLarge, { color: selectedReason ? colors.onPrimary : colors.onSurfaceVariant }]}>
-                Envoyer
+                {t('report.submitButton')}
               </Text>
             )}
           </TouchableOpacity>
@@ -248,7 +250,7 @@ const styles = StyleSheet.create({
   header: { paddingTop: 52, paddingHorizontal: 16, paddingBottom: 4 },
   backBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 48 },
-  sectionTitle: { marginTop: 28, marginBottom: 10, marginLeft: 4 },
+  sectionTitle: { marginTop: 28, marginBottom: 10, marginStart: 4 },
   // Context card
   contextCard: { borderRadius: 20, borderWidth: 1, padding: 16, marginTop: 24 },
   contextHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },

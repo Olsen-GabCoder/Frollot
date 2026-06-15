@@ -45,8 +45,8 @@ export default function ExploreScreen() {
         {item.isVerified && (
           <View style={styles.verifiedBadge}>
             <MaterialIcons name="verified" size={14} color={colors.primary} />
-            <Text style={[typo.labelSmall, { color: colors.primary, marginLeft: 4 }]}>
-              {t('salon.verified')}
+            <Text style={[typo.labelSmall, { color: colors.primary, marginStart: 4 }]}>
+              {t('verification.verified')}
             </Text>
           </View>
         )}
@@ -83,7 +83,7 @@ export default function ExploreScreen() {
         ListEmptyComponent={
           searched ? (
             <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 40 }]}>
-              {t('common.noResults')}
+              {t('common.states.noResults')}
             </Text>
           ) : null
         }
@@ -100,6 +100,6 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 16, paddingBottom: 100 },
   salonCard: { flexDirection: 'row', borderRadius: 16, padding: 12, marginBottom: 10 },
   salonThumb: { width: 72, height: 72, borderRadius: 12 },
-  salonInfo: { flex: 1, marginLeft: 12, justifyContent: 'center' },
+  salonInfo: { flex: 1, marginStart: 12, justifyContent: 'center' },
   verifiedBadge: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
 });

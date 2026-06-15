@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, I18nManager } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
@@ -35,8 +35,8 @@ export default function FavoritesScreen() {
     } catch (error: any) {
       // Backend owner-only : 403 si on tente de voir les favoris d'autrui — message honnête
       setLoadError(error?.response?.status === 403
-        ? 'Ces favoris sont privés : seul leur propriétaire peut les consulter.'
-        : 'Impossible de charger vos favoris');
+        ? t('profile.favoritesPrivate')
+        : t('profile.favoritesLoadError'));
     } finally { setIsLoading(false); setRefreshing(false); }
   };
 
@@ -53,7 +53,7 @@ export default function FavoritesScreen() {
       await socialApi.toggleFavorite(postId);
     } catch (error: any) {
       setPosts(previousPosts); // rollback : le post revient dans la liste
-      setToast({ message: error?.response?.data?.message || 'Impossible de retirer ce favori.', type: 'error' });
+      setToast({ message: error?.response?.data?.message || t('profile.removeFavoriteError'), type: 'error' });
     }
   };
 
@@ -62,8 +62,8 @@ export default function FavoritesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => router.back()}><MaterialIcons name="arrow-back" size={24} color={colors.onSurface} /></TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>{t('profile.favorites')}</Text>
+        <TouchableOpacity onPress={() => router.back()}><MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} /></TouchableOpacity>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{t('profile.favorites')}</Text>
       </View>
       {loadError && posts.length === 0 ? (
         <ErrorState message={loadError} onRetry={() => { setIsLoading(true); loadFavorites(true); }} />
@@ -80,7 +80,7 @@ export default function FavoritesScreen() {
               {item.imageUrl && <Image source={{ uri: resolveMediaUrl(item.imageUrl) }} style={styles.thumb} contentFit="cover" />}
             </View>
             <View style={styles.postFooter}>
-              <View style={styles.iconRow}><MaterialIcons name="favorite" size={14} color={colors.onSurfaceVariant} /><Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>{item.likesCount}</Text></View>
+              <View style={styles.iconRow}><MaterialIcons name="favorite" size={14} color={colors.onSurfaceVariant} /><Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>{item.likesCount}</Text></View>
               <TouchableOpacity onPress={() => handleUnfavorite(item.id)}>
                 <MaterialIcons name="bookmark-remove" size={20} color={colors.error} />
               </TouchableOpacity>
@@ -88,7 +88,7 @@ export default function FavoritesScreen() {
           </TouchableOpacity>
         )}
         onEndReached={loadMore} onEndReachedThreshold={0.3}
-        ListEmptyComponent={<View style={styles.emptyState}><MaterialIcons name="favorite-border" size={48} color={colors.onSurfaceVariant} /><Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 12 }]}>Aucun favori</Text></View>}
+        ListEmptyComponent={<View style={styles.emptyState}><MaterialIcons name="favorite-border" size={48} color={colors.onSurfaceVariant} /><Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 12 }]}>{t('profile.favoritesEmpty')}</Text></View>}
         contentContainerStyle={styles.list}
       />
       )}
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 }, centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 52, paddingBottom: 12, paddingHorizontal: 16 },
   list: { paddingHorizontal: 16, paddingBottom: 40 }, postCard: { borderRadius: 12, padding: 16, marginBottom: 8 },
-  postRow: { flexDirection: 'row' }, thumb: { width: 60, height: 60, borderRadius: 8, marginLeft: 12 },
+  postRow: { flexDirection: 'row' }, thumb: { width: 60, height: 60, borderRadius: 8, marginStart: 12 },
   postFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   iconRow: { flexDirection: 'row', alignItems: 'center' }, emptyState: { alignItems: 'center', padding: 48 },
 });

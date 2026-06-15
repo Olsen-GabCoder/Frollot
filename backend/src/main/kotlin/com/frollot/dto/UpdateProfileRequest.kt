@@ -16,12 +16,10 @@ data class UpdateProfileRequest(
     @field:Size(min = 2, max = 50, message = "Le nom doit contenir entre 2 et 50 caractères")
     val lastName: String? = null,
     
-    @field:Pattern(
-        regexp = "^\\+?[0-9]{10,15}$",
-        message = "Numéro de téléphone invalide"
-    )
-    val phoneNumber: String? = null,
-    
+    // phoneNumber RETIRÉ (incrément 1 téléphone) : ce chemin d'écriture parallèle
+    // contournait la validation E.164, le catch d'unicité et la visibilité phone_public.
+    // CHEMIN UNIQUE d'écriture du numéro : PUT /api/users/me/phone (changePhone).
+
     @field:Size(max = 500, message = "La bio ne peut pas dépasser 500 caractères")
     val bio: String? = null,
     

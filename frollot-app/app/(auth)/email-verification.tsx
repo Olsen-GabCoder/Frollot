@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, I18nManager } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,19 +16,17 @@ export default function EmailVerificationScreen() {
       </View>
 
       <Text style={[styles.title, { color: colors.onBackground }]}>
-        Vérifiez votre email
+        {t('auth.verifyEmailTitle')}
       </Text>
 
       <Text style={[styles.desc, { color: colors.onSurfaceVariant }]}>
-        Un email de vérification a été envoyé à{' '}
-        <Text style={{ color: colors.primary, fontWeight: '600' }}>{email || 'votre adresse'}</Text>.
-        {'\n\n'}Cliquez sur le lien dans l'email pour activer votre compte.
+        {t('auth.verifyEmailHint', { email: email || t('auth.verifyEmail.yourAddress') })}
       </Text>
 
       <View style={[styles.infoCard, { backgroundColor: colors.surfaceContainerHigh }]}>
         <MaterialCommunityIcons name="information-outline" size={18} color={colors.onSurfaceVariant} />
         <Text style={[styles.infoText, { color: colors.onSurfaceVariant }]}>
-          Si vous n'avez pas reçu l'email, vérifiez vos spams. Le renvoi automatique n'est pas encore disponible.
+          {t('auth.verifyEmail.spamHint')}
         </Text>
       </View>
 
@@ -36,8 +34,8 @@ export default function EmailVerificationScreen() {
         style={[styles.loginBtn, { borderColor: colors.primary }]}
         onPress={() => router.replace('/(auth)/login')}
       >
-        <MaterialCommunityIcons name="arrow-left" size={20} color={colors.primary} />
-        <Text style={[styles.loginBtnText, { color: colors.primary }]}>Retour à la connexion</Text>
+        <MaterialCommunityIcons name={I18nManager.isRTL ? 'arrow-right' : 'arrow-left'} size={20} color={colors.primary} />
+        <Text style={[styles.loginBtnText, { color: colors.primary }]}>{t('auth.twoFactor.backToLogin')}</Text>
       </TouchableOpacity>
     </View>
   );

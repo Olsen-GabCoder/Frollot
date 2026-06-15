@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +37,7 @@ export default function SalonSocialProfileScreen() {
         setProfile(data);
         setIsFollowing(data.isFollowedByCurrentUser ?? false);
       } catch (e: any) {
-        setError(e?.message || t('common.error'));
+        setError(e?.message || t('common.states.error'));
       } finally {
         setIsLoading(false);
       }
@@ -62,18 +63,17 @@ export default function SalonSocialProfileScreen() {
   }
 
   const stats = [
-    { label: 'Posts', value: profile.postsCount },
-    { label: t('profile.followers'), value: profile.followersCount },
-    { label: t('profile.portfolios'), value: profile.portfoliosCount },
+    { label: t('profile.stats.posts'), value: profile.statistics.postsCount },
+    { label: t('profile.followers'), value: profile.statistics.followersCount },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>{profile.name}</Text>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>{profile.name}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -87,23 +87,22 @@ export default function SalonSocialProfileScreen() {
           <Text style={[typo.headlineSmall, { color: colors.onSurface }]}>{profile.name}</Text>
           <View style={styles.row}>
             <MaterialIcons name="location-on" size={16} color={colors.onSurfaceVariant} />
-            <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>{profile.city}</Text>
+            <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginStart: 4 }]}>{profile.city}</Text>
           </View>
           {profile.isVerified && (
             <View style={styles.row}>
               <MaterialIcons name="verified" size={16} color={colors.primary} />
-              <Text style={[typo.labelSmall, { color: colors.primary, marginLeft: 4 }]}>{t('verification.verified')}</Text>
+              <Text style={[typo.labelSmall, { color: colors.primary, marginStart: 4 }]}>{t('verification.verified')}</Text>
             </View>
           )}
-          {profile.averageRating != null && (
+          {profile.statistics.totalReviews > 0 && (
             <View style={styles.row}>
               <MaterialIcons name="star" size={16} color={colors.tertiary} />
-              <Text style={[typo.labelMedium, { color: colors.onSurface, marginLeft: 4 }]}>
-                {profile.averageRating.toFixed(1)} ({profile.totalReviews} {t('salon.reviews').toLowerCase()})
+              <Text style={[typo.labelMedium, { color: colors.onSurface, marginStart: 4 }]}>
+                {profile.statistics.averageRating.toFixed(1)} ({profile.statistics.totalReviews} {t('review.reviewsTitle').toLowerCase()})
               </Text>
             </View>
           )}
-
           <View style={styles.statsRow}>
             {stats.map((s, i) => (
               <View key={i} style={styles.statItem}>
@@ -118,7 +117,7 @@ export default function SalonSocialProfileScreen() {
             onPress={handleFollow}
           >
             <Text style={[typo.labelLarge, { color: isFollowing ? colors.onSurfaceVariant : colors.onPrimary }]}>
-              {isFollowing ? t('salon.following') : t('salon.follow')}
+              {isFollowing ? t('common.states.following') : t('common.actions.follow')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -136,7 +135,7 @@ export default function SalonSocialProfileScreen() {
           onPress={() => router.push(`/salon/${profile.salonId}`)}
         >
           <Text style={[typo.labelLarge, { color: colors.onPrimaryContainer, textAlign: 'center' }]}>
-            Voir le salon complet →
+            {t('profile.viewFullSalon')}
           </Text>
         </TouchableOpacity>
 

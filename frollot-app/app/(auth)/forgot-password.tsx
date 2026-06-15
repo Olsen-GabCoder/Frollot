@@ -13,16 +13,16 @@ export default function ForgotPasswordScreen() {
 
   const handleSubmit = async () => {
     if (!email.trim()) {
-      Alert.alert(t('common.error'), t('auth.emailRequired'));
+      Alert.alert(t('common.states.error'), t('common.validation.emailRequired'));
       return;
     }
     setIsLoading(true);
     try {
       await authApi.forgotPassword({ email: email.trim() });
-      Alert.alert(t('common.done'), t('auth.resetPasswordSent'));
+      Alert.alert(t('common.actions.done'), t('auth.resetPasswordSent'));
       router.back();
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.response?.data?.message || t('common.error'));
+      Alert.alert(t('common.states.error'), error?.response?.data?.message || t('common.states.error'));
     } finally {
       setIsLoading(false);
     }
@@ -33,7 +33,7 @@ export default function ForgotPasswordScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-        <Text style={[typo.labelLarge, { color: colors.primary }]}>{t('common.back')}</Text>
+        <Text style={[typo.labelLarge, { color: colors.primary }]}>{t('common.actions.back')}</Text>
       </TouchableOpacity>
 
       <Text style={[typo.headlineMedium, { color: colors.onBackground, marginBottom: 12 }]}>
@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
           color: colors.onSurface,
           borderColor: colors.outlineVariant,
         }]}
-        placeholder={t('auth.email')}
+        placeholder={t('common.fields.email')}
         placeholderTextColor={colors.onSurfaceVariant}
         value={email}
         onChangeText={setEmail}

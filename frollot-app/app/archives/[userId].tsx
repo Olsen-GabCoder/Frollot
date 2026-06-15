@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, Pressable,
-  StyleSheet, RefreshControl, Modal, ActivityIndicator,
+  StyleSheet, RefreshControl, Modal, ActivityIndicator, I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../src/theme';
 import { useAuthStore } from '../../src/stores/authStore';
 import { socialApi } from '../../src/api/social';
@@ -18,6 +19,7 @@ type PendingAction = { type: 'unarchive' | 'delete'; post: PostResponse } | null
 
 export default function ArchivesScreen() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
+  const { t } = useTranslation();
   const { colors, typography: typo } = useTheme();
   const { user } = useAuthStore();
 
@@ -75,8 +77,8 @@ export default function ArchivesScreen() {
     } catch {
       setPosts(previousPosts); // rollback
       setActionError(type === 'unarchive'
-        ? 'Impossible de désarchiver ce post. Réessayez.'
-        : 'Impossible de supprimer ce post. Réessayez.');
+        ? t('social.unarchiveError')
+        : t('social.deletePostError'));
     } finally {
       setIsActing(false);
     }
@@ -92,7 +94,7 @@ export default function ArchivesScreen() {
         ? { ...p, isLikedByCurrentUser: updated.isLikedByCurrentUser, likesCount: updated.likesCount }
         : p));
     } catch (error: any) {
-      setToast({ message: error?.response?.data?.message || "Impossible de mettre à jour le j'aime.", type: 'error' });
+      setToast({ message: error?.response?.data?.message || t('social.likeError'), type: 'error' });
     }
   };
 
@@ -104,7 +106,7 @@ export default function ArchivesScreen() {
         ? { ...p, isFavoritedByCurrentUser: updated.isFavoritedByCurrentUser }
         : p));
     } catch (error: any) {
-      setToast({ message: error?.response?.data?.message || 'Impossible de mettre à jour le favori.', type: 'error' });
+      setToast({ message: error?.response?.data?.message || t('social.bookmarkError'), type: 'error' });
     }
   };
 
@@ -114,7 +116,7 @@ export default function ArchivesScreen() {
       await sharePostExternally(post);
     } catch (error) {
       if (isShareCancellation(error)) return;
-      setToast({ message: "Le partage n'est pas disponible sur cet appareil.", type: 'error' });
+      setToast({ message: t('social.shareUnavailable'), type: 'error' });
     }
   };
 
@@ -123,11 +125,11 @@ export default function ArchivesScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.outlineVariant }]}>
         <TouchableOpacity style={styles.iconBtn} onPress={goBack}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={colors.onSurface} />
+          <MaterialCommunityIcons name={I18nManager.isRTL ? 'arrow-right' : 'arrow-left'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
         <View style={styles.headerTexts}>
-          <Text style={[typo.overline, { color: colors.secondary }]}>Profil</Text>
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Archives</Text>
+          <Text style={[typo.overline, { color: colors.secondary }]}>{t('profile.archivesOverline')}</Text>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>{t('profile.archivesTitle')}</Text>
         </View>
       </View>
 
@@ -135,14 +137,14 @@ export default function ArchivesScreen() {
         <LoadingState />
       ) : hasError ? (
         <ErrorState
-          message="Impossible de charger vos archives"
+          message={t('profile.archivesLoadError')}
           onRetry={() => { setIsLoading(true); loadArchives(0, true); }}
         />
       ) : posts.length === 0 ? (
         <EmptyState
           icon="archive-outline"
-          title="Aucune archive"
-          message="Les posts que vous archivez apparaîtront ici."
+          title={t('profile.archivesEmpty')}
+          message={t('profile.archivesEmptyMessage')}
         />
       ) : (
         <FlatList
@@ -183,12 +185,12 @@ export default function ArchivesScreen() {
               />
             </View>
             <Text style={[styles.modalTitle, { color: colors.onSurface }]}>
-              {pendingAction?.type === 'delete' ? 'Supprimer ce post ?' : 'Désarchiver ce post ?'}
+              {pendingAction?.type === 'delete' ? t('social.deletePostTitle') : t('social.unarchiveTitle')}
             </Text>
             <Text style={[styles.modalBody, { color: colors.onSurfaceVariant }]}>
               {pendingAction?.type === 'delete'
-                ? 'Le post sera définitivement supprimé. Cette action est irréversible.'
-                : 'Le post redeviendra visible dans le fil et sur votre profil.'}
+                ? t('social.deletePostMessage')
+                : t('social.unarchiveMessage')}
             </Text>
             {actionError && (
               <View style={[styles.modalErrorCard, { backgroundColor: colors.errorContainer }]}>
@@ -201,7 +203,7 @@ export default function ArchivesScreen() {
                 onPress={closeModal}
                 disabled={isActing}
               >
-                <Text style={[styles.modalBtnText, { color: colors.onSurface }]}>Annuler</Text>
+                <Text style={[styles.modalBtnText, { color: colors.onSurface }]}>{t('common.actions.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalBtn, { backgroundColor: pendingAction?.type === 'delete' ? colors.error : colors.primary }]}
@@ -212,7 +214,7 @@ export default function ArchivesScreen() {
                   <ActivityIndicator size="small" color={colors.onPrimary} />
                 ) : (
                   <Text style={[styles.modalBtnText, { color: colors.onPrimary }]}>
-                    {pendingAction?.type === 'delete' ? 'Supprimer' : 'Désarchiver'}
+                    {pendingAction?.type === 'delete' ? t('common.actions.delete') : t('social.menu.unarchive')}
                   </Text>
                 )}
               </TouchableOpacity>

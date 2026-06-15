@@ -15,20 +15,20 @@ export default function ResetPasswordScreen() {
 
   const handleSubmit = async () => {
     if (newPassword.length < 8) {
-      Alert.alert(t('common.error'), t('auth.passwordTooShort'));
+      Alert.alert(t('common.states.error'), t('common.validation.passwordTooShort'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert(t('common.error'), t('auth.passwordsDoNotMatch'));
+      Alert.alert(t('common.states.error'), t('common.validation.passwordsDoNotMatch'));
       return;
     }
     setIsLoading(true);
     try {
       await authApi.resetPassword({ token: token || '', newPassword });
-      Alert.alert(t('common.done'), t('auth.resetPasswordSuccess'));
+      Alert.alert(t('common.actions.done'), t('auth.resetPasswordSuccess'));
       router.replace('/(auth)/login');
     } catch (error: any) {
-      Alert.alert(t('common.error'), error?.response?.data?.message || t('common.error'));
+      Alert.alert(t('common.states.error'), error?.response?.data?.message || t('common.states.error'));
     } finally {
       setIsLoading(false);
     }
@@ -44,7 +44,7 @@ export default function ResetPasswordScreen() {
 
       <TextInput
         style={[styles.input, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-        placeholder={t('auth.newPassword')}
+        placeholder={t('common.fields.newPassword')}
         placeholderTextColor={colors.onSurfaceVariant}
         value={newPassword}
         onChangeText={setNewPassword}
@@ -52,7 +52,7 @@ export default function ResetPasswordScreen() {
       />
       <TextInput
         style={[styles.input, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-        placeholder={t('auth.confirmPassword')}
+        placeholder={t('common.fields.confirmPassword')}
         placeholderTextColor={colors.onSurfaceVariant}
         value={confirmPassword}
         onChangeText={setConfirmPassword}

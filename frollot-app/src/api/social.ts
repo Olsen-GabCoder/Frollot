@@ -107,27 +107,27 @@ export const socialApi = {
   getHashtagsByCategory: (category: string) =>
     api.get<HairHashtagResponse[]>(`/api/social/hashtags/category/${category}`).then((r) => r.data),
 
-  // Follow
+  // Follow — routes réelles du backend (FollowController.kt, base /api/social)
   followSalon: (salonId: string) =>
-    api.post<FollowResponse>(`/api/social/follow/salon/${salonId}`).then((r) => r.data),
+    api.post<FollowResponse>(`/api/social/salons/${salonId}/follow`).then((r) => r.data),
 
   unfollowSalon: (salonId: string) =>
-    api.delete(`/api/social/follow/salon/${salonId}`).then((r) => r.data),
+    api.delete(`/api/social/salons/${salonId}/follow`).then((r) => r.data),
 
   followCoiffeur: (coiffeurId: string) =>
-    api.post<FollowResponse>(`/api/social/follow/coiffeur/${coiffeurId}`).then((r) => r.data),
+    api.post<FollowResponse>(`/api/social/coiffeurs/${coiffeurId}/follow`).then((r) => r.data),
 
   unfollowCoiffeur: (coiffeurId: string) =>
-    api.delete(`/api/social/follow/coiffeur/${coiffeurId}`).then((r) => r.data),
+    api.delete(`/api/social/coiffeurs/${coiffeurId}/follow`).then((r) => r.data),
 
   getFollowing: (userId: string) =>
-    api.get<FollowResponse[]>(`/api/social/follow/following/${userId}`).then((r) => r.data),
+    api.get<FollowResponse[]>(`/api/social/users/${userId}/following`).then((r) => r.data),
 
   getSalonFollowers: (salonId: string) =>
-    api.get<any[]>(`/api/social/follow/salon/${salonId}/followers`).then((r) => r.data),
+    api.get<any[]>(`/api/social/salons/${salonId}/followers`).then((r) => r.data),
 
   getCoiffeurFollowers: (coiffeurId: string) =>
-    api.get<any[]>(`/api/social/follow/coiffeur/${coiffeurId}/followers`).then((r) => r.data),
+    api.get<any[]>(`/api/social/coiffeurs/${coiffeurId}/followers`).then((r) => r.data),
 
   getFollowingFeed: (page = 0, size = 20) =>
     api.get<PageResponse<PostResponse>>('/api/social/feed/following', { params: { page, size } }).then((r) => r.data),
@@ -144,15 +144,19 @@ export const socialApi = {
   getArchivedPosts: (userId: string, page = 0, size = 20) =>
     api.get<PageResponse<PostResponse>>(`/api/social/users/${userId}/archives`, { params: { page, size } }).then((r) => r.data),
 
-  // Pin
+  // Pin (B29)
+  // Backend réel : POST /posts/{id}/pin (ownership 403 ; limite 3 posts épinglés —
+  // IllegalStateException mappée 401 par le handler du contrôleur, message backend à afficher)
   pinPost: (postId: string) =>
     api.post<PostResponse>(`/api/social/posts/${postId}/pin`).then((r) => r.data),
 
+  // Backend réel : DELETE /posts/{id}/pin — l'ancien POST /unpin n'existe pas (B29)
   unpinPost: (postId: string) =>
-    api.post<PostResponse>(`/api/social/posts/${postId}/unpin`).then((r) => r.data),
+    api.delete<PostResponse>(`/api/social/posts/${postId}/pin`).then((r) => r.data),
 
+  // Backend réel : GET /users/{authorId}/pinned-posts — l'ancien /posts/pinned/{id} n'existe pas (B29)
   getPinnedPosts: (authorId: string) =>
-    api.get<PostResponse[]>(`/api/social/posts/pinned/${authorId}`).then((r) => r.data),
+    api.get<PostResponse[]>(`/api/social/users/${authorId}/pinned-posts`).then((r) => r.data),
 
   // Search
   searchPostsByContent: (query: string, page = 0, size = 20) =>

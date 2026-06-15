@@ -1,30 +1,29 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, TextInput, ScrollView, TouchableOpacity, Pressable,
-  StyleSheet, RefreshControl, Modal, ActivityIndicator,
+  View, Text, FlatList, TextInput, ScrollView, TouchableOpacity,
+  StyleSheet, RefreshControl, ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/stores/authStore';
 import { socialApi } from '../../src/api';
-import { collectionsApi } from '../../src/api/portfolios';
-import { PostCard } from '../../src/components/social';
+import { PostCard, CollectionPickerModal } from '../../src/components/social';
 import { Toast, type ToastType } from '../../src/components/ui';
 import { LoadingState, EmptyState, ErrorState } from '../../src/components/lists';
 import { PostResponse, PostType, SearchResponse } from '../../src/types';
 import { sharePostExternally, isShareCancellation } from '../../src/utils/share';
 import { useTheme } from '../../src/theme';
 
-const TABS = ['Tous', 'Suivis', 'Tendances'];
+const TAB_KEYS = ['social.tabs.all', 'social.tabs.following', 'social.tabs.trending'];
 
-const POST_TYPE_FILTERS: { label: string; value: PostType | undefined }[] = [
-  { label: 'Tous', value: undefined },
-  { label: 'Avant/Après', value: PostType.AVANT_APRES },
-  { label: 'Réalisation', value: PostType.REALISATION },
-  { label: 'Tendance', value: PostType.TENDANCE },
-  { label: 'Conseil', value: PostType.CONSEIL },
-  { label: 'Inspiration', value: PostType.INSPIRATION },
+const POST_TYPE_FILTER_KEYS: { i18nKey: string; value: PostType | undefined }[] = [
+  { i18nKey: 'social.postTypes.all', value: undefined },
+  { i18nKey: 'social.postTypes.avantApres', value: PostType.AVANT_APRES },
+  { i18nKey: 'social.postTypes.realisation', value: PostType.REALISATION },
+  { i18nKey: 'social.postTypes.tendance', value: PostType.TENDANCE },
+  { i18nKey: 'social.postTypes.conseil', value: PostType.CONSEIL },
+  { i18nKey: 'social.postTypes.inspiration', value: PostType.INSPIRATION },
 ];
 
 export default function SocialFeedScreen() {
@@ -48,10 +47,8 @@ export default function SocialFeedScreen() {
   const [searchResults, setSearchResults] = useState<SearchResponse | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  // Collection save state
+  // Collection save state (dialog extrait en composant partagé CollectionPickerModal)
   const [savePostId, setSavePostId] = useState<string | null>(null);
-  const [collections, setCollections] = useState<any[]>([]);
-  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
 
   // Toast feedback
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
@@ -60,7 +57,7 @@ export default function SocialFeedScreen() {
   const loadPosts = useCallback(async (p = 0, refresh = false) => {
     setHasError(false);
     try {
-      const postTypeFilter = POST_TYPE_FILTERS[selectedPostType]?.value;
+      const postTypeFilter = POST_TYPE_FILTER_KEYS[selectedPostType]?.value;
       let data;
       if (activeTab === 1) {
         data = await socialApi.getFollowingFeed(p, 20);
@@ -117,7 +114,7 @@ export default function SocialFeedScreen() {
         ? { ...p, isLikedByCurrentUser: updated.isLikedByCurrentUser, likesCount: updated.likesCount }
         : p));
     } catch (error: any) {
-      setToast({ message: error?.response?.data?.message || "Impossible de mettre à jour le j'aime.", type: 'error' });
+      setToast({ message: error?.response?.data?.message || t('social.likeError'), type: 'error' });
     }
   };
 
@@ -130,7 +127,7 @@ export default function SocialFeedScreen() {
         ? { ...p, isFavoritedByCurrentUser: updated.isFavoritedByCurrentUser }
         : p));
     } catch (error: any) {
-      setToast({ message: error?.response?.data?.message || 'Impossible de mettre à jour le favori.', type: 'error' });
+      setToast({ message: error?.response?.data?.message || t('social.bookmarkError'), type: 'error' });
     }
   };
 
@@ -140,7 +137,7 @@ export default function SocialFeedScreen() {
       await sharePostExternally(post);
     } catch (error) {
       if (isShareCancellation(error)) return;
-      setToast({ message: "Le partage n'est pas disponible sur cet appareil.", type: 'error' });
+      setToast({ message: t('social.shareUnavailable'), type: 'error' });
     }
   };
 
@@ -151,10 +148,10 @@ export default function SocialFeedScreen() {
     setPosts(prev => prev.filter(p => p.id !== postId));
     try {
       await socialApi.archivePost(postId);
-      setToast({ message: 'Post archivé. Retrouvez-le dans vos archives.', type: 'success' });
+      setToast({ message: t('social.postArchived'), type: 'success' });
     } catch (error: any) {
       setPosts(previousPosts); // rollback : le post revient dans le fil
-      setToast({ message: error?.response?.data?.message || "Impossible d'archiver ce post.", type: 'error' });
+      setToast({ message: error?.response?.data?.message || t('social.archiveError'), type: 'error' });
     }
   };
 
@@ -162,34 +159,26 @@ export default function SocialFeedScreen() {
     try {
       await socialApi.deletePost(postId);
       setPosts(prev => prev.filter(p => p.id !== postId));
-      setToast({ message: 'Post supprimé.', type: 'success' });
+      setToast({ message: t('social.postDeleted'), type: 'success' });
     } catch (error: any) {
-      setToast({ message: error?.response?.data?.message || 'Impossible de supprimer le post.', type: 'error' });
+      setToast({ message: error?.response?.data?.message || t('social.deleteError'), type: 'error' });
     }
   };
 
-  const handleSaveToCollection = async (collectionId: string, postId: string) => {
-    setSavePostId(null);
-    const collectionName = collections.find((c) => c.id === collectionId)?.name;
+  // B29 : épingler/désépingler depuis le menu « ⋯ » (posts possédés). Optimiste +
+  // rollback ; la limite backend de 3 posts épinglés renvoie son message (affiché tel quel).
+  const handlePin = async (post: PostResponse) => {
+    const wasPinned = !!post.isPinned;
+    setPosts(prev => prev.map(p => p.id === post.id ? { ...p, isPinned: !wasPinned } : p));
     try {
-      await collectionsApi.addPostToCollection(collectionId, postId);
-      setToast({ message: collectionName ? `Post ajouté à « ${collectionName} ».` : 'Post ajouté à la collection.', type: 'success' });
+      const updated = wasPinned
+        ? await socialApi.unpinPost(post.id)
+        : await socialApi.pinPost(post.id);
+      setPosts(prev => prev.map(p => p.id === post.id ? { ...p, isPinned: updated.isPinned } : p));
+      setToast({ message: wasPinned ? t('social.postUnpinned') : t('social.postPinned'), type: 'success' });
     } catch (error: any) {
-      setToast({ message: error?.response?.data?.message || "Impossible d'ajouter le post à la collection.", type: 'error' });
-    }
-  };
-
-  const openCollectionDialog = async (postId: string) => {
-    setSavePostId(postId);
-    if (user) {
-      setIsLoadingCollections(true);
-      try {
-        const cols = await collectionsApi.getCollectionsByUser(user.id, true);
-        setCollections(cols);
-      } catch (error: any) {
-        setCollections([]);
-        setToast({ message: error?.response?.data?.message || 'Impossible de charger vos collections.', type: 'error' });
-      } finally { setIsLoadingCollections(false); }
+      setPosts(prev => prev.map(p => p.id === post.id ? { ...p, isPinned: wasPinned } : p)); // rollback
+      setToast({ message: error?.response?.data?.message || t('social.pinError'), type: 'error' });
     }
   };
 
@@ -201,7 +190,7 @@ export default function SocialFeedScreen() {
           <TouchableOpacity style={styles.iconBtn}>
             <MaterialCommunityIcons name="menu" size={24} color={colors.onSurface} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Fil social</Text>
+          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>{t('social.title')}</Text>
           <TouchableOpacity style={styles.iconBtn} onPress={() => setShowSearch(!showSearch)}>
             <MaterialCommunityIcons name={showSearch ? 'close' : 'magnify'} size={24} color={colors.onSurface} />
           </TouchableOpacity>
@@ -215,7 +204,7 @@ export default function SocialFeedScreen() {
           <View style={styles.searchSection}>
             <TextInput
               style={[styles.searchInput, { backgroundColor: colors.surfaceContainerHigh, color: colors.onSurface, borderColor: colors.outlineVariant }]}
-              placeholder="Rechercher posts, salons, utilisateurs…"
+              placeholder={t('social.searchPlaceholder')}
               placeholderTextColor={colors.onSurfaceVariant}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -226,7 +215,7 @@ export default function SocialFeedScreen() {
               <View style={[styles.searchResults, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
                 {(searchResults.posts?.length || 0) > 0 && (
                   <>
-                    <Text style={[styles.searchLabel, { color: colors.onSurfaceVariant }]}>Posts</Text>
+                    <Text style={[styles.searchLabel, { color: colors.onSurfaceVariant }]}>{t('social.searchPosts')}</Text>
                     {searchResults.posts.slice(0, 3).map((p: any, i: number) => (
                       <TouchableOpacity key={i} style={styles.searchItem} onPress={() => { setShowSearch(false); setSearchQuery(''); router.push(`/post/${p.id}`); }}>
                         <Text style={[styles.searchItemText, { color: colors.onSurface }]} numberOfLines={1}>{p.content || p.title}</Text>
@@ -236,7 +225,7 @@ export default function SocialFeedScreen() {
                 )}
                 {(searchResults.salons?.length || 0) > 0 && (
                   <>
-                    <Text style={[styles.searchLabel, { color: colors.onSurfaceVariant }]}>Salons</Text>
+                    <Text style={[styles.searchLabel, { color: colors.onSurfaceVariant }]}>{t('social.searchSalons')}</Text>
                     {searchResults.salons.slice(0, 3).map((s: any, i: number) => (
                       <TouchableOpacity key={i} style={styles.searchItem} onPress={() => { setShowSearch(false); setSearchQuery(''); router.push(`/salon/${s.id}`); }}>
                         <Text style={[styles.searchItemText, { color: colors.onSurface }]} numberOfLines={1}>{s.name}</Text>
@@ -246,7 +235,7 @@ export default function SocialFeedScreen() {
                 )}
                 {(searchResults.users?.length || 0) > 0 && (
                   <>
-                    <Text style={[styles.searchLabel, { color: colors.onSurfaceVariant }]}>Utilisateurs</Text>
+                    <Text style={[styles.searchLabel, { color: colors.onSurfaceVariant }]}>{t('social.searchUsers')}</Text>
                     {searchResults.users.slice(0, 3).map((u: any, i: number) => (
                       <TouchableOpacity key={i} style={styles.searchItem} onPress={() => { setShowSearch(false); setSearchQuery(''); }}>
                         <Text style={[styles.searchItemText, { color: colors.onSurface }]} numberOfLines={1}>{u.firstName} {u.lastName}</Text>
@@ -261,9 +250,9 @@ export default function SocialFeedScreen() {
 
         {/* Tabs */}
         <View style={styles.tabRow}>
-          {TABS.map((tab, i) => (
-            <TouchableOpacity key={i} style={styles.tab} onPress={() => setActiveTab(i)}>
-              <Text style={[styles.tabLabel, { color: i === activeTab ? colors.primary : colors.onSurfaceVariant }]}>{tab}</Text>
+          {TAB_KEYS.map((tabKey, i) => (
+            <TouchableOpacity key={tabKey} style={styles.tab} onPress={() => setActiveTab(i)}>
+              <Text style={[styles.tabLabel, { color: i === activeTab ? colors.primary : colors.onSurfaceVariant }]}>{t(tabKey)}</Text>
               {i === activeTab && <View style={[styles.tabIndicator, { backgroundColor: colors.primary }]} />}
             </TouchableOpacity>
           ))}
@@ -272,13 +261,13 @@ export default function SocialFeedScreen() {
         {/* PostType filter chips */}
         {activeTab === 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-            {POST_TYPE_FILTERS.map((f, i) => (
+            {POST_TYPE_FILTER_KEYS.map((f, i) => (
               <TouchableOpacity
-                key={i}
+                key={f.i18nKey}
                 style={[styles.chip, { backgroundColor: i === selectedPostType ? colors.primaryContainer : colors.surfaceContainerHigh }]}
                 onPress={() => setSelectedPostType(i)}
               >
-                <Text style={[styles.chipText, { color: i === selectedPostType ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>{f.label}</Text>
+                <Text style={[styles.chipText, { color: i === selectedPostType ? colors.onPrimaryContainer : colors.onSurfaceVariant }]}>{t(f.i18nKey)}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -291,9 +280,9 @@ export default function SocialFeedScreen() {
       {isLoading && posts.length === 0 ? (
         <LoadingState />
       ) : hasError ? (
-        <ErrorState message="Impossible de charger le fil" onRetry={() => { setIsLoading(true); setPosts([]); loadPosts(0, true); }} />
+        <ErrorState message={t('social.feedLoadError')} onRetry={() => { setIsLoading(true); setPosts([]); loadPosts(0, true); }} />
       ) : posts.length === 0 ? (
-        <EmptyState icon="newspaper-variant-outline" title="Aucun post" message="Le fil est vide pour le moment." />
+        <EmptyState icon="newspaper-variant-outline" title={t('social.feedEmptyTitle')} message={t('social.feedEmptyMessage')} />
       ) : (
         <FlatList
           data={posts}
@@ -307,8 +296,9 @@ export default function SocialFeedScreen() {
               onShare={() => handleShare(item)}
               onPress={() => router.push(`/post/${item.id}`)}
               onBookmark={() => handleBookmark(item.id)}
-              onSaveToCollection={() => openCollectionDialog(item.id)}
+              onSaveToCollection={() => setSavePostId(item.id)}
               onArchive={() => handleArchive(item.id)}
+              onPin={() => handlePin(item)}
               onDelete={() => handleDelete(item.id)}
               onReport={() => router.push({ pathname: '/report', params: { entityType: 'POST', entityId: item.id } })}
             />
@@ -321,33 +311,12 @@ export default function SocialFeedScreen() {
         />
       )}
 
-      {/* Collection save dialog */}
-      <Modal visible={!!savePostId} transparent animationType="fade" onRequestClose={() => setSavePostId(null)}>
-        <Pressable style={styles.dialogOverlay} onPress={() => setSavePostId(null)}>
-          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.dialogCard, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.dialogTitle, { color: colors.onSurface }]}>Enregistrer dans une collection</Text>
-            {isLoadingCollections ? (
-              <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
-            ) : collections.length === 0 ? (
-              <Text style={[styles.dialogEmpty, { color: colors.onSurfaceVariant }]}>Aucune collection. Créez-en une depuis votre profil.</Text>
-            ) : (
-              collections.map((col: any) => (
-                <TouchableOpacity
-                  key={col.id}
-                  style={[styles.collectionItem, { borderBottomColor: colors.outlineVariant }]}
-                  onPress={() => savePostId && handleSaveToCollection(col.id, savePostId)}
-                >
-                  <MaterialCommunityIcons name="folder-outline" size={20} color={colors.primary} />
-                  <Text style={[styles.collectionName, { color: colors.onSurface }]}>{col.name}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-            <TouchableOpacity onPress={() => setSavePostId(null)} style={styles.dialogClose}>
-              <Text style={[styles.dialogCloseText, { color: colors.onSurfaceVariant }]}>Annuler</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      {/* Collection save dialog (composant partagé, B30) */}
+      <CollectionPickerModal
+        postId={savePostId}
+        onClose={() => setSavePostId(null)}
+        onFeedback={(message, type) => setToast({ message, type })}
+      />
 
       {/* Toast feedback (succès / erreur) */}
       {toast && (
@@ -366,7 +335,7 @@ const styles = StyleSheet.create({
   // Search
   searchSection: { paddingHorizontal: 12, paddingBottom: 8, position: 'relative' },
   searchInput: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontFamily: 'Manrope-Regular' },
-  searchSpinner: { position: 'absolute', right: 24, top: 12 },
+  searchSpinner: { position: 'absolute', end: 24, top: 12 },
   searchResults: { borderWidth: 1, borderRadius: 12, marginTop: 4, padding: 8, maxHeight: 250 },
   searchLabel: { fontFamily: 'Manrope-Bold', fontSize: 10.5, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', paddingHorizontal: 8, paddingTop: 8, paddingBottom: 4 },
   searchItem: { paddingVertical: 10, paddingHorizontal: 8 },
@@ -375,7 +344,7 @@ const styles = StyleSheet.create({
   tabRow: { flexDirection: 'row', paddingHorizontal: 8 },
   tab: { flex: 1, alignItems: 'center', paddingVertical: 12, position: 'relative' },
   tabLabel: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
-  tabIndicator: { position: 'absolute', bottom: 0, left: '28%', right: '28%', height: 3, borderRadius: 3 },
+  tabIndicator: { position: 'absolute', bottom: 0, start: '28%', end: '28%', height: 3, borderRadius: 3 },
   tabDivider: { height: 1 },
   // Chips
   chipsRow: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
@@ -383,13 +352,4 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600' },
   // Feed
   feedContent: { paddingVertical: 12 },
-  // Dialog
-  dialogOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 32 }, // design-fixed
-  dialogCard: { width: '100%', maxWidth: 360, borderRadius: 24, padding: 24 },
-  dialogTitle: { fontFamily: 'CormorantGaramond-SemiBold', fontSize: 20, fontWeight: '600', marginBottom: 12 },
-  dialogEmpty: { fontFamily: 'Manrope-Regular', fontSize: 14, textAlign: 'center', paddingVertical: 20 },
-  collectionItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1 },
-  collectionName: { fontFamily: 'Manrope-SemiBold', fontSize: 15, fontWeight: '600' },
-  dialogClose: { alignItems: 'center', paddingTop: 16 },
-  dialogCloseText: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
 });

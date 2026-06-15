@@ -15,11 +15,11 @@ export const reviewsApi = {
     api.get<Review>(`/api/reviews/${reviewId}`).then((r) => r.data),
 
   getClientReviews: (clientId: string) =>
-    api.get<Review[]>(`/api/reviews/client/${clientId}`).then((r) => r.data),
+    api.get<Review[]>(`/api/clients/${clientId}/reviews`).then((r) => r.data),
 
   hasReviewForBooking: (bookingId: string) =>
     api.get<boolean>(`/api/bookings/${bookingId}/review/exists`).then((r) => r.data),
 
   getSalonReviewStats: (salonId: string) =>
-    api.get<SalonReviewStats>(`/api/reviews/salon/${salonId}/stats`).then((r) => r.data),
+    api.get<SalonReviewStats>(`/api/salons/${salonId}/reviews/stats`).then((r) => r.data),
 };

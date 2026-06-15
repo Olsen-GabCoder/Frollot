@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, TextInputProps, Platform } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../theme';
 
 interface TextFieldProps extends Omit<TextInputProps, 'style'> {
@@ -43,10 +44,11 @@ export function TextField({ label, icon, trailingIcon, onTrailingPress, error, o
 }
 
 export function PasswordTextField({ label, ...rest }: Omit<TextFieldProps, 'trailingIcon' | 'onTrailingPress' | 'secureTextEntry'>) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   return (
     <TextField
-      label={label || 'Mot de passe'}
+      label={label || t('common.fields.password')}
       icon="lock"
       secureTextEntry={!visible}
       trailingIcon={visible ? 'eye-off' : 'eye'}

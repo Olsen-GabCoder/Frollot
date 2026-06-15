@@ -8,6 +8,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  I18nManager,
 } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -59,15 +60,15 @@ export default function ChangeEmailScreen() {
   const validateRequest = (): boolean => {
     const candidate = newEmail.trim();
     if (!candidate) {
-      setEmailFieldError('Saisissez votre nouvelle adresse email.');
+      setEmailFieldError(t('settings.email.newRequiredError'));
       return false;
     }
     if (!EMAIL_REGEX.test(candidate)) {
-      setEmailFieldError("Format d'email invalide.");
+      setEmailFieldError(t('common.validation.emailInvalid'));
       return false;
     }
     if (candidate.toLowerCase() === currentEmail.toLowerCase()) {
-      setEmailFieldError('La nouvelle adresse doit être différente de l’actuelle.');
+      setEmailFieldError(t('settings.email.sameAsCurrentError'));
       return false;
     }
     setEmailFieldError('');
@@ -77,7 +78,7 @@ export default function ChangeEmailScreen() {
   const handleRequest = async () => {
     setServerError('');
     if (!validateRequest() || !password) {
-      if (!password) setServerError('Le mot de passe est obligatoire.');
+      if (!password) setServerError(t('common.validation.passwordRequired'));
       return;
     }
     setSubmitting(true);
@@ -88,7 +89,7 @@ export default function ChangeEmailScreen() {
       setStep('confirm');
     } catch (error: any) {
       // 400 mot de passe incorrect / email invalide, 409 email déjà utilisé — message backend tel quel
-      setServerError(error?.response?.data?.message || "Impossible d'envoyer le code. Réessayez.");
+      setServerError(error?.response?.data?.message || t('settings.email.sendError'));
     } finally {
       setSubmitting(false);
     }
@@ -102,9 +103,9 @@ export default function ChangeEmailScreen() {
       // Rappelle la demande : le backend écrase pendingEmail + token (testé S4-backend).
       await authApi.changeEmail({ newEmail: newEmail.trim(), password });
       setToken('');
-      setResendInfo(`Nouveau code envoyé à ${newEmail.trim()}. L'ancien code n'est plus valide.`);
+      setResendInfo(t('settings.email.resendSuccess', { email: newEmail.trim() }));
     } catch (error: any) {
-      setServerError(error?.response?.data?.message || "Impossible de renvoyer le code. Réessayez.");
+      setServerError(error?.response?.data?.message || t('settings.email.resendError'));
     } finally {
       setResending(false);
     }
@@ -115,7 +116,7 @@ export default function ChangeEmailScreen() {
     setResendInfo('');
     const code = token.trim();
     if (code.length !== 6) {
-      setServerError('Le code doit contenir 6 chiffres.');
+      setServerError(t('settings.email.codeLengthError'));
       return;
     }
     setSubmitting(true);
@@ -130,7 +131,7 @@ export default function ChangeEmailScreen() {
       setStep('success');
     } catch (error: any) {
       // 400 code invalide / expiré — message backend tel quel
-      setServerError(error?.response?.data?.message || 'Code invalide. Réessayez.');
+      setServerError(error?.response?.data?.message || t('settings.email.codeInvalidError'));
     } finally {
       setSubmitting(false);
     }
@@ -153,7 +154,7 @@ export default function ChangeEmailScreen() {
           style={[styles.backBtn, { backgroundColor: colors.surfaceContainerHigh }]}
           onPress={goBack}
         >
-          <MaterialIcons name="arrow-back" size={22} color={colors.onSurface} />
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={22} color={colors.onSurface} />
         </TouchableOpacity>
       </View>
 
@@ -168,18 +169,17 @@ export default function ChangeEmailScreen() {
         >
           {step === 'request' && (
             <>
-              <Text style={[typo.overline, { color: colors.secondary }]}>Compte</Text>
+              <Text style={[typo.overline, { color: colors.secondary }]}>{t('settings.sections.account')}</Text>
               <Text style={[typo.headlineMedium, { color: colors.onBackground, marginTop: 4 }]}>
                 {t('settings.changeEmail')}
               </Text>
               <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 8 }]}>
-                Un code de vérification sera envoyé à votre nouvelle adresse. Votre email actuel
-                reste actif tant que le changement n'est pas confirmé.
+                {t('settings.email.intro')}
               </Text>
 
               <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
                 {/* Email actuel — lecture seule */}
-                <Text style={[typo.labelMedium, { color: colors.onSurfaceVariant }]}>Email actuel</Text>
+                <Text style={[typo.labelMedium, { color: colors.onSurfaceVariant }]}>{t('settings.email.currentLabel')}</Text>
                 <View style={[styles.currentEmailBox, { backgroundColor: colors.surfaceContainerHigh }]}>
                   <MaterialIcons name="alternate-email" size={18} color={colors.onSurfaceVariant} />
                   <Text style={[typo.bodyMedium, styles.currentEmailText, { color: colors.onSurface }]} numberOfLines={1}>
@@ -190,7 +190,7 @@ export default function ChangeEmailScreen() {
 
                 <View style={styles.fieldGap}>
                   <TextField
-                    label="Nouvel email"
+                    label={t('settings.email.newLabel')}
                     icon="email-outline"
                     value={newEmail}
                     onChangeText={(v) => { setNewEmail(v); if (emailFieldError) setEmailFieldError(''); }}
@@ -198,16 +198,16 @@ export default function ChangeEmailScreen() {
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    placeholder="nouvelle@adresse.com"
+                    placeholder={t('settings.email.newPlaceholder')}
                   />
                 </View>
 
                 <View style={styles.fieldGap}>
                   <PasswordTextField
-                    label="Mot de passe"
+                    label={t('common.fields.password')}
                     value={password}
                     onChangeText={setPassword}
-                    placeholder="Confirmez avec votre mot de passe"
+                    placeholder={t('settings.passwordConfirmPlaceholder')}
                   />
                 </View>
 
@@ -221,7 +221,7 @@ export default function ChangeEmailScreen() {
                     disabled={!newEmail.trim() || !password}
                     onPress={handleRequest}
                   >
-                    Envoyer le code
+                    {t('settings.email.sendCodeButton')}
                   </PrimaryButton>
                 </View>
               </View>
@@ -230,12 +230,12 @@ export default function ChangeEmailScreen() {
 
           {step === 'confirm' && (
             <>
-              <Text style={[typo.overline, { color: colors.secondary }]}>Compte</Text>
+              <Text style={[typo.overline, { color: colors.secondary }]}>{t('settings.sections.account')}</Text>
               <Text style={[typo.headlineMedium, { color: colors.onBackground, marginTop: 4 }]}>
-                Saisissez le code
+                {t('settings.email.codeTitle')}
               </Text>
               <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 8 }]}>
-                Un code à 6 chiffres a été envoyé à{' '}
+                {t('settings.email.codeSentPrefix')}{' '}
                 <Text style={{ color: colors.onBackground, fontFamily: 'Manrope-Bold' }}>
                   {newEmail.trim()}
                 </Text>
@@ -246,14 +246,13 @@ export default function ChangeEmailScreen() {
               <View style={[styles.messageCard, { backgroundColor: colors.tertiaryContainer }]}>
                 <MaterialIcons name="info-outline" size={20} color={colors.onTertiaryContainer} />
                 <Text style={[typo.bodySmall, styles.messageText, { color: colors.onTertiaryContainer }]}>
-                  Le changement n'est pas encore effectif : votre adresse actuelle ({currentEmail})
-                  reste active tant que le code n'est pas confirmé.
+                  {t('settings.email.pendingHint', { email: currentEmail })}
                 </Text>
               </View>
 
               <View style={[styles.formCard, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
                 <Text style={[typo.labelMedium, { color: colors.onSurfaceVariant, textAlign: 'center' }]}>
-                  Code de vérification
+                  {t('settings.email.codeLabel')}
                 </Text>
                 <TextInput
                   style={[styles.otpInput, {
@@ -289,16 +288,16 @@ export default function ChangeEmailScreen() {
                     disabled={token.trim().length !== 6}
                     onPress={handleConfirm}
                   >
-                    Confirmer
+                    {t('common.actions.confirm')}
                   </PrimaryButton>
                 </View>
 
                 <View style={styles.confirmActions}>
                   <TextButton loading={resending} onPress={handleResend}>
-                    Renvoyer le code
+                    {t('settings.email.resendButton')}
                   </TextButton>
                   <TextButton onPress={goBack}>
-                    Modifier l'adresse
+                    {t('settings.email.editAddressButton')}
                   </TextButton>
                 </View>
               </View>
@@ -311,16 +310,16 @@ export default function ChangeEmailScreen() {
                 <MaterialIcons name="check-circle" size={48} color={colors.primary} />
               </View>
               <Text style={[typo.headlineMedium, { color: colors.onBackground, textAlign: 'center', marginTop: 20 }]}>
-                Email changé
+                {t('settings.email.successTitle')}
               </Text>
               <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, textAlign: 'center', marginTop: 8 }]}>
-                Votre nouvelle adresse{' '}
+                {t('settings.email.successPrefix')}{' '}
                 <Text style={{ color: colors.onBackground, fontFamily: 'Manrope-Bold' }}>{finalEmail}</Text>{' '}
-                est désormais active. Utilisez-la pour vos prochaines connexions.
+                {t('settings.email.successSuffix')}
               </Text>
               <View style={styles.successBtn}>
                 <PrimaryButton full icon="arrow-left" onPress={leaveScreen}>
-                  Retour aux paramètres
+                  {t('settings.backToSettings')}
                 </PrimaryButton>
               </View>
             </View>

@@ -120,8 +120,9 @@ interface PostRepository : JpaRepository<Post, String> {
      */
     @EntityGraph(attributePaths = ["author"])
     @Query("""
-        SELECT p FROM Post p 
+        SELECT p FROM Post p
         WHERE p.createdAt >= :sinceDate
+        AND p.isArchived = false
         ORDER BY (p.likesCount * 1 + p.commentsCount * 2 + p.sharesCount * 3) DESC, p.createdAt DESC
     """)
     fun findTrendingPosts(
@@ -141,5 +142,12 @@ interface PostRepository : JpaRepository<Post, String> {
      */
     @EntityGraph(attributePaths = ["author"])
     fun findByAuthorIdAndIsPinnedTrueOrderByCreatedAtDesc(authorId: String): List<Post>
+
+    /**
+     * Récupère les posts archivés d'un auteur, triés par date d'archivage décroissante.
+     * V041 - Archivage global (façon Instagram)
+     */
+    @EntityGraph(attributePaths = ["author"])
+    fun findByAuthorIdAndIsArchivedTrueOrderByArchivedAtDesc(authorId: String, pageable: Pageable): Page<Post>
 }
 

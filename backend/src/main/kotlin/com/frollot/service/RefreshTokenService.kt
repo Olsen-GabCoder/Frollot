@@ -30,6 +30,14 @@ class RefreshTokenService(
 
     companion object {
         private const val REFRESH_TOKEN_VALIDITY_DAYS = 7L
+
+        /**
+         * Plafond de sessions actives simultanées par utilisateur (S8b).
+         * Au-delà, les sessions les moins récemment utilisées sont automatiquement
+         * révoquées lors d'une nouvelle connexion (éviction LRU — on ne refuse jamais
+         * le login, sinon un utilisateur ayant perdu ses anciens appareils serait bloqué).
+         */
+        const val MAX_ACTIVE_SESSIONS = 5
     }
 
     /**
@@ -59,6 +67,12 @@ class RefreshTokenService(
         ipAddress: String? = null,
         deviceName: String? = null
     ): String {
+        // Plafond de sessions (S8b) : si la limite est atteinte, révoquer les sessions
+        // les moins récemment utilisées pour que le total après création reste <= MAX.
+        // Sûr vis-à-vis de la rotation : rotateRefreshToken révoque l'ancien token AVANT
+        // d'appeler cette méthode (le flush automatique pré-requête l'exclut du décompte).
+        enforceSessionLimit(userId)
+
         // Générer un token UUID sécurisé
         val token = UUID.randomUUID().toString()
 
@@ -85,6 +99,21 @@ class RefreshTokenService(
         return token
     }
     
+    /**
+     * Révoque les sessions excédentaires (les moins récemment utilisées d'abord)
+     * pour qu'après la création d'une nouvelle session, l'utilisateur ait au plus
+     * [MAX_ACTIVE_SESSIONS] sessions actives.
+     */
+    private fun enforceSessionLimit(userId: String) {
+        val activeTokens = refreshTokenRepository.findValidTokensByUserId(userId, LocalDateTime.now())
+        if (activeTokens.size < MAX_ACTIVE_SESSIONS) return
+
+        activeTokens
+            .sortedBy { it.lastUsedAt ?: it.createdAt }
+            .take(activeTokens.size - MAX_ACTIVE_SESSIONS + 1)
+            .forEach { refreshTokenRepository.save(it.copy(revoked = true)) }
+    }
+
     /**
      * Détecte le type de device à partir du User-Agent.
      */

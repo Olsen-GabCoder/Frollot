@@ -5,23 +5,30 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
+  Pressable,
+  Modal,
   StyleSheet,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../src/theme';
 import { resolveMediaUrl } from '../../src/utils/media';
 import { useAuthStore } from '../../src/stores/authStore';
 import { socialApi } from '../../src/api/social';
 import { sharePostExternally, isShareCancellation } from '../../src/utils/share';
 import { Toast, type ToastType } from '../../src/components/ui';
+import { CollectionPickerModal } from '../../src/components/social';
 import { PostResponse, CommentResponse } from '../../src/types';
+
+// Garde B24b : le détail peut être atteint par lien direct (pas d'historique)
+const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -41,6 +48,10 @@ export default function PostDetailScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [savePostId, setSavePostId] = useState<string | null>(null);
+
+  const isOwn = !!user && !!post && post.authorId === user.id;
 
   const loadPost = async () => {
     if (!id) return;
@@ -54,7 +65,7 @@ export default function PostDetailScreen() {
       setComments(commentsData.content);
       setHasMore(!commentsData.last);
     } catch (e: any) {
-      setError(e?.message || t('common.error'));
+      setError(e?.message || t('common.states.error'));
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +84,9 @@ export default function PostDetailScreen() {
       setComments((prev) => [...prev, ...result.content]);
       setCurrentPage(nextPage);
       setHasMore(!result.last);
-    } catch {} finally {
+    } catch (e: any) {
+      setToast({ message: e?.response?.data?.message || t('social.loadCommentsError'), type: 'error' });
+    } finally {
       setIsLoadingMore(false);
     }
   };
@@ -86,7 +99,7 @@ export default function PostDetailScreen() {
       const updated = await socialApi.toggleLike(id);
       setPost((prev) => prev ? { ...prev, isLikedByCurrentUser: updated.isLikedByCurrentUser, likesCount: updated.likesCount } : prev);
     } catch (e: any) {
-      setToast({ message: e?.response?.data?.message || "Impossible de mettre à jour le j'aime.", type: 'error' });
+      setToast({ message: e?.response?.data?.message || t('social.likeError'), type: 'error' });
     }
   };
 
@@ -98,7 +111,7 @@ export default function PostDetailScreen() {
       const updated = await socialApi.toggleFavorite(id);
       setPost((prev) => prev ? { ...prev, isFavoritedByCurrentUser: updated.isFavoritedByCurrentUser } : prev);
     } catch (e: any) {
-      setToast({ message: e?.response?.data?.message || 'Impossible de mettre à jour le favori.', type: 'error' });
+      setToast({ message: e?.response?.data?.message || t('social.bookmarkError'), type: 'error' });
     }
   };
 
@@ -110,7 +123,7 @@ export default function PostDetailScreen() {
       await sharePostExternally(post);
     } catch (error) {
       if (isShareCancellation(error)) return;
-      setToast({ message: "Le partage n'est pas disponible sur cet appareil.", type: 'error' });
+      setToast({ message: t('social.shareUnavailable'), type: 'error' });
     }
   };
 
@@ -129,22 +142,72 @@ export default function PostDetailScreen() {
       setComments(result.content);
       setCurrentPage(0);
       setHasMore(!result.last);
-    } catch {} finally {
+    } catch (e: any) {
+      setToast({ message: e?.response?.data?.message || t('social.commentError'), type: 'error' });
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    Alert.alert(t('common.delete'), t('common.confirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
+  // B29 : épingler/désépingler (posts possédés). Optimiste + rollback ; la limite
+  // backend de 3 posts épinglés renvoie son message (affiché tel quel).
+  const handlePin = async () => {
+    if (!id || !post) return;
+    const wasPinned = !!post.isPinned;
+    setPost((prev) => prev ? { ...prev, isPinned: !wasPinned } : prev);
+    try {
+      const updated = wasPinned ? await socialApi.unpinPost(id) : await socialApi.pinPost(id);
+      setPost((prev) => prev ? { ...prev, isPinned: updated.isPinned } : prev);
+      setToast({ message: wasPinned ? t('social.postUnpinned') : t('social.postPinned'), type: 'success' });
+    } catch (e: any) {
+      setPost((prev) => prev ? { ...prev, isPinned: wasPinned } : prev); // rollback
+      setToast({ message: e?.response?.data?.message || t('social.pinError'), type: 'error' });
+    }
+  };
+
+  // B32/B33 : archivage global — le post disparaît de tous les fils, retour au fil.
+  const handleArchivePost = async () => {
+    if (!id) return;
+    try {
+      await socialApi.archivePost(id);
+      goBack();
+    } catch (e: any) {
+      setToast({ message: e?.response?.data?.message || t('social.archiveError'), type: 'error' });
+    }
+  };
+
+  const handleDeletePost = () => {
+    if (!id) return;
+    Alert.alert(t('social.deletePostTitle'), t('social.deletePostConfirm'), [
+      { text: t('common.actions.cancel'), style: 'cancel' },
       {
-        text: t('common.delete'),
+        text: t('common.actions.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await socialApi.deletePost(id);
+            goBack();
+          } catch (e: any) {
+            setToast({ message: e?.response?.data?.message || t('social.deleteError'), type: 'error' });
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    Alert.alert(t('common.actions.delete'), t('common.actions.confirm'), [
+      { text: t('common.actions.cancel'), style: 'cancel' },
+      {
+        text: t('common.actions.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await socialApi.deleteComment(commentId);
             setComments((prev) => prev.filter((c) => c.id !== commentId));
-          } catch {}
+          } catch (e: any) {
+            setToast({ message: e?.response?.data?.message || t('social.deleteCommentError'), type: 'error' });
+          }
         },
       },
     ]);
@@ -161,9 +224,9 @@ export default function PostDetailScreen() {
   if (error || !post) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
-        <Text style={[typo.bodyLarge, { color: colors.error }]}>{error || t('common.error')}</Text>
+        <Text style={[typo.bodyLarge, { color: colors.error }]}>{error || t('common.states.error')}</Text>
         <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={loadPost}>
-          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>{t('common.retry')}</Text>
+          <Text style={[typo.labelLarge, { color: colors.onPrimary }]}>{t('common.actions.retry')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -177,11 +240,49 @@ export default function PostDetailScreen() {
     >
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={colors.onSurface} />
+        <TouchableOpacity onPress={goBack}>
+          <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
-        <Text style={[typo.titleLarge, { color: colors.onSurface, marginLeft: 16 }]}>Publication</Text>
+        <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16, flex: 1 }]}>{t('social.publication')}</Text>
+        <TouchableOpacity style={styles.menuBtn} onPress={() => setShowMenu(true)}>
+          <MaterialCommunityIcons name="dots-horizontal" size={24} color={colors.onSurfaceVariant} />
+        </TouchableOpacity>
       </View>
+
+      {/* Menu « ⋯ » (patron B22) — cartographie figée : collection · archiver (isOwn) ·
+          épingler (isOwn) · signaler · supprimer (isOwn). « Voir le post » omis (on y est). */}
+      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
+        <Pressable style={styles.menuOverlay} onPress={() => setShowMenu(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.menuCard, { backgroundColor: colors.surfaceContainerHighest, borderColor: colors.outlineVariant }]}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); setSavePostId(post.id); }}>
+              <MaterialCommunityIcons name="folder-plus-outline" size={18} color={colors.onSurface} />
+              <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('social.menu.addToCollection')}</Text>
+            </TouchableOpacity>
+            {isOwn && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); handleArchivePost(); }}>
+                <MaterialCommunityIcons name="archive-arrow-down-outline" size={18} color={colors.onSurface} />
+                <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('social.menu.archive')}</Text>
+              </TouchableOpacity>
+            )}
+            {isOwn && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); handlePin(); }}>
+                <MaterialCommunityIcons name={post.isPinned ? 'pin-off-outline' : 'pin-outline'} size={18} color={colors.onSurface} />
+                <Text style={[styles.menuText, { color: colors.onSurface }]}>{post.isPinned ? t('social.menu.unpin') : t('social.menu.pin')}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); router.push({ pathname: '/report', params: { entityType: 'POST', entityId: post.id } }); }}>
+              <MaterialCommunityIcons name="flag-outline" size={18} color={colors.onSurface} />
+              <Text style={[styles.menuText, { color: colors.onSurface }]}>{t('common.actions.report')}</Text>
+            </TouchableOpacity>
+            {isOwn && (
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); handleDeletePost(); }}>
+                <MaterialCommunityIcons name="delete-outline" size={18} color={colors.error} />
+                <Text style={[styles.menuText, { color: colors.error }]}>{t('common.actions.delete')}</Text>
+              </TouchableOpacity>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <FlatList
         ref={flatListRef}
@@ -198,7 +299,7 @@ export default function PostDetailScreen() {
                     {(post.authorName?.[0] || '?').toUpperCase()}
                   </Text>
                 </View>
-                <View style={{ flex: 1, marginLeft: 10 }}>
+                <View style={{ flex: 1, marginStart: 10 }}>
                   <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{post.authorName}</Text>
                   <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{post.authorUserType}</Text>
                 </View>
@@ -225,13 +326,13 @@ export default function PostDetailScreen() {
                     size={22}
                     color={post.isLikedByCurrentUser ? colors.error : colors.onSurfaceVariant}
                   />
-                  <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
+                  <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
                     {post.likesCount}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.engagementBtn}>
                   <MaterialIcons name="chat-bubble-outline" size={22} color={colors.onSurfaceVariant} />
-                  <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginLeft: 4 }]}>
+                  <Text style={[typo.labelSmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
                     {post.commentsCount}
                   </Text>
                 </TouchableOpacity>
@@ -264,7 +365,7 @@ export default function PostDetailScreen() {
                   {(item.authorName?.[0] || '?').toUpperCase()}
                 </Text>
               </View>
-              <View style={{ flex: 1, marginLeft: 8 }}>
+              <View style={{ flex: 1, marginStart: 8 }}>
                 <Text style={[typo.labelMedium, { color: colors.onSurface }]}>{item.authorName}</Text>
               </View>
               {item.authorId === user?.id && (
@@ -289,7 +390,7 @@ export default function PostDetailScreen() {
               {isLoadingMore ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={[typo.labelMedium, { color: colors.primary }]}>Charger plus</Text>
+                <Text style={[typo.labelMedium, { color: colors.primary }]}>{t('social.loadMore')}</Text>
               )}
             </TouchableOpacity>
           ) : null
@@ -309,7 +410,7 @@ export default function PostDetailScreen() {
             backgroundColor: colors.surfaceContainerHigh,
             color: colors.onSurface,
           }]}
-          placeholder={t('social.writeComment')}
+          placeholder={t('social.writeCommentPlaceholder')}
           placeholderTextColor={colors.onSurfaceVariant}
           value={newComment}
           onChangeText={setNewComment}
@@ -331,7 +432,14 @@ export default function PostDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Toast feedback (erreur like) */}
+      {/* Collection save dialog (composant partagé, B30) */}
+      <CollectionPickerModal
+        postId={savePostId}
+        onClose={() => setSavePostId(null)}
+        onFeedback={(message, type) => setToast({ message, type })}
+      />
+
+      {/* Toast feedback (succès / erreur) */}
       {toast && (
         <Toast message={toast.message} type={toast.type} visible onDismiss={() => setToast(null)} />
       )}
@@ -357,6 +465,30 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   retryBtn: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 28 },
   header: { flexDirection: 'row', alignItems: 'center', paddingTop: 52, paddingBottom: 12, paddingHorizontal: 16 },
+  menuBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  // Menu « ⋯ » (B22)
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)', // design-fixed
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: 100,
+    paddingEnd: 16,
+  },
+  menuCard: {
+    minWidth: 220,
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuText: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
   listContent: { paddingBottom: 80 },
   postCard: { padding: 16, marginBottom: 4 },
   authorRow: { flexDirection: 'row', alignItems: 'center' },
