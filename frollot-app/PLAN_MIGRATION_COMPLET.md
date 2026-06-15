@@ -3343,6 +3343,17 @@ marquee « Bientot » et desactivee, jamais un tap qui ne fait rien).
   - COMMIT LOCAL 2f90607 : 122 fichiers, tout le travail etapes 1-9 securise.
     Rien n'a ete pushe (decision humaine).
 
+- **Migration port 8090 + commit securisation (2026-06-15)** :
+  - Windows Hyper-V reserve dynamiquement la plage 9047-9146, rendant le port 9090
+    inutilisable. **PORT BACKEND DESORMAIS = 8090** (reference pour tous les futurs
+    relances, tests et configurations).
+  - Migration appliquee sur 19 fichiers : application.yml (server.port, CORS, base-url),
+    13 controllers (@CrossOrigin), SecurityConfig, 2 services (devUrl),
+    frontend client.ts + media.ts. Sed verifie propre (22 remplacements legitimes).
+  - Verification post-migration : BUILD SUCCESSFUL (recompile), tsc=0,
+    check-keys 668/692 0 ecart, 0 residu :9090 dans tout le codebase.
+  - COMMIT LOCAL e66044f. Rien pushe.
+
 ---
 
 ### ETAPE 9 : Completer les traductions i18n - 5 langues (2 jours)
