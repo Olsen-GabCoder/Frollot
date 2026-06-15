@@ -3331,6 +3331,18 @@ marquee « Bientot » et desactivee, jamais un tap qui ne fait rien).
     ecrans manquants restants, (3) correction 12 erreurs tsc baseline.
   - Decision en attente validation humaine.
 
+- **Reprise post-crash + commit securisation (2026-06-15)** :
+  - PC eteint brutalement. Aucune correction en cours au moment du crash.
+  - Reconnaissance : backend BUILD SUCCESSFUL, tsc=0, check-keys 668/692 0 ecart.
+    Aucun fichier tronque. Revert Avatar social.tsx confirme. Home inchange.
+  - 5 cles salon.roles.* + salon.noTeam ajoutees (663->668, 687->692).
+  - Notes salon/coiffeur (ReviewRepository, SocialDto/Service, types/profile.ts),
+    equipe complete (SalonStaffService owner injection, StaffResponse.role, SalonStaff.kt),
+    avatars alignes — tout valide par l'humain avant le crash.
+  - .claude/ ajoute au .gitignore racine.
+  - COMMIT LOCAL 2f90607 : 122 fichiers, tout le travail etapes 1-9 securise.
+    Rien n'a ete pushe (decision humaine).
+
 ---
 
 ### ETAPE 9 : Completer les traductions i18n - 5 langues (2 jours)
