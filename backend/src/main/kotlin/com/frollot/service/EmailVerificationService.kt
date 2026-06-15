@@ -94,7 +94,7 @@ class EmailVerificationService(
     private val fromEmail: String,
     @Value("\${app.email.verification.enabled:true}")
     private val verificationEnabled: Boolean,
-    @Value("\${app.frontend.base-url:http://localhost:9090}")
+    @Value("\${app.frontend.base-url:http://localhost:8090}")
     private val frontendBaseUrl: String
 ) {
 
@@ -531,7 +531,7 @@ class EmailVerificationService(
      * Log le token pour le développement.
      */
     private fun logDevToken(email: String, token: String) {
-        val devUrl = "http://localhost:9090/api/users/verify-email?token=$token"
+        val devUrl = "http://localhost:8090/api/users/verify-email?token=$token"
         println("🎯 [DEV MODE] Token pour $email : $token")
         println("🎯 [DEV MODE] URL directe : $devUrl")
         println("🎯 [DEV MODE] Ou utiliser l'endpoint POST /api/users/verify-email avec {\"token\":\"$token\"}")

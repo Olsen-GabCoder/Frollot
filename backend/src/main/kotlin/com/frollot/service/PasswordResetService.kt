@@ -213,7 +213,7 @@ class PasswordResetService(
      * Log le token pour le développement.
      */
     private fun logDevToken(email: String, token: String) {
-        val devUrl = "http://localhost:9090/api/users/reset-password?token=$token"
+        val devUrl = "http://localhost:8090/api/users/reset-password?token=$token"
         println("🎯 [DEV MODE] Token pour $email : $token")
         println("🎯 [DEV MODE] URL directe : $devUrl")
         println("🎯 [DEV MODE] Ou utiliser l'endpoint POST /api/users/reset-password avec {\"token\":\"$token\", \"newPassword\":\"nouveau_mot_de_passe\", \"confirmPassword\":\"nouveau_mot_de_passe\"}")

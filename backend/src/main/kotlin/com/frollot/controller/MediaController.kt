@@ -28,12 +28,12 @@ import org.springframework.web.multipart.MultipartFile
     description = "API pour l'upload et la gestion des fichiers média (images)"
 )
 @CrossOrigin(
-    origins = ["http://localhost:3000", "http://localhost:9090", "http://10.0.2.2:9090"],
+    origins = ["http://localhost:3000", "http://localhost:8090", "http://10.0.2.2:8090"],
     allowCredentials = "true"
 )
 class MediaController(
     private val mediaService: MediaService,
-    @Value("\${server.port:9090}") private val serverPort: String
+    @Value("\${server.port:8090}") private val serverPort: String
 ) {
 
     // ========== MÉTHODES UTILITAIRES ==========

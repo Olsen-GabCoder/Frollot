@@ -41,7 +41,7 @@ import java.math.BigDecimal
     description = "API de gestion des prestations de services des salons de coiffure"
 )
 @CrossOrigin(
-    origins = ["http://localhost:3000", "http://localhost:9090"],
+    origins = ["http://localhost:3000", "http://localhost:8090"],
     allowCredentials = "true"
 )
 class SalonServiceController(

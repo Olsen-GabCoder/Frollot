@@ -6,9 +6,9 @@ import { AuthResponse } from '../types';
 
 const BASE_URL = __DEV__
   ? Platform.select({
-      android: 'http://10.0.2.2:9090',
-      ios: 'http://localhost:9090',
-      default: 'http://localhost:9090',
+      android: 'http://10.0.2.2:8090',
+      ios: 'http://localhost:8090',
+      default: 'http://localhost:8090',
     })
   : 'https://api.frollot.com';
 

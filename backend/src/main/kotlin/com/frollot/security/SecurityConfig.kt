@@ -216,10 +216,10 @@ class SecurityConfig(
                 "http://localhost:3000",  // React/Next.js local
                 "http://localhost:8081",  // Expo dev server
                 "http://localhost:8082",  // Expo dev server (alt)
-                "http://localhost:9090",  // Frontend Compose local
+                "http://localhost:8090",  // Frontend Compose local
                 "http://127.0.0.1:8081", // Expo dev server
-                "http://127.0.0.1:9090",
-                "http://10.0.2.2:9090"   // Émulateur Android
+                "http://127.0.0.1:8090",
+                "http://10.0.2.2:8090"   // Émulateur Android
             )
         } else {
             // En production : uniquement les origines de production

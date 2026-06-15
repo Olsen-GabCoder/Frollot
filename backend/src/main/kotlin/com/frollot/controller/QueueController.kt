@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/salons/{salonId}/queue")
 @Tag(name = "File d'attente", description = "Gestion des clients sans rendez-vous")
 @CrossOrigin(
-    origins = ["http://localhost:3000", "http://localhost:9090", "http://10.0.2.2:9090"],
+    origins = ["http://localhost:3000", "http://localhost:8090", "http://10.0.2.2:8090"],
     allowCredentials = "true"
 )
 class QueueController(

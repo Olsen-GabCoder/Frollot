@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/api/social")
-@CrossOrigin(origins = ["http://localhost:3000", "http://10.0.2.2:9090"])
+@CrossOrigin(origins = ["http://localhost:3000", "http://10.0.2.2:8090"])
 @Tag(
     name = "Follow",
     description = "API de gestion des relations de suivi (salons, coiffeurs)"

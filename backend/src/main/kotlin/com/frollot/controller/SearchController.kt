@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*
     description = "API de recherche unifiée pour posts, salons, utilisateurs et hashtags"
 )
 @CrossOrigin(
-    origins = ["http://localhost:3000", "http://localhost:9090", "http://10.0.2.2:9090"],
+    origins = ["http://localhost:3000", "http://localhost:8090", "http://10.0.2.2:8090"],
     allowCredentials = "true"
 )
 class SearchController(
