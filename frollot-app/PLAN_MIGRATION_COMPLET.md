@@ -3700,3 +3700,42 @@ Dependances backend signalees (NON forcees) :
 
 Baselines : tsc=0, i18n=668/692 0 ecart.
 8 fichiers (1 cree + 7 modifies), 0 backend.
+
+### COMMIT LOT A — c95a463 (2026-06-16)
+
+Lot A commite isolement (feat(profil): navigation vers les profils). Working tree propre
+sauf parasite UserResponse.kt (emailVerified) absorbe au lot suivant.
+
+### R0 BACKEND (city + cover user) + R1 COMPOSANTS PROFIL COMMUNS (2026-06-16)
+
+**R0-1 — champ city** :
+- Migration V046 (ALTER TABLE users ADD COLUMN city VARCHAR(100) NULL)
+- User.kt : champ city nullable
+- SocialDto.kt : city ajoute a CoiffeurProfileResponse, ClientProfileResponse,
+  SalonOwnerProfileResponse + mapping fromUser
+- UpdateProfileRequest : city ajoute (Size max 100)
+- UserService.updateUserProfile : city mappe (trim, blank -> null)
+
+**R0-2 — endpoint cover user** :
+- VERDICT : endpoint EXISTANT reutilise (SocialController PUT /api/social/users/{userId}/cover-image).
+  Frontend peut : POST /api/media/upload (multipart) -> URL, puis appeler l'endpoint existant.
+  Aucun doublon cree.
+
+**R0-3** : ./gradlew classes = BUILD SUCCESSFUL.
+
+**R1 — 5 composants profil communs** (src/components/profile/) :
+- CoverImage : cover 200px + gradient bas + bouton camera optionnel (onEditCover). Reutilise
+  resolveMediaUrl, expo-image, LinearGradient. Gere absence de cover (gradient placeholder).
+- StatCounter : valeur + label. Formatage K/M pour grands nombres.
+- ProfileTabBar : extrait du pattern salon/[id].tsx (salon NON modifie). Generique :
+  tabs:{key,label,icon?}[], activeKey, onChange. RTL via start/end.
+- ProfileInfoSection : section a icones. Reutilise SectionHeader + Card. Crayon par ligne
+  seulement si onEdit fourni.
+- ProfileHeader : assemble CoverImage + Avatar chevauche + nom + badge verifie + sous-titre +
+  row StatCounter + bio + zone actions (ReactNode par props). AUCUN appel API/navigation.
+  Reutilise Avatar existant.
+- Barrel export index.ts. Aucune cle i18n en dur (tout par props).
+- AUCUN ecran branche (fondations seulement, R2 pour validation visuelle).
+
+Baselines R0+R1 : backend BUILD OK, tsc=0, i18n=668/692 0 ecart.
+Fichiers : 5 backend modifies + 1 migration + 6 frontend crees. salon/[id].tsx intact.

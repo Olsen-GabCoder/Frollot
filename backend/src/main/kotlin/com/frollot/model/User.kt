@@ -93,6 +93,9 @@ data class User(
     @Column(name = "cover_image_url", length = 500)
     var coverImageUrl: String? = null,
 
+    @Column(name = "city", length = 100)
+    var city: String? = null,
+
     // Phase E.1 - Profil Coiffeur Enrichi
     @Column(columnDefinition = "TEXT")
     var bio: String? = null,

@@ -581,6 +581,7 @@ class UserService(
         // phoneNumber retiré de l'update partiel : chemin d'écriture UNIQUE = changePhone
         // (validation E.164 + unicité + visibilité). Voir UpdateProfileRequest.
         request.bio?.let { user.bio = it.trim() }
+        request.city?.let { user.city = it.trim().takeIf { c -> c.isNotBlank() } }
         request.avatarUrl?.let { user.avatarUrl = it }
         request.preferredLanguage?.let { user.preferredLanguage = it }
         request.instagramHandle?.let { user.instagramHandle = it.trim() }

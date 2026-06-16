@@ -636,6 +636,7 @@ data class CoiffeurProfileResponse(
     val lastName: String?,
     val avatarUrl: String?,
     val coverImageUrl: String? = null, // Photo de couverture du profil
+    val city: String? = null,
     val isVerified: Boolean,
     val bio: String?,
     val specialties: List<String>,
@@ -671,6 +672,7 @@ data class CoiffeurProfileResponse(
                 lastName = user.lastName,
                 avatarUrl = user.avatarUrl,
                 coverImageUrl = user.coverImageUrl,
+                city = user.city,
                 isVerified = user.isVerified,
                 bio = user.bio,
                 specialties = user.specialties.toList(),
@@ -720,6 +722,7 @@ data class ClientProfileResponse(
     val lastName: String?,
     val avatarUrl: String?,
     val coverImageUrl: String? = null, // Photo de couverture du profil
+    val city: String? = null,
     val isVerified: Boolean,
     val bio: String?,
     val statistics: ClientProfileStatistics,
@@ -747,6 +750,7 @@ data class ClientProfileResponse(
                 lastName = user.lastName,
                 avatarUrl = user.avatarUrl,
                 coverImageUrl = user.coverImageUrl,
+                city = user.city,
                 isVerified = user.isVerified,
                 bio = user.bio,
                 statistics = statistics,
@@ -787,6 +791,7 @@ data class SalonOwnerProfileResponse(
     val lastName: String?,
     val avatarUrl: String?,
     val coverImageUrl: String? = null, // Photo de couverture du profil
+    val city: String? = null,
     val isVerified: Boolean,
     val bio: String?,
     val statistics: SalonOwnerProfileStatistics,
@@ -816,6 +821,7 @@ data class SalonOwnerProfileResponse(
                 lastName = user.lastName,
                 avatarUrl = user.avatarUrl,
                 coverImageUrl = user.coverImageUrl,
+                city = user.city,
                 isVerified = user.isVerified,
                 bio = user.bio,
                 statistics = statistics,

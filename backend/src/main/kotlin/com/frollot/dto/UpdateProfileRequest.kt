@@ -22,6 +22,9 @@ data class UpdateProfileRequest(
 
     @field:Size(max = 500, message = "La bio ne peut pas dépasser 500 caractères")
     val bio: String? = null,
+
+    @field:Size(max = 100, message = "La ville ne peut pas dépasser 100 caractères")
+    val city: String? = null,
     
     val avatarUrl: String? = null,
     
