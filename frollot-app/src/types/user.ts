@@ -33,6 +33,7 @@ export interface User {
   isFollowedByCurrentUser?: boolean;
   followersCount?: number;
   bio?: string;
+  city?: string;
   yearsExperience?: number;
   certifications?: string;
   instagramHandle?: string;

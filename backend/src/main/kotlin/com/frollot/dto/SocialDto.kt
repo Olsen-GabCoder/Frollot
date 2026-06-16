@@ -580,8 +580,8 @@ data class UpdateCoiffeurProfileRequest(
      * Valide les données de la requête.
      */
     fun validate() {
-        if (bio != null && bio.length > 1000) {
-            throw IllegalArgumentException("La biographie ne peut pas dépasser 1000 caractères")
+        if (bio != null && bio.length > 150) {
+            throw IllegalArgumentException("La biographie ne peut pas dépasser 150 caractères")
         }
         if (specialties.size > 5) {
             throw IllegalArgumentException("Le nombre de spécialités ne peut pas dépasser 5")

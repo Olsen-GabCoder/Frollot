@@ -3739,3 +3739,423 @@ sauf parasite UserResponse.kt (emailVerified) absorbe au lot suivant.
 
 Baselines R0+R1 : backend BUILD OK, tsc=0, i18n=668/692 0 ecart.
 Fichiers : 5 backend modifies + 1 migration + 6 frontend crees. salon/[id].tsx intact.
+
+Commits R0/R1 + parasite emailVerified isole :
+- 4fdb5ef : feat(profil) R0+R1 (12 fichiers, UserResponse.kt EXCLU)
+- 1b6e428 : chore(dto) emailVerified dans UserResponse (isole, origine inconnue)
+
+### R2 PROFIL COIFFEUR REFONDU — PILOTE (2026-06-16)
+
+Refonte complete de profile/coiffeur/[id].tsx avec ossature R1 :
+- ProfileHeader (cover+avatar chevauche+nom+badge+sous-titre+stats+bio+actions)
+- ProfileTabBar (Publications/Portfolio/Avis)
+- ProfileInfoSection (specialites/experience/certifications/instagram/ville)
+- FollowButton CREE (src/components/profile/FollowButton.tsx) : etat OPTIMISTE avec
+  rollback, reutilise socialApi.followCoiffeur/unfollowCoiffeur, generique coiffeur+salon
+- isOwnProfile : actions = Modifier (noop lot R6) + Partager (natif) ; tiers = FollowButton
+- Type TS CoiffeurProfileResponse MIS A JOUR (aligne backend : +coverImageUrl, city,
+  certifications, instagramHandle, portfolios, recentPosts, badges ; -userId -salonId -salonName)
+- Posts : pinned en tete + recentPosts dedupliques, via PostCard avec onProfilePress (lot A)
+- 13 cles i18n ajoutees (5 langues) : tabs, type, info, stats, actions. Total 681/705 0 ecart.
+- salon/[id].tsx, profils client/owner NON touches.
+- SIGNALE : pas d'ecran d'edition coiffeur dedie (bouton Modifier present mais noop, lot R6).
+  Upload cover/avatar non branche (lot R6, crayons non affiches R2 = lecture seule prioritaire).
+- Onglet Avis = placeholder texte (pas d'endpoint reviews par user dans le DTO coiffeur).
+
+### R3 PROFIL CLIENT + R4 PROFIL OWNER REFONDUS (2026-06-16)
+
+Meme moule que R2 (ProfileHeader + ProfileTabBar + ProfileInfoSection).
+- Types TS ClientProfileResponse et SalonOwnerProfileResponse MIS A JOUR (alignes backend :
+  +coverImageUrl, city, bio, isVerified, recentPosts, collections, badges, isFollowedByCurrentUser).
+- SalonSummaryResponse CREE dans types/profile.ts.
+- VERDICT FOLLOW : PAS de followClient ni followOwner dans l'API (seuls followCoiffeur et
+  followSalon existent). Pas de FollowButton pour client/owner — tiers voit le profil en
+  lecture seule. SIGNALE pour lot futur si necessaire.
+- R3 CLIENT : onglets Publications + Collections (donnees du DTO). Pas de favoris (endpoint
+  separe owner-only, pas dans le DTO client). Stats : abonnes/abonnements/posts. Subtitle = Client.
+- R4 OWNER : onglets Salons + Publications + Collections. Chaque salon navigue vers salon/[id].
+  Stats : abonnes/abonnements/salons. Subtitle = Proprietaire de salon.
+- 4 cles i18n ajoutees (5 langues) : type.client, type.owner, tabs.collections, tabs.salons.
+  Total 685/709 0 ecart.
+- salon/[id].tsx et profile/coiffeur NON modifies.
+- Baselines : tsc=0, i18n=685/709 0 ecart.
+
+### DIAGNOSTIC SYSTEME FOLLOW — EXTENSION CLIENT/OWNER (2026-06-16)
+
+VERDICT : follow SEMI-GENERIQUE, extension FACILE.
+
+(A) Modele : table unique `follows` (follower_id + following_type VARCHAR(20) + following_id).
+Enum FollowingType = { USER, SALON, COIFFEUR }. Le type USER EXISTE DEJA dans l'enum et est
+DEJA UTILISE par les compteurs profils client/owner (followersCount lit FollowingType.USER).
+Un salon est une entite DISTINCTE d'un user (table salons) — le follow salon cible le salon.id,
+pas l'owner.id. « Suivre un owner » = follow USER sur l'owner.id, distinct de suivre ses salons.
+
+(B) Endpoints existants : followSalon, followCoiffeur, unfollowSalon, unfollowCoiffeur (POST/DELETE),
+getFollowing, getSalonFollowers, getCoiffeurFollowers (GET). Le service FollowService a unfollow/
+isFollowing/getFollowers/getFollowersCount GENERIQUES (prennent un FollowingType) ; seuls
+followSalon et followCoiffeur sont SPECIFIQUES (validation du type cible). Il manque followUser.
+
+(C) Impacts :
+- FEED SUIVIS : ne remonte que les posts des COIFFEUR et SALON suivis (SocialService:472-480).
+  Si on ajoute followUser pour client/owner, le feed devra aussi remonter les posts des USER suivis.
+- COMPTEURS : DEJA COHERENTS — les profils client/owner comptent les followers avec FollowingType.USER
+  (SocialService:2278/2373) et followingCount = countByFollowerId (tous types). Pas d'adaptation.
+- isFollowedByCurrentUser : DEJA CABLE pour client (SocialService) et owner (SocialService:2398-2406)
+  avec FollowingType.USER. Le backend RENVOIE deja le bon booleen.
+- NOTIFICATIONS : aucun systeme de notif follow actif (Firebase dormant).
+- CONTRAINTES : unicite (follower_id, following_type, following_id) = pas de doublon. Pas de garde
+  soi-meme explicite dans followCoiffeur (l'UI ne montre pas le bouton si isOwnProfile).
+
+(D) Plan d'implementation recommande (APPROCHE UNIFIEE) :
+1. BACKEND : ajouter followUser(followerId, userId) dans FollowService (verifie que userId existe,
+   empeche de se suivre soi-meme, FollowingType.USER). 2 endpoints dans FollowController :
+   POST/DELETE /api/social/users/{userId}/follow + GET /api/social/users/{userId}/followers.
+   Pas de migration (la table/enum supportent deja USER).
+2. FEED : ajouter les followedUserIds (FollowingType.USER) dans getFollowingFeed pour remonter
+   leurs posts (meme pattern que followedCoiffeurIds).
+3. FRONTEND : etendre FollowTargetType dans FollowButton ('coiffeur'|'salon'|'user'), ajouter
+   followUser/unfollowUser dans social.ts, brancher le FollowButton sur les profils client/owner.
+Ampleur estimee : ~50 lignes backend, ~20 lignes frontend. Pas de migration. Risque faible.
+
+### FOLLOW UNIFIE followUser + CABLAGE PROFILS CLIENT/OWNER + FEED (2026-06-16)
+
+Implementation complete des 5 etapes du plan :
+1. FollowService.followUser : FollowingType.USER, garde anti-soi-meme, verif existence target.
+2. FollowController : POST/DELETE /api/social/users/{userId}/follow + GET .../followers.
+3. Feed Suivis (SocialService.getFollowingFeed) : ajoute followedUserIds (FollowingType.USER),
+   posts remontes via authorId. Deduplication GARANTIE par .distinctBy { it.id } deja en place
+   (ligne 519) — un coiffeur suivi en COIFFEUR + USER ne produit pas de doublon.
+4. Frontend : followUser/unfollowUser dans social.ts.
+5. FollowButton : FollowTargetType etendu avec 'user', dispatch interne ajoute.
+6. Profils client/owner : FollowButton cable en zone tiers (targetType='user',
+   isFollowed=profile.isFollowedByCurrentUser). Propre profil = Modifier+Partager inchange.
+Pas de migration. Backend BUILD OK, tsc=0, i18n=685/709 0 ecart. salon intact.
+
+---
+
+## R6 — DIAGNOSTIC « MON PROFIL + EDITION » (2026-06-16, LECTURE SEULE)
+
+### (A) INVENTAIRE COMPLET DE (tabs)/profile.tsx — A PRESERVER
+
+Ecran central (225 lignes), source de donnees = authStore.user (GET /api/users/me via refreshUser)
++ appel profil role-specifique pour stats (profilesApi.getXxxProfile). PAS de pull-to-refresh.
+
+| Element                  | Impl. actuelle                                     | Destination / action                              |
+|--------------------------|----------------------------------------------------|----------------------------------------------------|
+| Avatar (88px rond)       | Image cliquable -> pickAvatar (expo-image-picker)  | Ouvre galerie, preview + Annuler/Enregistrer        |
+| Upload avatar            | mediaApi.uploadImage -> usersApi.updateUserAvatar   | PATCH /api/users/{id}/avatar, puis refreshUser()    |
+| Badge camera             | Icone camera-alt en bas-droite de l'avatar          | Visuel seulement, meme onPress que avatar           |
+| Nom complet              | user.firstName + user.lastName                      | Affichage seul                                      |
+| Email                    | user.email                                          | Affichage seul                                      |
+| Badge verifie            | user.isVerified OU user.emailVerified               | Affichage conditionnel                              |
+| Stats (3 compteurs)      | Differents selon userType (voir ci-dessous)         | Affichage seul, pas cliquables                      |
+| Menu Favoris             | icon favorite-border                                | router.push(/favorites/{userId})                    |
+| Menu Archives            | icon archive                                        | router.push(/archives/{userId})                     |
+| Menu Collections         | icon collections-bookmark                           | router.push(/collections/user/{userId})             |
+| Menu Portfolios          | icon photo-library                                  | router.push(/portfolios?ownerId=...&ownerType=...)  |
+| Menu Reglages            | icon settings                                       | router.push(/settings)                              |
+| Bouton Deconnexion       | Bordure rouge, icone logout                         | Ouvre LogoutConfirmModal                            |
+
+Stats par type :
+- client : bookings / collections / posts
+- salon_owner : salons / followers / posts
+- hairstylist : followers / posts / likes
+
+Donnees : l'objet `user` du store est reconstitue SOIT par authResponseToUser (login, 7 champs) SOIT
+par usersApi.getCurrentUser (GET /me, User complet). refreshUser() fait GET /me -> user complet avec
+avatarUrl, coverImageUrl, bio, city, etc. Donc TOUTES ces donnees sont disponibles dans le store.
+
+Ce qui MANQUE par rapport aux profils publics refondus (R2-R4) :
+- Pas de cover image
+- Pas de bio affichee
+- Pas de ville affichee
+- Pas de ProfileHeader / ProfileTabBar / onglets (posts, portfolios, collections)
+- Pas de bouton « Modifier le profil » (les profils publics l'ont en noop)
+- Pas de bouton Partager
+- Design ancien (pas de ring avatar, pas de Cormorant Garamond)
+
+### (B) EDITION — ENDPOINTS BACKEND REELS
+
+#### B1. PUT /api/users/me (UserController:580-590, UserService:574-591)
+UpdateProfileRequest (UpdateProfileRequest.kt:12-41) :
+  - firstName (Size 2-50)
+  - lastName (Size 2-50)
+  - bio (Size max 500)
+  - city (Size max 100)
+  - avatarUrl (libre)
+  - preferredLanguage (Pattern fr|en|es|de|ar)
+  - instagramHandle (Size max 100)
+  - yearsExperience (libre)
+NOTE : phoneNumber RETIRE (endpoint dedie PUT /me/phone)
+
+#### B2. PATCH /api/users/{userId}/avatar (UserController:740-760)
+UpdateAvatarRequest : { avatarUrl: String }
+Ownership check (403 si pas soi-meme). Flux actuel dans (tabs)/profile.tsx :
+  1. expo-image-picker -> URI locale
+  2. mediaApi.uploadImage(uri, fileName) -> POST /api/media/upload -> retourne path
+  3. usersApi.updateUserAvatar(userId, path) -> PATCH /users/{id}/avatar -> retourne User
+  4. refreshUser() -> GET /me -> met a jour authStore
+
+#### B3. PUT /api/social/users/{userId}/cover-image (SocialController:1805-1833)
+Body : { coverImageUrl: String }. Ownership check. Service : UserService:602-618 (max 500 chars).
+Frontend : usersApi.updateUserCoverImage(userId, coverImageUrl) EXISTE (users.ts:23-24).
+Pipeline : identique a l'avatar (mediaApi.uploadImage -> path -> PUT cover-image).
+UI : AUCUNE — a creer.
+
+#### B4. PUT /api/social/coiffeurs/{coiffeurId}/profile (SocialController:1049-1060)
+UpdateCoiffeurProfileRequest (SocialDto.kt:571-577) :
+  - bio (max 1000)
+  - specialties (List<String>, max 5, chaque max 100)
+  - yearsExperience (0-100)
+  - certifications (max 2000)
+  - instagramHandle (max 30, alphanum+._)
+  - portfolioHighlightedId
+Frontend : profilesApi.updateCoiffeurProfile EXISTE (profiles.ts:18-19).
+ATTENTION : le type TS UpdateCoiffeurProfileRequest (profile.ts:56-60) n'a que 3 champs sur 6 !
+  Manquent : certifications, instagramHandle, portfolioHighlightedId.
+
+#### B5. PUT /api/social/salons/{salonId}/profile (SocialController:1127-1138)
+UpdateSalonSocialProfileRequest (SocialDto.kt:871-874) :
+  - socialDescription (max 2000)
+  - socialCoverImage
+  - highlightedPostIds (List<String>)
+Frontend : profilesApi.updateSalonSocialProfile EXISTE (profiles.ts:24-25).
+ATTENTION : le type TS (profile.ts:82-84) n'a que description — manquent socialCoverImage, highlightedPostIds.
+
+#### B6. POST /api/media/upload (MediaController:80-127)
+Multipart, retourne { url, path, uploadedBy, filename }.
+Frontend : mediaApi.uploadImage (media.ts:5-34) — cross-platform (web blob / native FormData).
+
+#### B7. Pas d'endpoint UPDATE pour client-only ou owner-only
+  - Client/owner editent bio/ville/avatar/cover via PUT /me et les endpoints B2/B3 generiques.
+  - Seul le coiffeur a un endpoint role-specifique (B4).
+
+### (C) TABLEAU CHAMP EDITABLE -> ENDPOINT -> TYPE
+
+| Champ             | Endpoint                              | client | coiffeur | owner |
+|-------------------|---------------------------------------|--------|----------|-------|
+| firstName         | PUT /api/users/me                     | oui    | oui      | oui   |
+| lastName          | PUT /api/users/me                     | oui    | oui      | oui   |
+| bio               | PUT /api/users/me (500c)              | oui    | oui      | oui   |
+| bio (etendue)     | PUT coiffeurs/{id}/profile (1000c)    | —      | oui      | —     |
+| city              | PUT /api/users/me                     | oui    | oui      | oui   |
+| avatarUrl         | PATCH /users/{id}/avatar              | oui    | oui      | oui   |
+| coverImageUrl     | PUT /users/{id}/cover-image           | oui    | oui      | oui   |
+| instagramHandle   | PUT /api/users/me OU coiffeur profile | oui*   | oui      | oui*  |
+| yearsExperience   | PUT /api/users/me OU coiffeur profile | —      | oui      | —     |
+| specialties       | PUT coiffeurs/{id}/profile            | —      | oui      | —     |
+| certifications    | PUT coiffeurs/{id}/profile            | —      | oui      | —     |
+| portfolioHighl.   | PUT coiffeurs/{id}/profile            | —      | oui      | —     |
+| preferredLanguage | PUT /api/users/me                     | oui    | oui      | oui   |
+*instagramHandle dans /me : accepte mais pas affiche sur profils client/owner actuellement
+
+### (D) ARCHITECTURE EDITION — PROPOSITION
+
+#### Option (i) : Ecran d'edition DEDIE (app/edit-profile.tsx)
+- Le bouton « Modifier le profil » (profils publics isOwnProfile) et (tabs)/profile.tsx naviguent
+  vers un ecran formulaire dedie.
+- Formulaire avec TextInputs (nom, bio, ville, instagram...), sections conditionnelles par userType.
+- Upload avatar/cover integres dans cet ecran.
+- PRO : separation claire lecture/ecriture, plus simple a tester, pas de mode inline complexe.
+- PRO : coherent avec le pattern Instagram/TikTok (bouton Modifier -> ecran dedie).
+- CON : un ecran de plus a creer.
+
+#### Option (ii) : Edition inline sur (tabs)/profile.tsx avec crayons
+- Chaque section a un crayon qui passe en mode edition in-place.
+- PRO : pas de navigation supplementaire.
+- CON : gestion d'etat complexe (mode edition/lecture par section), risque de bugs, incoherent
+  avec les profils publics qui ont « Modifier le profil » comme bouton unique.
+
+#### RECOMMANDATION : Option (i) — ecran dedie
+Raisons :
+1. Les profils publics (profile/{type}/[id].tsx) ont DEJA un bouton « Modifier le profil » qui
+   ne fait rien (noop). Il suffit de le brancher vers router.push('/edit-profile').
+2. (tabs)/profile.tsx peut etre refonde visuellement (ProfileHeader, onglets) sans toucher a
+   l'edition, qui vit dans son propre ecran.
+3. Le pipeline upload avatar EXISTANT dans (tabs)/profile.tsx peut etre DEPLACE ou DUPLIQUE dans
+   l'ecran d'edition (meme flux : pick -> preview -> mediaApi.upload -> PATCH).
+4. Pattern standard des apps sociales (Instagram, TikTok, X).
+
+#### Articulation (tabs)/profile.tsx <-> profils publics refondus
+PROPOSITION : (tabs)/profile.tsx REUTILISE ProfileHeader (R1) pour l'ossature visuelle
+(cover, avatar avec ring, nom, badge, stats, bio, boutons Modifier+Partager) mais GARDE son
+menu propre (favoris/archives/collections/portfolios/settings) et son bouton deconnexion en
+dessous. L'ecran reste DISTINCT des profils publics (il ne charge PAS via profilesApi.getXxxProfile
+pour l'affichage principal — il utilise authStore.user enrichi par GET /me). Les stats viennent
+toujours de l'appel profil role-specifique (comme maintenant).
+
+### (E) DECOUPAGE EN SOUS-ETAPES VALIDABLES
+
+#### R6a — Ossature visuelle de « Mon Profil » (tabs)/profile.tsx
+- Reutiliser ProfileHeader (cover, avatar ring, nom, badge verifie, sous-titre type, stats, bio)
+- Zone actions = « Modifier le profil » (navigue vers /edit-profile, a creer R6b) + « Partager »
+- Conserver TOUT le menu existant (favoris, archives, collections, portfolios, settings)
+- Conserver le bouton deconnexion + LogoutConfirmModal
+- Ajouter pull-to-refresh
+- PAS de cover upload encore (affichage seul avec placeholder)
+- Dependances : R1 composants (deja faits)
+- Ampleur : ~80 lignes modifiees dans (tabs)/profile.tsx
+
+#### R6b — Ecran d'edition champs texte (app/edit-profile.tsx)
+- Nouveau fichier app/edit-profile.tsx
+- Formulaire : firstName, lastName, bio, city, instagramHandle
+- Sections conditionnelles coiffeur : specialties, yearsExperience, certifications
+- Appels : PUT /api/users/me (champs communs) + PUT coiffeurs/{id}/profile (champs coiffeur)
+- Ajouter usersApi.updateProfile dans users.ts (appel PUT /me — ABSENT aujourd'hui)
+- Aligner les types TS UpdateCoiffeurProfileRequest (ajouter certifications, instagramHandle,
+  portfolioHighlightedId)
+- Brancher le bouton « Modifier le profil » de R6a + des profils publics (isOwnProfile)
+- Dependances : R6a
+- Ampleur : ~200 lignes (ecran) + ~15 lignes (api/types)
+
+#### R6c — Upload cover + avatar dans l'ecran d'edition
+- Deplacer le pipeline avatar existant de (tabs)/profile.tsx vers edit-profile.tsx
+  (ou le garder dans les deux — pick avatar dans les deux endroits est un choix UX)
+- Ajouter upload cover : meme pipeline (pick -> mediaApi.uploadImage -> PUT cover-image)
+- La cover s'affiche via ProfileHeader (deja cable via coverUrl prop)
+- Dependances : R6b
+- Ampleur : ~60 lignes (reutilise le pattern avatar existant)
+
+### Baselines inchangees
+gradlew classes = BUILD SUCCESSFUL, tsc --noEmit = 0, i18n 685/709 0 ecart.
+Aucun fichier modifie sauf cette trace.
+
+### R6a — REFONTE VISUELLE « MON PROFIL » + RETRAIT BOUTON MODIFIER PROFILS PUBLICS (2026-06-16)
+
+Implementation :
+1. (tabs)/profile.tsx REFONDE avec ProfileHeader R1 :
+   - Cover (affichage seul, placeholder si vide, PAS d'upload R6c)
+   - Avatar avec ring (coherent R2-R4), affichage seul (pipeline upload CONSERVE en code
+     mort commente TODO R6c, pret a etre deplace vers ecran d'edition)
+   - Nom (CormorantGaramond), badge verifie, sous-titre type (profile.type.hairstylist/client/owner)
+   - Stats role-specifiques INCHANGES (client: bookings/collections/posts, owner: salons/followers/
+     posts, hairstylist: followers/posts/likes)
+   - Bio (user.bio via authStore, affichage seul)
+   - Actions = « Modifier le profil » (NOOP TODO R6b) + « Partager » (Share natif)
+   - Pull-to-refresh ajoute (RefreshControl -> refreshUser + loadStats)
+2. PRESERVE : menu 5 items (favoris/archives/collections/portfolios/settings, routes inchangees),
+   bouton deconnexion + LogoutConfirmModal. Email RETIRE de l'affichage (deja visible dans Settings,
+   pas montre sur les profils publics non plus — coherence).
+3. Profils publics (profile/coiffeur/[id], client/[id], owner/[id]) : bouton « Modifier le profil »
+   RETIRE du cas isOwnProfile. Reste UNIQUEMENT « Partager ». Cas tiers INCHANGE (FollowButton).
+4. Aucune cle i18n ajoutee (profile.editProfile existait deja dans les 5 langues).
+5. salon/[id].tsx NON modifie.
+Baselines : tsc=0, i18n 685/709 0 ecart, gradlew classes inchange (aucun backend modifie dans ce lot).
+
+### R6c — UPLOAD COVER (pipeline calque avatar) (2026-06-16)
+
+Implementation :
+1. Pipeline cover SYMETRIQUE au pipeline avatar dans (tabs)/profile.tsx :
+   - Etats SEPARES : coverPreview (string|null) + isUploadingCover (bool) — pas de conflit avec avatar.
+   - pickCover : ImagePicker aspect 16:9 (cover), quality 0.8.
+   - saveCover : mediaApi.uploadImage -> usersApi.updateUserCoverImage (users.ts:23, PUT /api/social/
+     users/{id}/cover-image) -> refreshUser -> reset coverPreview.
+   - cancelCoverPreview : reset coverPreview.
+2. Cable sur ProfileHeader :
+   - coverUrl={coverPreview || user?.coverImageUrl} (preview avant upload).
+   - onEditCover={pickCover} (remplace le NOOP).
+3. Barre preview cover : Annuler/Enregistrer DUPLIQUEE (pas factorisee — 7 lignes, pas assez pour un
+   composant dedie). Affichee au-dessus de la barre preview avatar si les deux sont actifs (cas rare).
+4. Non-regression avatar : pipeline avatar INTACT (renomme isUploading -> isUploadingAvatar,
+   cancelPreview -> cancelAvatarPreview pour clarte).
+5. Aucune cle i18n ajoutee (reutilise common.actions.cancel/save). Backend NON modifie. salon NON modifie.
+Baselines : tsc=0, i18n 685/709 0 ecart.
+
+### BOTTOM SHEET EDITION (pilote) + CHAMP BIO (2026-06-16)
+
+Diagnostic :
+- D1 : bio = user.bio UNIQUE (500c via PUT /me). Les 3 profils publics + Mon Profil lisent le meme
+  champ. CoiffeurProfileRequest a un bio mais mappe le meme user.bio. Pas de 2e bio.
+- D2 : PUT /api/users/me n'avait AUCUN appel frontend. Ajoute usersApi.updateProfile (users.ts).
+- D3 : pas de lib bottom sheet. Modal natif RN + Animated (calque LogoutConfirmModal). Zero dependance.
+- D-cover-bugfix : UserResponse.kt n'incluait ni coverImageUrl ni bio -> ajoutes (lot precedent).
+- D-cover-url : users.ts coverImage URL corrigee /api/social/users/{id}/cover-image (etait /api/users).
+
+Implementation :
+1. EditBottomSheet.tsx (src/components/profile/) : composant GENERIQUE reutilisable. Modal natif,
+   backdrop tap-to-close, grabber, titre CormorantGaramond, X, children, Annuler/Enregistrer,
+   Animated slide+fade, KeyboardAvoidingView. Exporte via index.ts.
+2. ProfileHeader : ajout prop onEditBio. Bio tappable avec crayon-outline quand isOwnProfile+onEditBio.
+   Affiche meme sans bio (pour pouvoir en ajouter une).
+3. (tabs)/profile.tsx : etat showBioSheet/bioDraft/isSavingBio. openBioSheet pre-remplit. saveBio appelle
+   usersApi.updateProfile({bio}) -> refreshUser -> ferme. Erreur affichee par Alert (pas de catch vide).
+   TextInput multiline + compteur N/500.
+4. usersApi.updateProfile ajoute (PUT /api/users/me). Couvre tous les champs du DTO backend pour les
+   futurs lots (firstName/lastName/bio/city/instagramHandle/yearsExperience/preferredLanguage).
+5. i18n : 2 cles ajoutees (profile.editBioTitle + profile.editBioPlaceholder) dans 5 langues.
+   Total : 687/711, 0 ecart.
+6. CoverImage.tsx : bouton camera deplace top:12 (etait bottom:12, bloque par le z-index avatar).
+Backend : UserResponse.coverImageUrl + bio ajoutes (lot precedent, BUILD OK).
+Baselines : tsc=0, i18n 687/711 0 ecart. salon/profils publics NON modifies.
+
+### BOTTOM SHEETS VILLE + INSTAGRAM (2026-06-16)
+
+Diagnostic :
+- D1 : Mon Profil n'affichait NI city NI instagram. Profils publics les affichaient via ProfileInfoSection.
+  -> ProfileInfoSection AJOUTEE sur Mon Profil avec onEdit par item (crayon discret en bout de ligne).
+- D2 : instagramHandle backend = @Size(max=100) via PUT /me. Pas de @Pattern dans UpdateProfileRequest
+  (la validation stricte 30c alphanum+._ est dans UpdateCoiffeurProfileRequest.validate() seulement).
+- D3 : city = @Size(max=100).
+- UserResponse.kt : city + instagramHandle MANQUAIENT -> ajoutes (champs + fromEntity mapping).
+- User.ts frontend : city MANQUAIT -> ajoute.
+
+Implementation :
+1. (tabs)/profile.tsx : 2 sheets sur le moule bio (EditBottomSheet reutilise) :
+   - City : cityDraft/isSavingCity, openCitySheet, saveCity -> updateProfile({city}) -> refreshUser.
+     TextInput 1 ligne, compteur N/100. Alert erreur backend.
+   - Instagram : instagramDraft/isSavingInstagram, openInstagramSheet, saveInstagram ->
+     updateProfile({instagramHandle}) -> refreshUser. TextInput 1 ligne autoCapitalize=none,
+     compteur N/100. Alert erreur backend.
+2. ProfileInfoSection ajoutee sur Mon Profil (entre ProfileHeader et Menu) : ville + instagram,
+   chaque item avec onEdit -> ouvre le sheet correspondant. Affiche "—" si vide (editable quand meme).
+3. Profils publics NON modifies (lecture seule, pas de onEdit).
+4. i18n : 4 cles ajoutees (editCityTitle/Placeholder + editInstagramTitle/Placeholder) x 5 langues.
+5. Backend : UserResponse.kt += city + instagramHandle (champs + fromEntity).
+Baselines : tsc=0, i18n 691/715 0 ecart, gradlew classes BUILD OK.
+
+### PROFILEINFOCARD INLINE UNIFIE + ORDRE BLOCS PROFILS PUBLICS (2026-06-16)
+
+1. COMPOSANT ProfileInfoCard.tsx (src/components/profile/) : carte inline unifiee SANS titre.
+   Props : items[] avec icon + value + onEdit? optionnel. Fond surface, coins arrondis, filets de
+   separation. onEdit present -> crayon en bout de ligne ; absent -> lecture seule.
+2. MON PROFIL : remplace la carte infos inline ad-hoc par ProfileInfoCard AVEC onEdit (ville ->
+   openCitySheet, instagram -> openInstagramSheet). Meme rendu, code factorise.
+3. 3 PROFILS PUBLICS : ProfileInfoSection (gros titre) remplacee par ProfileInfoCard (pas de titre,
+   lecture seule). DEPLACEE entre ProfileHeader/actions et onglets (ordre cible respecte).
+   Infos par type (uniquement si presentes) :
+   - Coiffeur : ville, instagram, experience, certifications, specialites
+   - Client : ville
+   - Owner : ville
+4. Ancienne ProfileInfoSection : LAISSEE en place (pas utilisee mais ne casse rien, pourra servir
+   sur d'autres ecrans).
+5. Aucune cle i18n ajoutee. salon/[id].tsx NON modifie. Backend NON modifie.
+Baselines : tsc=0, i18n 691/715 0 ecart.
+
+### EDITION COIFFEUR (experience + certifications + specialites) + CARTE INFOS CONDITIONNELLE (2026-06-16)
+
+Diagnostic :
+- D1 : update MIXTE (SocialService.kt:2082-2136) — bio/yearsExp/certifs/instagram = PARTIEL (?.let),
+  specialties = HYBRIDE (if isNotEmpty clear+add, default emptyList ne declenche pas le clear).
+  Approche DEFENSIVE : objet COMPLET envoye a chaque save (buildCoiffeurPayload).
+- D2 : getCoiffeurProfile appele dans loadStats mais profil NON stocke -> ajoute etat coiffeurProfile
+  (CoiffeurProfileResponse) stocke au chargement + recharge apres chaque save coiffeur.
+- D3 : UpdateCoiffeurProfileRequest TS aligne sur le DTO Kotlin (6 champs : bio, specialties,
+  yearsExperience, certifications, instagramHandle, portfolioHighlightedId).
+- D4 : bio 150, specialties max 5 x 100c, yearsExperience 0-100, certifications 2000,
+  instagramHandle max 30 alphanum+._
+
+Implementation :
+1. Carte infos Mon Profil (ProfileInfoCard) : conditionnelle au type. Coiffeur = ville + instagram +
+   experience + certifications + specialites (5 items editables). Client/owner = ville + instagram.
+2. Sheet EXPERIENCE : TextInput number-pad, validation 0-100 (regle backend), objet complet.
+3. Sheet CERTIFICATIONS : TextInput multiline, compteur N/2000, objet complet.
+4. Sheet SPECIALITES : chips activables (toggle), suggestions FR en dur (13 termes coiffure courants),
+   chips custom existantes preservees, chip "Autre" (TextInput inline + submit), compteur N/5.
+   Objet complet.
+5. Suggestions specialites en dur FR (raffinement i18n futur signale).
+6. i18n : 7 cles ajoutees (editExp.title/hint/rangeError + editCerts.title/placeholder +
+   editSpec.title/other) x 5 langues. Total 698/722, 0 ecart.
+7. ANTI-ECRASEMENT : buildCoiffeurPayload lit TOUTES les valeurs du CoiffeurProfileResponse actuel
+   puis override le seul champ edite. Teste : editer experience ne doit pas effacer specialites.
+salon NON modifie. Profils publics NON modifies. Backend NON modifie.
+Baselines : tsc=0, i18n 698/722 0 ecart.

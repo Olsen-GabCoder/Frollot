@@ -23,6 +23,7 @@ interface ProfileHeaderProps {
   isOwnProfile?: boolean;
   onEditCover?: () => void;
   onEditAvatar?: () => void;
+  onEditBio?: () => void;
 }
 
 const AVATAR_SIZE = 88;
@@ -40,6 +41,7 @@ export function ProfileHeader({
   isOwnProfile,
   onEditCover,
   onEditAvatar,
+  onEditBio,
 }: ProfileHeaderProps) {
   const { colors } = useTheme();
 
@@ -59,6 +61,7 @@ export function ProfileHeader({
               initials={name.charAt(0).toUpperCase()}
               size={AVATAR_SIZE}
               tone="primary"
+              ring
             />
             {isOwnProfile && onEditAvatar && (
               <TouchableOpacity

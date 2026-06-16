@@ -20,7 +20,7 @@ data class UpdateProfileRequest(
     // contournait la validation E.164, le catch d'unicité et la visibilité phone_public.
     // CHEMIN UNIQUE d'écriture du numéro : PUT /api/users/me/phone (changePhone).
 
-    @field:Size(max = 500, message = "La bio ne peut pas dépasser 500 caractères")
+    @field:Size(max = 150, message = "La bio ne peut pas dépasser 150 caractères")
     val bio: String? = null,
 
     @field:Size(max = 100, message = "La ville ne peut pas dépasser 100 caractères")

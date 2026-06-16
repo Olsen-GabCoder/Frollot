@@ -17,9 +17,12 @@ export const usersApi = {
   updateCurrentUserLanguage: (languageCode: string) =>
     api.put<string>('/api/users/me/language', { languageCode }).then((r) => r.data),
 
+  updateProfile: (data: { firstName?: string; lastName?: string; bio?: string; city?: string; instagramHandle?: string; yearsExperience?: number; preferredLanguage?: string }) =>
+    api.put<User>('/api/users/me', data).then((r) => r.data),
+
   updateUserAvatar: (userId: string, avatarUrl: string) =>
     api.patch<User>(`/api/users/${userId}/avatar`, { avatarUrl }).then((r) => r.data),
 
   updateUserCoverImage: (userId: string, coverImageUrl: string) =>
-    api.put<Record<string, string>>(`/api/users/${userId}/cover-image`, { coverImageUrl }).then((r) => r.data),
+    api.put<Record<string, string>>(`/api/social/users/${userId}/cover-image`, { coverImageUrl }).then((r) => r.data),
 };

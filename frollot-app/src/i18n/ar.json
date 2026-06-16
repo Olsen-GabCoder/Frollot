@@ -591,6 +591,25 @@
   "profile": {
     "title": "الملف الشخصي",
     "editProfile": "تعديل الملف الشخصي",
+    "editBioTitle": "تعديل النبذة",
+    "editBioPlaceholder": "اكتب بضع كلمات عن نفسك...",
+    "editCityTitle": "تعديل المدينة",
+    "editCityPlaceholder": "مدينتك...",
+    "editInstagramTitle": "تعديل إنستغرام",
+    "editInstagramPlaceholder": "اسم المستخدم الخاص بك على إنستغرام...",
+    "editExp": {
+      "title": "تعديل الخبرة",
+      "hint": "عدد السنوات (0-100)",
+      "rangeError": "يجب أن تكون الخبرة بين 0 و 100 سنة"
+    },
+    "editCerts": {
+      "title": "تعديل الشهادات",
+      "placeholder": "شهاداتك ودبلوماتك..."
+    },
+    "editSpec": {
+      "title": "تخصصاتك",
+      "other": "أخرى..."
+    },
     "favorites": "المفضلة",
     "archives": "الأرشيف",
     "collections": "المجموعات",
@@ -609,7 +628,32 @@
       "posts": "المنشورات",
       "salons": "الصالونات",
       "followers": "المتابعون",
-      "likes": "الإعجابات"
+      "likes": "الإعجابات",
+      "following": "المتابَعون",
+      "rating": "التقييم"
+    },
+    "tabs": {
+      "posts": "المنشورات",
+      "portfolio": "معرض الأعمال",
+      "reviews": "التقييمات",
+      "collections": "المجموعات",
+      "salons": "الصالونات"
+    },
+    "type": {
+      "hairstylist": "مصفف شعر",
+      "client": "عميل",
+      "owner": "مالك صالون"
+    },
+    "info": {
+      "title": "معلومات",
+      "certifications": "الشهادات",
+      "instagram": "إنستغرام",
+      "city": "المدينة",
+      "salon": "الصالون",
+      "experience": "الخبرة"
+    },
+    "actions": {
+      "bookAppointment": "حجز موعد"
     },
     "memberSince": "عضو منذ {{year}}",
     "pinnedPosts": "المنشورات المثبتة",

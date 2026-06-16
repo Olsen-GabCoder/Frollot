@@ -23,6 +23,10 @@ data class UserResponse(
     val verificationType: VerificationType? = null, // Phase H.2 - Vérification Salons/Coiffeurs
     val isActive: Boolean,
     val avatarUrl: String?,
+    val coverImageUrl: String? = null,
+    val bio: String? = null,
+    val city: String? = null,
+    val instagramHandle: String? = null,
     val preferredLanguage: String? = null, // Phase 3 - Fonctionnalité Langue
     val createdAt: LocalDateTime?,
     val isFollowedByCurrentUser: Boolean? = null,
@@ -54,6 +58,10 @@ data class UserResponse(
                 verificationType = user.verificationType, // Phase H.2
                 isActive = user.isActive,
                 avatarUrl = user.avatarUrl,
+                coverImageUrl = user.coverImageUrl,
+                bio = user.bio,
+                city = user.city,
+                instagramHandle = user.instagramHandle,
                 preferredLanguage = user.preferredLanguage, // Phase 3
                 createdAt = user.createdAt,
                 isFollowedByCurrentUser = null,

@@ -149,6 +149,44 @@ class FollowController(
     }
 
     /**
+     * Suit un utilisateur (client, owner ou tout type).
+     */
+    @Operation(summary = "Suivre un utilisateur")
+    @PostMapping("/users/{userId}/follow")
+    fun followUser(
+        @PathVariable userId: String
+    ): ResponseEntity<FollowResponse> {
+        val followerId = getAuthenticatedUserId()
+        val follow = followService.followUser(followerId, userId)
+        return ResponseEntity.ok(follow)
+    }
+
+    /**
+     * Ne plus suivre un utilisateur.
+     */
+    @Operation(summary = "Ne plus suivre un utilisateur")
+    @DeleteMapping("/users/{userId}/follow")
+    fun unfollowUser(
+        @PathVariable userId: String
+    ): ResponseEntity<Map<String, String>> {
+        val followerId = getAuthenticatedUserId()
+        followService.unfollow(followerId, FollowingType.USER, userId)
+        return ResponseEntity.ok(mapOf("message" to "Utilisateur non suivi avec succès"))
+    }
+
+    /**
+     * Récupère les followers d'un utilisateur.
+     */
+    @Operation(summary = "Récupérer les followers d'un utilisateur")
+    @GetMapping("/users/{userId}/followers")
+    fun getUserFollowers(
+        @PathVariable userId: String
+    ): ResponseEntity<List<UserResponse>> {
+        val followers = followService.getFollowers(FollowingType.USER, userId)
+        return ResponseEntity.ok(followers)
+    }
+
+    /**
      * Récupère la liste des entités suivies par un utilisateur.
      */
     @Operation(

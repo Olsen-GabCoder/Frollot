@@ -120,6 +120,12 @@ export const socialApi = {
   unfollowCoiffeur: (coiffeurId: string) =>
     api.delete(`/api/social/coiffeurs/${coiffeurId}/follow`).then((r) => r.data),
 
+  followUser: (userId: string) =>
+    api.post<FollowResponse>(`/api/social/users/${userId}/follow`).then((r) => r.data),
+
+  unfollowUser: (userId: string) =>
+    api.delete(`/api/social/users/${userId}/follow`).then((r) => r.data),
+
   getFollowing: (userId: string) =>
     api.get<FollowResponse[]>(`/api/social/users/${userId}/following`).then((r) => r.data),
 

@@ -124,8 +124,41 @@ class FollowService(
     }
 
     /**
+     * Suit un utilisateur (client, owner ou tout type).
+     */
+    @Transactional
+    fun followUser(followerId: String, targetUserId: String): FollowResponse {
+        if (followerId == targetUserId) {
+            throw RuntimeException("Vous ne pouvez pas vous suivre vous-même")
+        }
+
+        val target = userRepository.findById(targetUserId)
+            .orElseThrow { RuntimeException("Utilisateur avec ID '$targetUserId' non trouvé") }
+
+        val follower = userRepository.findById(followerId)
+            .orElseThrow { RuntimeException("Utilisateur avec ID '$followerId' non trouvé") }
+
+        if (followRepository.existsByFollowerIdAndFollowingTypeAndFollowingId(
+                followerId, FollowingType.USER, targetUserId
+            )
+        ) {
+            throw RuntimeException("Vous suivez déjà cet utilisateur")
+        }
+
+        val follow = Follow(
+            id = UUID.randomUUID().toString(),
+            follower = follower,
+            followingType = FollowingType.USER,
+            followingId = targetUserId
+        )
+
+        val savedFollow = followRepository.save(follow)
+        return FollowResponse.fromEntity(savedFollow)
+    }
+
+    /**
      * Ne plus suivre une entité.
-     * 
+     *
      * @param followerId ID de l'utilisateur qui ne suit plus
      * @param followingType Type de l'entité (SALON, COIFFEUR, USER)
      * @param followingId ID de l'entité à ne plus suivre

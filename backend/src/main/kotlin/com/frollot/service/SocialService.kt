@@ -478,7 +478,12 @@ class SocialService(
             .filter { it.followingType == com.frollot.model.FollowingType.COIFFEUR }
             .map { it.followingId }
             .toSet()
-        
+
+        val followedUserIds = follows
+            .filter { it.followingType == com.frollot.model.FollowingType.USER }
+            .map { it.followingId }
+            .toSet()
+
         // 3. Récupérer les posts des salons suivis (via PostTag)
         val salonPosts = mutableSetOf<com.frollot.model.Post>()
         followedSalonIds.forEach { salonId ->
@@ -499,9 +504,18 @@ class SocialService(
         } else {
             emptyList()
         }
-        
-        // 5. Fusionner et trier par date décroissante
-        val allPosts = (salonPosts + coiffeurPosts)
+
+        // 4b. Récupérer les posts des utilisateurs suivis (via authorId)
+        val userPosts = if (followedUserIds.isNotEmpty()) {
+            followedUserIds.flatMap { uid ->
+                postRepository.findByAuthorIdOrderByCreatedAtDesc(uid)
+            }
+        } else {
+            emptyList()
+        }
+
+        // 5. Fusionner et trier par date décroissante (distinctBy élimine les doublons coiffeur+user)
+        val allPosts = (salonPosts + coiffeurPosts + userPosts)
             .distinctBy { it.id }
             .filter { !it.isArchived } // V041 - Archivage global (masqué pour tous)
             .sortedByDescending { it.createdAt }

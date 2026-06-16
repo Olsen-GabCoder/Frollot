@@ -579,6 +579,25 @@
   "profile": {
     "title": "Perfil",
     "editProfile": "Editar perfil",
+    "editBioTitle": "Editar biografía",
+    "editBioPlaceholder": "Escribe unas palabras sobre ti...",
+    "editCityTitle": "Editar ciudad",
+    "editCityPlaceholder": "Tu ciudad...",
+    "editInstagramTitle": "Editar Instagram",
+    "editInstagramPlaceholder": "Tu nombre de usuario en Instagram...",
+    "editExp": {
+      "title": "Editar experiencia",
+      "hint": "Número de años (0-100)",
+      "rangeError": "La experiencia debe estar entre 0 y 100 años"
+    },
+    "editCerts": {
+      "title": "Editar certificaciones",
+      "placeholder": "Tus certificaciones y diplomas..."
+    },
+    "editSpec": {
+      "title": "Tus especialidades",
+      "other": "Otro..."
+    },
     "favorites": "Favoritos",
     "archives": "Archivos",
     "collections": "Colecciones",
@@ -593,7 +612,32 @@
       "posts": "Publicaciones",
       "salons": "Salones",
       "followers": "Seguidores",
-      "likes": "Me gusta"
+      "likes": "Me gusta",
+      "following": "Siguiendo",
+      "rating": "Nota"
+    },
+    "tabs": {
+      "posts": "Publicaciones",
+      "portfolio": "Portafolio",
+      "reviews": "Reseñas",
+      "collections": "Colecciones",
+      "salons": "Salones"
+    },
+    "type": {
+      "hairstylist": "Estilista",
+      "client": "Cliente",
+      "owner": "Propietario de salón"
+    },
+    "info": {
+      "title": "Información",
+      "certifications": "Certificaciones",
+      "instagram": "Instagram",
+      "city": "Ciudad",
+      "salon": "Salón",
+      "experience": "Experiencia"
+    },
+    "actions": {
+      "bookAppointment": "Reservar cita"
     },
     "memberSince": "Miembro desde {{year}}",
     "pinnedPosts": "Publicaciones fijadas",

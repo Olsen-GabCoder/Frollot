@@ -1,3 +1,6 @@
+import type { PostResponse } from './social';
+import type { PortfolioResponse, CollectionResponse } from './portfolio';
+
 // --- Statistics sub-objects (SocialDto.kt, backend) ---
 // Champs toujours présents (defaults 0 côté backend).
 
@@ -30,24 +33,33 @@ export interface CoiffeurProfileStatistics {
 
 export interface CoiffeurProfileResponse {
   id: string;
-  userId: string;
-  firstName: string;
-  lastName: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
+  city?: string;
+  isVerified: boolean;
   bio?: string;
   specialties: string[];
   yearsExperience?: number;
-  salonId?: string;
-  salonName?: string;
-  isVerified: boolean;
-  isFollowedByCurrentUser?: boolean;
+  certifications?: string;
+  instagramHandle?: string;
+  portfolioHighlighted?: PortfolioResponse;
   statistics: CoiffeurProfileStatistics;
+  portfolios: PortfolioResponse[];
+  recentPosts: PostResponse[];
+  badges: UserBadgeResponse[];
+  isFollowedByCurrentUser?: boolean;
 }
 
 export interface UpdateCoiffeurProfileRequest {
   bio?: string;
   specialties?: string[];
   yearsExperience?: number;
+  certifications?: string;
+  instagramHandle?: string;
+  portfolioHighlightedId?: string;
 }
 
 export interface SalonSocialProfileStatistics {
@@ -76,22 +88,46 @@ export interface UpdateSalonSocialProfileRequest {
 
 export interface ClientProfileResponse {
   id: string;
-  userId: string;
-  firstName: string;
-  lastName: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
-  memberSince?: string;
+  coverImageUrl?: string;
+  city?: string;
+  isVerified: boolean;
+  bio?: string;
   statistics: ClientProfileStatistics;
+  recentPosts: PostResponse[];
+  collections: CollectionResponse[];
+  badges: UserBadgeResponse[];
+  isFollowedByCurrentUser?: boolean;
+}
+
+export interface SalonSummaryResponse {
+  id: string;
+  name: string;
+  city: string;
+  coverPhotoUrl?: string;
+  isVerified: boolean;
+  followersCount: number;
 }
 
 export interface SalonOwnerProfileResponse {
   id: string;
-  userId: string;
-  firstName: string;
-  lastName: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
+  city?: string;
   isVerified: boolean;
+  bio?: string;
   statistics: SalonOwnerProfileStatistics;
+  salons: SalonSummaryResponse[];
+  recentPosts: PostResponse[];
+  collections: CollectionResponse[];
+  badges: UserBadgeResponse[];
+  isFollowedByCurrentUser?: boolean;
 }
 
 // Phase E.3 - Badges et Certifications
