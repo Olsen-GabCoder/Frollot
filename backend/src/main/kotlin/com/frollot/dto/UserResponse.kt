@@ -19,6 +19,7 @@ data class UserResponse(
     val phoneNumber: String?,
     val phonePublic: Boolean = false, // V045 — visibilité choisie par l'utilisateur
     val isVerified: Boolean,
+    val emailVerified: Boolean = false,
     val verificationType: VerificationType? = null, // Phase H.2 - Vérification Salons/Coiffeurs
     val isActive: Boolean,
     val avatarUrl: String?,
@@ -49,6 +50,7 @@ data class UserResponse(
                 phoneNumber = if (includePrivatePhone || user.phonePublic) user.phoneNumber else null,
                 phonePublic = user.phonePublic,
                 isVerified = user.isVerified,
+                emailVerified = user.emailVerified,
                 verificationType = user.verificationType, // Phase H.2
                 isActive = user.isActive,
                 avatarUrl = user.avatarUrl,
