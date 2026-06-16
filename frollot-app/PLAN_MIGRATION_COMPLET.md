@@ -4159,3 +4159,12 @@ Implementation :
    puis override le seul champ edite. Teste : editer experience ne doit pas effacer specialites.
 salon NON modifie. Profils publics NON modifies. Backend NON modifie.
 Baselines : tsc=0, i18n 698/722 0 ecart.
+
+### CLOTURE REFONTE PROFILS — NETTOYAGE + COMMIT UNIQUE + PUSH (2026-06-16)
+
+1. Nettoyage : ProfileInfoSection orpheline SUPPRIMEE (fichier + export).
+2. Revue : 27 fichiers (6 backend + 21 frontend), aucun parasite, salon non touche.
+3. Baselines finales : gradlew classes BUILD OK, tsc 0, i18n 698/722 0 ecart.
+4. Commit unique : 6313e97 « feat(profils): refonte complete des profils (publics + mon profil) »
+5. Push : frollot/main f30c8c3..6313e97 — SUCCES. Working tree propre.
+REFONTE PROFILS TERMINEE.
