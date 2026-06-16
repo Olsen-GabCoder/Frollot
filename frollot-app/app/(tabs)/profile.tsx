@@ -145,7 +145,7 @@ export default function ProfileScreen() {
         <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant }]}>
           {user?.email}
         </Text>
-        {user?.isVerified && (
+        {(user?.isVerified || user?.emailVerified) && (
           <View style={styles.verifiedRow}>
             <MaterialIcons name="verified" size={16} color={colors.primary} />
             <Text style={[typo.labelSmall, { color: colors.primary, marginStart: 4 }]}>

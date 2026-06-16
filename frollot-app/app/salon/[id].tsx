@@ -19,6 +19,7 @@ import { PostCard } from '../../src/components/social';
 import { Salon, SalonService, StaffMember, Review, SalonReviewStats, QueueStatusResponse, PostResponse } from '../../src/types';
 import { useTheme } from '../../src/theme';
 import { resolveMediaUrl } from '../../src/utils/media';
+import { navigateToProfile } from '../../src/utils/navigateToProfile';
 
 type SalonTab = 'services' | 'team' | 'reviews' | 'posts' | 'info';
 const TAB_KEYS: { key: SalonTab; i18nKey: string }[] = [
@@ -271,7 +272,12 @@ export default function SalonDetailScreen() {
             <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>{t('salon.noTeam')}</Text>
           )}
           {selectedTab === 'team' && staff.map((m) => (
-            <View key={m.id} style={[s.staffItem, { borderBottomColor: colors.outlineVariant }]}>
+            <TouchableOpacity
+              key={m.id}
+              style={[s.staffItem, { borderBottomColor: colors.outlineVariant }]}
+              onPress={() => navigateToProfile(m.role === 'owner' ? 'salon_owner' : 'hairstylist', m.userId)}
+              activeOpacity={0.7}
+            >
               <Avatar initials={`${m.userFirstName?.[0] || ''}${m.userLastName?.[0] || ''}`} size={44} ring tone={m.role === 'owner' ? 'primary' : 'secondary'} imageUrl={m.userAvatarUrl} />
               <View style={{ flex: 1 }}>
                 <Text style={[s.staffName, { color: colors.onSurface }]}>{m.userFirstName} {m.userLastName}</Text>
@@ -280,7 +286,8 @@ export default function SalonDetailScreen() {
                   <Text style={[s.staffSpecialty, { color: colors.onSurfaceVariant }]}>{m.specialtyLabels.join(', ')}</Text>
                 )}
               </View>
-            </View>
+              <MaterialCommunityIcons name={I18nManager.isRTL ? "chevron-left" : "chevron-right"} size={20} color={colors.onSurfaceVariant} />
+            </TouchableOpacity>
           ))}
 
           {selectedTab === 'reviews' && (
@@ -294,13 +301,13 @@ export default function SalonDetailScreen() {
               )}
               {reviews.map((rev) => (
                 <View key={rev.id} style={[s.reviewItem, { borderBottomColor: colors.outlineVariant }]}>
-                  <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
+                  <TouchableOpacity style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }} onPress={() => navigateToProfile('client', rev.clientId)} activeOpacity={0.7}>
                     <Avatar initials={rev.clientName?.[0] || 'U'} size={40} tone="tertiary" />
                     <View>
                       <Text style={[s.reviewAuthor, { color: colors.onSurface }]}>{rev.clientName}</Text>
                       <RatingStars value={rev.rating} size={14} />
                     </View>
-                  </View>
+                  </TouchableOpacity>
                   {rev.content && <Text style={[s.reviewContent, { color: colors.onSurface }]}>{rev.content}</Text>}
                 </View>
               ))}
@@ -325,6 +332,7 @@ export default function SalonDetailScreen() {
                     key={post.id}
                     post={post}
                     currentUserId={user?.id}
+                    onProfilePress={() => navigateToProfile(post.authorUserType, post.authorId)}
                     onPress={() => router.push(`/post/${post.id}`)}
                     onComment={() => router.push(`/comments/${post.id}`)}
                   />

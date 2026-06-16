@@ -3650,3 +3650,53 @@ Si plusieurs developpeurs :
 | Tests a ecrire | 150+ unitaires + 49 integration + 12 E2E |
 | Maquettes design v2 a appliquer | 5 ecrans |
 | Estimation totale | ~31 jours dev |
+
+---
+
+## PHASE 1 — DIAGNOSTIC ECRANS MANQUANTS (2026-06-15)
+
+Diagnostic exhaustif pur lecture : inventaire backend (18 controllers, ~150 endpoints) croise avec
+les 50 ecrans RN existants. Boussole = backend + liens morts RN (KMP n'est plus la reference).
+
+### Resultat
+
+8 lots identifies (A-H), ordonnes par dependances et ratio valeur/risque :
+
+| Lot | Sujet | Taille | Backend | Bloque par |
+|-----|-------|--------|---------|------------|
+| A | Navigation profils (cablage onProfilePress, helper dispatch userType) | S | 0% | - |
+| D | Menu lateral / Drawer (hamburgers morts Home+Social) | M | 0% | - |
+| B | Listes followers/following (ecrans + compteurs cliquables) | M | 0% | A |
+| F | Interactions salon (coeur + share cover, like=follow?) | S-M | 0-30% | - |
+| C | Publication au nom du salon (selecteur identite, salonId payload) | M | 20% | A |
+| E | Complements avis (noms cliquables, photos optionnel) | S | 10% | A |
+| G | Blocage utilisateurs (full-stack: table + endpoints + ecran + filtrage) | L | 80% | - |
+| H | Verification + Notifications (ecrans, Firebase dormant) | M-L | 50%+ | - |
+
+12 liens morts identifies (hamburgers, cloche, onProfilePress x6, search users, cover salon x2,
+staff/reviews noms, settings blocked/verification).
+
+Diagnostic complet dans la conversation Claude du 2026-06-15. Aucun code modifie.
+
+### LOT A — NAVIGATION VERS LES PROFILS (2026-06-15) — FAIT
+
+Helper `src/utils/navigateToProfile.ts` : dispatch `userType` -> route profil.
+Mapping : client -> /profile/client/[id], hairstylist -> /profile/coiffeur/[id],
+salon_owner -> /profile/owner/[id], salon -> /profile/salon/[id], admin -> fallback client.
+Type inconnu = warn DEV + noop.
+
+Points cables :
+- PostCard onProfilePress : social.tsx, archives/[userId].tsx, salon/[id]/posts.tsx, salon/[id].tsx (4/4)
+- Recherche users : social.tsx L241 -> navigateToProfile(u.userType, u.id)
+- Equipe salon : salon/[id].tsx staff -> TouchableOpacity, role owner -> salon_owner, sinon hairstylist
+- Avis salon : salon/[id].tsx reviews -> TouchableOpacity sur reviewer (client, rev.clientId)
+- Post detail : post/[id].tsx author row -> TouchableOpacity
+- Comments : post author header -> TouchableOpacity (post.authorUserType dispo)
+
+Dependances backend signalees (NON forcees) :
+- CommentResponse n'a PAS de authorUserType -> le nom du commentateur ne peut pas naviguer
+  vers le bon profil (seulement l'auteur du POST dans le header). Backend manquant.
+- SearchResponse.users est type `any[]` -> depend du JSON reel du backend (userType + id).
+
+Baselines : tsc=0, i18n=668/692 0 ecart.
+8 fichiers (1 cree + 7 modifies), 0 backend.

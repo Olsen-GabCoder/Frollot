@@ -16,6 +16,7 @@ import { Toast, type ToastType } from '../../../src/components/ui';
 import { LoadingState, EmptyState, ErrorState } from '../../../src/components/lists';
 import { Salon, SalonService, PostResponse, PostType, SortBy } from '../../../src/types';
 import { sharePostExternally, isShareCancellation } from '../../../src/utils/share';
+import { navigateToProfile } from '../../../src/utils/navigateToProfile';
 import { resolveMediaUrl } from '../../../src/utils/media';
 import { useTheme } from '../../../src/theme';
 
@@ -323,6 +324,7 @@ export default function SalonPostsScreen() {
             <PostCard
               post={item}
               currentUserId={user?.id}
+              onProfilePress={() => navigateToProfile(item.authorUserType, item.authorId)}
               onLike={() => handleLike(item.id)}
               onComment={() => router.push(`/comments/${item.id}`)}
               onShare={() => handleShare(item)}

@@ -13,6 +13,7 @@ import { PostCard } from '../../src/components/social';
 import { Toast, type ToastType } from '../../src/components/ui';
 import { LoadingState, EmptyState, ErrorState } from '../../src/components/lists';
 import { PostResponse } from '../../src/types';
+import { navigateToProfile } from '../../src/utils/navigateToProfile';
 import { sharePostExternally, isShareCancellation } from '../../src/utils/share';
 
 type PendingAction = { type: 'unarchive' | 'delete'; post: PostResponse } | null;
@@ -154,6 +155,7 @@ export default function ArchivesScreen() {
             <PostCard
               post={item}
               currentUserId={user?.id}
+              onProfilePress={() => navigateToProfile(item.authorUserType, item.authorId)}
               onLike={() => handleLike(item.id)}
               onComment={() => router.push(`/comments/${item.id}`)}
               onShare={() => handleShare(item)}

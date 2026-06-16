@@ -18,6 +18,7 @@ import { useTheme } from '../../src/theme';
 import { useAuthStore } from '../../src/stores/authStore';
 import { socialApi } from '../../src/api/social';
 import { PostResponse, CommentResponse } from '../../src/types';
+import { navigateToProfile } from '../../src/utils/navigateToProfile';
 
 export default function CommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -130,7 +131,9 @@ export default function CommentsScreen() {
         ListHeaderComponent={
           post ? (
             <View style={[styles.postPreview, { backgroundColor: colors.surface }]}>
-              <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{post.authorName}</Text>
+              <TouchableOpacity onPress={() => navigateToProfile(post.authorUserType, post.authorId)} activeOpacity={0.7}>
+                <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{post.authorName}</Text>
+              </TouchableOpacity>
               <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 4 }]} numberOfLines={3}>
                 {post.content}
               </Text>

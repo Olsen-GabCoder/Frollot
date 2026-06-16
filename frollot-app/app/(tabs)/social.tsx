@@ -13,6 +13,7 @@ import { Toast, type ToastType } from '../../src/components/ui';
 import { LoadingState, EmptyState, ErrorState } from '../../src/components/lists';
 import { PostResponse, PostType, SearchResponse } from '../../src/types';
 import { sharePostExternally, isShareCancellation } from '../../src/utils/share';
+import { navigateToProfile } from '../../src/utils/navigateToProfile';
 import { useTheme } from '../../src/theme';
 
 const TAB_KEYS = ['social.tabs.all', 'social.tabs.following', 'social.tabs.trending'];
@@ -237,7 +238,7 @@ export default function SocialFeedScreen() {
                   <>
                     <Text style={[styles.searchLabel, { color: colors.onSurfaceVariant }]}>{t('social.searchUsers')}</Text>
                     {searchResults.users.slice(0, 3).map((u: any, i: number) => (
-                      <TouchableOpacity key={i} style={styles.searchItem} onPress={() => { setShowSearch(false); setSearchQuery(''); }}>
+                      <TouchableOpacity key={i} style={styles.searchItem} onPress={() => { setShowSearch(false); setSearchQuery(''); navigateToProfile(u.userType, u.id); }}>
                         <Text style={[styles.searchItemText, { color: colors.onSurface }]} numberOfLines={1}>{u.firstName} {u.lastName}</Text>
                       </TouchableOpacity>
                     ))}
@@ -291,6 +292,7 @@ export default function SocialFeedScreen() {
             <PostCard
               post={item}
               currentUserId={user?.id}
+              onProfilePress={() => navigateToProfile(item.authorUserType, item.authorId)}
               onLike={() => handleLike(item.id)}
               onComment={() => router.push(`/comments/${item.id}`)}
               onShare={() => handleShare(item)}

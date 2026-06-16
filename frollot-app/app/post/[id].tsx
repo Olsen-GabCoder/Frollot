@@ -26,6 +26,7 @@ import { sharePostExternally, isShareCancellation } from '../../src/utils/share'
 import { Toast, type ToastType } from '../../src/components/ui';
 import { CollectionPickerModal } from '../../src/components/social';
 import { PostResponse, CommentResponse } from '../../src/types';
+import { navigateToProfile } from '../../src/utils/navigateToProfile';
 
 // Garde B24b : le détail peut être atteint par lien direct (pas d'historique)
 const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)'));
@@ -293,7 +294,7 @@ export default function PostDetailScreen() {
             {/* Post card */}
             <View style={[styles.postCard, { backgroundColor: colors.surface }]}>
               {/* Author */}
-              <View style={styles.authorRow}>
+              <TouchableOpacity style={styles.authorRow} onPress={() => navigateToProfile(post.authorUserType, post.authorId)} activeOpacity={0.7}>
                 <View style={[styles.authorAvatar, { backgroundColor: colors.secondaryContainer }]}>
                   <Text style={[typo.labelMedium, { color: colors.onSecondaryContainer }]}>
                     {(post.authorName?.[0] || '?').toUpperCase()}
@@ -303,7 +304,7 @@ export default function PostDetailScreen() {
                   <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{post.authorName}</Text>
                   <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>{post.authorUserType}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               {/* Content */}
               <Text style={[typo.bodyLarge, { color: colors.onSurface, marginVertical: 12 }]}>
