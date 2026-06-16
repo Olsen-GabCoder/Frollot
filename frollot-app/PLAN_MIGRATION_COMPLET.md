@@ -4168,3 +4168,23 @@ Baselines : tsc=0, i18n 698/722 0 ecart.
 4. Commit unique : 6313e97 « feat(profils): refonte complete des profils (publics + mon profil) »
 5. Push : frollot/main f30c8c3..6313e97 — SUCCES. Working tree propre.
 REFONTE PROFILS TERMINEE.
+
+---
+
+## DIAGNOSTIC ROLE PROPRIETAIRE DE SALON (2026-06-16, LECTURE SEULE)
+
+Constat : connecte en salon_owner, l'experience est tres limitee. Aucun menu « Mes salons » dans
+Mon Profil. Les ecrans create-staff et create-service existent mais sont INATTEIGNABLES (zero
+navigation). create-salon accessible uniquement quand 0 salon (EmptyState home). owner-bookings
+n'a que l'annulation (pas de confirmer/refuser/completer). Aucun dashboard, aucune gestion
+services/equipe/avis depuis l'app.
+
+Backend : staff CRUD complet, services CRUD complet, bookings workflow complet (pending->confirmed
+->in_progress->completed/cancelled/no_show), queue ok, paiements ok. MANQUENT : edit salon general
+(PUT /salons/{id}), delete salon, reply review, horaires d'ouverture (aucun modele).
+
+Decoupage propose : L1 dashboard owner (hub central, structurant) -> L2 services CRUD (relier
+ecrans morts) -> L3 equipe (idem) -> L4 bookings owner complets (confirmer/refuser) -> L5 edit
+salon -> L6 profil social salon -> L7 avis+reponses -> L8 stats -> L9 horaires (full-stack).
+Recommandation : commencer par L1 (hub) car sans point d'entree centralise, les autres lots
+n'ont pas de chemin d'acces coherent.
