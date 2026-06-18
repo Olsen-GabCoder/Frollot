@@ -4654,3 +4654,72 @@ au lieu de "comingSoon".
 - tsc --noEmit = 0 erreur
 - check-keys = 806 cles (+7), 0 ecart, parite 5 langues
 - Backend NON commite. Frontend NON commite. PAS de commit.
+
+### Nettoyage owner-services : catch suppression -> toast, residus debug retires
+- **catch muet** dans `handleDeleteConfirm` remplace par `showToast(message, 'error')` (pattern owner-staff)
+- **0 autre catch muet** dans le fichier (loadServices a setError -> OK)
+- **0 console.log de debug** a retirer (seul console.error dans loadServices = legitime)
+- **0 cle i18n ajoutee** (message d'erreur backend ou JS natif)
+- tsc --noEmit = 0, diff = owner-services.tsx seul. NON commite.
+
+### Diagnostic L5 : edition infos salon (PURE LECTURE)
+- Endpoint PUT/PATCH salon info : ABSENT -> FULL-STACK
+- Permission salon.update_info : seedee V048, owner+manager
+- Entite Salon.kt : 10 colonnes DB non mappees (country, phone_number, email, website_url,
+  instagram_handle, facebook_page, opening_hours, is_accepting_walk_ins, is_premium, subscription_plan)
+- Geocoding : AUCUN mecanisme dans le code ; lat/lng nullable, saisie manuelle a la creation (ou null)
+- Ecran patron : create-salon.tsx (name, address, city, postalCode, description, coverPhoto)
+- salonsApi.updateSalon : N'EXISTE PAS cote front
+- UpdateSalonRequest DTO : N'EXISTE PAS cote backend
+- Champs L5 candidats SIMPLES : name, address, city, postalCode, description, phone_number, email, website_url
+- Champs L5 EXCLUS (geres ailleurs) : coverPhotoUrl (update_cover), socialDescription (L6), opening_hours (L9)
+- Champ SENSIBLE : address/city/postalCode -> pas de geocoding auto, lat/lng resterait inchange (doc user)
+- Voir detail complet dans la reponse diagnostic ci-dessous.
+
+### L5 : edition infos salon (8 champs, full-stack, mapping phone/email/website)
+- **Backend** : Salon.kt +3 colonnes mappees (phoneNumber, email, websiteUrl), SalonResponse +3 champs,
+  UpdateSalonRequest DTO (8 champs, @NotBlank name/address/city/postalCode, @Email, @URL),
+  SalonService.updateSalonInfo (requirePermission salon.update_info), SalonController PUT /{salonId}
+- **Frontend** : Salon TS +3 champs, UpdateSalonRequest type, salonsApi.updateSalon, edit-salon.tsx
+  (8 champs, 3 sections identite/localisation/contact, toast succes/erreur, garde usePermissions +
+  can('salon.update_info') + AccessDenied), tuile "Infos salon" dans owner-dashboard masquee par
+  can('salon.update_info')
+- **i18n** : +10 cles salon.edit.* + profile.ownerDashboard.tiles.editSalon (5 langues, parite 816/840)
+- **Curl** : owner PUT 200, non-staff 403, unauth 401, validation name blank 400, email invalid 400,
+  GET non-regression OK (nouveaux champs presents)
+- tsc --noEmit = 0, check-keys 0 ecart. NON commite.
+
+### edit-salon : photo de couverture centralisee (ajout edit-salon, retrait du detail)
+- **edit-salon.tsx** : section photo en haut (ImagePicker + mediaApi.uploadImage + updateSalonCoverPhoto),
+  enregistrement IMMEDIAT a la selection (endpoint cover separe), toast succes/erreur, spinner pendant upload.
+  La photo existante est affichee via resolveMediaUrl, placeholder si absente.
+- **salon/[id].tsx** (page publique) : retrait du bouton camera owner (handlePickCover, isUploadingCover,
+  coverEditBadge, imports ImagePicker + mediaApi). Le cover est desormais un View non interactif.
+  isOwner conserve pour le floating action bar (reservations/queue owner).
+- **i18n** : +2 cles salon.edit.coverLabel + coverSuccess (5 langues, parite 818/842)
+- tsc --noEmit = 0, check-keys 0 ecart. NON commite.
+
+### Diagnostic social approfondi : contexte de publication salon/coiffeur
+- Colonne cle : posts.author_type ENUM('salon','staff','user') existe en base (V001) mais NON MAPPEE
+  dans Post.kt. L'entite n'a que author (User ManyToOne) -> tout post est « de l'utilisateur ».
+- getPostsBySalon = posts TAGUES avec le salon (PostTag), PAS posts PUBLIES PAR le salon.
+- CreatePostRequest n'a PAS de champ authorType/salonId/postAs -> pas de selecteur de contexte.
+- PostCard affiche authorUserType (salon_owner/hairstylist) = type du USER, pas du contexte de publi.
+- Tags salon = seul l'auteur du post peut taguer un salon (addTag verifie post.author == userId).
+- Verdict : la vision 3 modes NECESSITE d'evoluer le modele (mapper author_type, ajouter salonId
+  optionnel sur Post, modifier CreatePostRequest, adapter PostResponse/PostCard).
+- Voir rapport complet axes 1-6 + verdict + questions a trancher dans la reponse diagnostic.
+
+### Lot A social : edition profil social du salon (socialDescription + socialCoverImage)
+- **Backend** : NON touche (endpoint PUT /api/social/salons/{salonId}/profile existe, DTO
+  UpdateSalonSocialProfileRequest = socialDescription + socialCoverImage + highlightedPostIds)
+- **Types TS corriges** : SalonSocialProfileResponse alignee sur le JSON reel (socialDescription,
+  socialCoverImage, address, postalCode, slug, isOwner — supprime salonId fictif, description
+  renomme en socialDescription). UpdateSalonSocialProfileRequest = socialDescription + socialCoverImage.
+- **Ecran profile/salon/[id].tsx** : corrige description -> socialDescription, salonId -> id ;
+  ajoute bouton "Modifier le profil" masque par can('social.update_profile') (usePermissions).
+- **Ecran edit-salon-social.tsx** (nouveau) : image couverture sociale (ImagePicker + mediaApi) +
+  description sociale (multiligne, max 2000) + Enregistrer -> PUT profile -> toast. Garde
+  can('social.update_profile') + AccessDenied. Image uploade et URL stockee, tout part au save.
+- **i18n** : +8 cles salon.social.* (5 langues, parite 826/850)
+- tsc --noEmit = 0, check-keys 0 ecart. NON commite.

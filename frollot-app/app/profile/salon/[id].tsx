@@ -17,6 +17,8 @@ import { resolveMediaUrl } from '../../../src/utils/media';
 import { profilesApi } from '../../../src/api/profiles';
 import { socialApi } from '../../../src/api/social';
 import { SalonSocialProfileResponse } from '../../../src/types';
+import { useAuthStore } from '../../../src/stores/authStore';
+import { usePermissions } from '../../../src/hooks/usePermissions';
 
 export default function SalonSocialProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,6 +30,7 @@ export default function SalonSocialProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFollowing, setIsFollowing] = useState(false);
+  const { can } = usePermissions(id);
 
   useEffect(() => {
     if (!id) return;
@@ -120,19 +123,29 @@ export default function SalonSocialProfileScreen() {
               {isFollowing ? t('common.states.following') : t('common.actions.follow')}
             </Text>
           </TouchableOpacity>
+
+          {can('social.update_profile') && (
+            <TouchableOpacity
+              style={[styles.editBtn, { borderColor: colors.outlineVariant }]}
+              onPress={() => router.push({ pathname: '/edit-salon-social' as any, params: { salonId: id } })}
+            >
+              <MaterialIcons name="edit" size={16} color={colors.primary} />
+              <Text style={[typo.labelMedium, { color: colors.primary, marginStart: 6 }]}>{t('salon.social.edit')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Description */}
-        {profile.description && (
+        {profile.socialDescription && (
           <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant }]}>{profile.description}</Text>
+            <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant }]}>{profile.socialDescription}</Text>
           </View>
         )}
 
         {/* View full salon */}
         <TouchableOpacity
           style={[styles.section, { backgroundColor: colors.primaryContainer }]}
-          onPress={() => router.push(`/salon/${profile.salonId}`)}
+          onPress={() => router.push(`/salon/${profile.id}`)}
         >
           <Text style={[typo.labelLarge, { color: colors.onPrimaryContainer, textAlign: 'center' }]}>
             {t('profile.viewFullSalon')}
@@ -156,5 +169,6 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginTop: 20, marginBottom: 16 },
   statItem: { alignItems: 'center' },
   followBtn: { paddingVertical: 10, paddingHorizontal: 32, borderRadius: 999 },
+  editBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingHorizontal: 20, borderRadius: 999, borderWidth: 1, marginTop: 10 },
   section: { borderRadius: 16, padding: 16, marginBottom: 12 },
 });

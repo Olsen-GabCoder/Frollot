@@ -72,18 +72,23 @@ export interface SalonSocialProfileStatistics {
 
 export interface SalonSocialProfileResponse {
   id: string;
-  salonId: string;
   name: string;
-  description?: string;
-  coverPhotoUrl?: string;
+  address: string;
   city: string;
-  isVerified: boolean;
+  postalCode: string;
+  slug: string;
+  coverPhotoUrl?: string;
+  socialDescription?: string;
+  socialCoverImage?: string;
+  isVerified?: boolean;
   isFollowedByCurrentUser?: boolean;
+  isOwner?: boolean;
   statistics: SalonSocialProfileStatistics;
 }
 
 export interface UpdateSalonSocialProfileRequest {
-  description?: string;
+  socialDescription?: string;
+  socialCoverImage?: string;
 }
 
 export interface ClientProfileResponse {

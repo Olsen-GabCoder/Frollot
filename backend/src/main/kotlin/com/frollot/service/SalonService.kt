@@ -5,6 +5,7 @@ package com.frollot.service
 
 import com.frollot.dto.CreateSalonRequest
 import com.frollot.dto.SalonResponse
+import com.frollot.dto.UpdateSalonRequest
 import com.frollot.model.Salon
 import com.frollot.model.ServiceCategory
 import com.frollot.model.UserType
@@ -132,6 +133,26 @@ class SalonService(
         return toSalonResponse(updatedSalon)
     }
 
+    @Transactional
+    fun updateSalonInfo(salonId: String, request: UpdateSalonRequest, userId: String): SalonResponse {
+        val salon = salonRepository.findById(salonId)
+            .orElseThrow { NoSuchElementException("Salon avec l'ID $salonId introuvable") }
+
+        salonAuthorizationService.requirePermission(userId, salonId, "salon.update_info")
+
+        salon.name = request.name
+        salon.address = request.address
+        salon.city = request.city
+        salon.postalCode = request.postalCode
+        salon.description = request.description
+        salon.phoneNumber = request.phoneNumber
+        salon.email = request.email
+        salon.websiteUrl = request.websiteUrl
+
+        val updatedSalon = salonRepository.save(salon)
+        return toSalonResponse(updatedSalon)
+    }
+
     /**
      * Méthode utilitaire pour convertir une entité Salon en SalonResponse.
      * Évite la duplication de code.
@@ -153,8 +174,13 @@ class SalonService(
             coverPhotoUrl = salon.coverPhotoUrl,
             latitude = salon.latitude,
             longitude = salon.longitude,
+            phoneNumber = salon.phoneNumber,
+            email = salon.email,
+            websiteUrl = salon.websiteUrl,
             isVerified = salon.isVerified, // Phase H.2 - Vérification Salons/Coiffeurs
             verificationType = salon.verificationType, // Phase H.2 - Vérification Salons/Coiffeurs
+            averageRating = salon.ratingAverage,
+            reviewCount = salon.totalReviews,
             isFollowedByCurrentUser = isFollowedByCurrentUser,
             followersCount = followersCount,
             createdAt = salon.createdAt

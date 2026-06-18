@@ -2,6 +2,7 @@ import api from './client';
 import {
   Salon,
   CreateSalonRequest,
+  UpdateSalonRequest,
   PageResponse,
   SalonService,
   CreateServiceRequest,
@@ -31,6 +32,9 @@ export const salonsApi = {
 
   createSalon: (data: CreateSalonRequest) =>
     api.post<Salon>('/api/salons', data).then((r) => r.data),
+
+  updateSalon: (salonId: string, data: UpdateSalonRequest) =>
+    api.put<Salon>(`/api/salons/${salonId}`, data).then((r) => r.data),
 
   updateSalonCoverPhoto: (salonId: string, coverPhotoUrl: string) =>
     api.put<Salon>(`/api/salons/${salonId}/cover-photo`, { coverPhotoUrl }).then((r) => r.data),

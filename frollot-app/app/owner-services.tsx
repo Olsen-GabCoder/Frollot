@@ -19,6 +19,7 @@ import { salonsApi } from '../src/api/salons';
 import { SalonService } from '../src/types';
 import { ServiceImageStack, AccessDenied } from '../src/components/common';
 import { usePermissions } from '../src/hooks/usePermissions';
+import { useToast } from '../src/contexts/ToastContext';
 
 // ---------------------------------------------------------------------------
 // Main screen
@@ -27,6 +28,7 @@ export default function OwnerServicesScreen() {
   const { salonId } = useLocalSearchParams<{ salonId: string }>();
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const { showToast } = useToast();
   const { role, isLoading: permLoading, can } = usePermissions(salonId);
 
   const [services, setServices] = useState<SalonService[]>([]);
@@ -73,8 +75,8 @@ export default function OwnerServicesScreen() {
     try {
       await salonsApi.deleteSalonService(salonId, deleteTarget.id);
       setServices((prev) => prev.filter((s) => s.id !== deleteTarget.id));
-    } catch {
-      // silently handled — the item stays in the list
+    } catch (e: any) {
+      showToast(e?.response?.data?.message || e?.message || String(e), 'error');
     } finally {
       setDeletingId(null);
     }

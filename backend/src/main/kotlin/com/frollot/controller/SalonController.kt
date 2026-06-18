@@ -6,6 +6,8 @@ package com.frollot.controller
 import com.frollot.dto.CreateSalonRequest
 import com.frollot.dto.PageResponse
 import com.frollot.dto.SalonResponse
+import com.frollot.dto.UpdateSalonRequest
+import jakarta.validation.Valid
 import com.frollot.model.FollowingType
 import com.frollot.model.ServiceCategory
 import com.frollot.model.User
@@ -216,8 +218,13 @@ class SalonController(
                 coverPhotoUrl = salonEntity.coverPhotoUrl,
                 latitude = salonEntity.latitude,
                 longitude = salonEntity.longitude,
+                phoneNumber = salonEntity.phoneNumber,
+                email = salonEntity.email,
+                websiteUrl = salonEntity.websiteUrl,
                 isVerified = salonEntity.isVerified, // Phase H.2 - Vérification Salons/Coiffeurs
                 verificationType = salonEntity.verificationType, // Phase H.2 - Vérification Salons/Coiffeurs
+                averageRating = salonEntity.averageRating,
+                reviewCount = salonEntity.reviewCount,
                 isFollowedByCurrentUser = if (currentUserId != null) isFollowed else null,
                 followersCount = followersCount,
                 createdAt = salonEntity.createdAt
@@ -357,6 +364,32 @@ class SalonController(
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("error" to "Erreur serveur"))
+        }
+    }
+
+    @Operation(
+        summary = "Modifier les informations du salon",
+        description = "Met a jour les informations d'un salon (nom, adresse, contact...). Requiert la permission salon.update_info."
+    )
+    @PutMapping("/{salonId}")
+    @PreAuthorize("isAuthenticated()")
+    fun updateSalonInfo(
+        @PathVariable salonId: String,
+        @Valid @RequestBody request: UpdateSalonRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val authenticatedUserId = getAuthenticatedUserId()
+            val updatedSalon = salonService.updateSalonInfo(salonId, request, authenticatedUserId)
+            ResponseEntity.ok(updatedSalon)
+        } catch (e: NoSuchElementException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(mapOf("error" to (e.message ?: "Salon non trouve")))
+        } catch (e: com.frollot.service.SalonAuthorizationService.PermissionDeniedException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(mapOf("error" to (e.message ?: "Acces refuse")))
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(mapOf("error" to (e.message ?: "Donnees invalides")))
         }
     }
 

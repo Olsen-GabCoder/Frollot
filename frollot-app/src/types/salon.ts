@@ -15,6 +15,9 @@ export interface Salon {
   longitude?: number;
   isVerified: boolean;
   verificationType?: VerificationType;
+  phoneNumber?: string;
+  email?: string;
+  websiteUrl?: string;
   isFollowedByCurrentUser?: boolean;
   followersCount?: number;
   // Salon.kt: ratingAverage (BigDecimal) & totalReviews (Int) — colonnes DB,
@@ -35,6 +38,17 @@ export interface CreateSalonRequest {
   coverPhotoUrl?: string;
   latitude?: number;
   longitude?: number;
+}
+
+export interface UpdateSalonRequest {
+  name: string;
+  address: string;
+  city: string;
+  postalCode: string;
+  description?: string;
+  phoneNumber?: string;
+  email?: string;
+  websiteUrl?: string;
 }
 
 export enum ServiceCategory {

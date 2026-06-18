@@ -20,8 +20,13 @@ data class SalonResponse(
     val coverPhotoUrl: String? = null,
     val latitude: BigDecimal? = null,
     val longitude: BigDecimal? = null,
+    val phoneNumber: String? = null,
+    val email: String? = null,
+    val websiteUrl: String? = null,
     val isVerified: Boolean = false, // Phase H.2 - Vérification Salons/Coiffeurs
     val verificationType: VerificationType? = null, // Phase H.2 - Vérification Salons/Coiffeurs
+    val averageRating: BigDecimal = BigDecimal.ZERO,
+    val reviewCount: Int = 0,
     val isFollowedByCurrentUser: Boolean? = null,
     val followersCount: Long? = null,
     val createdAt: LocalDateTime?

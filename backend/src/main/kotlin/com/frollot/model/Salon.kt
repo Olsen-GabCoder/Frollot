@@ -66,6 +66,16 @@ data class Salon(
     @Column(name = "social_cover_image", length = 500)
     var socialCoverImage: String? = null,
 
+    // L5 — Contact fields (columns already exist in DB)
+    @Column(name = "phone_number", length = 20)
+    var phoneNumber: String? = null,
+
+    @Column(name = "email", length = 255)
+    var email: String? = null,
+
+    @Column(name = "website_url", length = 500)
+    var websiteUrl: String? = null,
+
     // Phase H.2 - Vérification Salons/Coiffeurs
     @Column(name = "is_verified", nullable = false)
     var isVerified: Boolean = false,

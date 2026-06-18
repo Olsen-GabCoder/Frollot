@@ -307,6 +307,29 @@
     "postalCode": "الرمز البريدي",
     "description": "الوصف",
     "notFound": "لم يُعثر على الصالون",
+    "edit": {
+      "title": "تعديل الصالون",
+      "sectionIdentity": "الهوية",
+      "sectionLocation": "الموقع",
+      "sectionContact": "الاتصال",
+      "phoneNumber": "هاتف الصالون",
+      "email": "بريد الصالون",
+      "websiteUrl": "الموقع الإلكتروني",
+      "save": "حفظ",
+      "success": "تم تحديث المعلومات",
+      "coverLabel": "صورة الغلاف",
+      "coverSuccess": "تم تحديث الصورة"
+    },
+    "social": {
+      "editTitle": "الملف الاجتماعي للصالون",
+      "edit": "تعديل الملف",
+      "descriptionLabel": "الوصف الاجتماعي",
+      "coverLabel": "صورة الغلاف الاجتماعية",
+      "coverHint": "إضافة صورة",
+      "coverUploaded": "تم رفع الصورة",
+      "save": "حفظ",
+      "saveSuccess": "تم تحديث الملف الاجتماعي"
+    },
     "bookService": "حجز خدمة",
     "reservations": "المواعيد",
     "queueOpen": "الطابور مفتوح · ~{{minutes}} دقيقة انتظار",
@@ -634,7 +657,8 @@
         "hours": "ساعات العمل",
         "reviews": "التقييمات",
         "payments": "المدفوعات",
-        "queue": "قائمة الانتظار"
+        "queue": "قائمة الانتظار",
+        "editSalon": "بيانات الصالون"
       },
       "comingSoon": "قريباً",
       "pending": {

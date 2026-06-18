@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, RefreshControl, FlatList, I18nManager } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Image } from 'expo-image';
@@ -14,7 +14,7 @@ import { reviewsApi } from '../../src/api/reviews';
 import { Avatar, RatingStars, ServiceImageStack } from '../../src/components/common';
 import { PrimaryButton, OutlineButton } from '../../src/components/ui';
 import { LoadingState, ErrorState } from '../../src/components/lists';
-import { mediaApi } from '../../src/api/media';
+
 import { PostCard } from '../../src/components/social';
 import { Salon, SalonService, StaffMember, Review, SalonReviewStats, QueueStatusResponse, PostResponse, SERVICE_CATEGORY_META } from '../../src/types';
 import { useTheme } from '../../src/theme';
@@ -48,7 +48,7 @@ export default function SalonDetailScreen() {
   const [followersCount, setFollowersCount] = useState(0);
   const [salonPosts, setSalonPosts] = useState<PostResponse[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
+
   const [isTogglingFollow, setIsTogglingFollow] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -120,20 +120,6 @@ export default function SalonDetailScreen() {
     return () => { ignore = true; };
   }, [selectedTab, id]);
 
-  const handlePickCover = async () => {
-    if (!isOwner || !id) return;
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (result.canceled || !result.assets[0]) return;
-    setIsUploadingCover(true);
-    try {
-      const fileName = `salon_cover_${id}_${Date.now()}.jpg`;
-      const path = await mediaApi.uploadImage(result.assets[0].uri, fileName);
-      await salonsApi.updateSalonCoverPhoto(id, path);
-      setSalon(prev => prev ? { ...prev, coverPhotoUrl: path } : prev);
-    } catch {} finally {
-      setIsUploadingCover(false);
-    }
-  };
 
   const handleLeaveQueue = async () => {
     if (!id || !user || isLeaving) return;
@@ -163,20 +149,11 @@ export default function SalonDetailScreen() {
     <View style={[s.container, { backgroundColor: colors.background }]}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
         {/* Cover */}
-        <TouchableOpacity style={s.coverWrap} activeOpacity={isOwner ? 0.8 : 1} onPress={isOwner ? handlePickCover : undefined}>
+        <View style={s.coverWrap}>
           {salon.coverPhotoUrl ? (
             <Image source={{ uri: resolveMediaUrl(salon.coverPhotoUrl) }} style={s.coverImage} contentFit="cover" />
           ) : (
             <View style={[s.coverImage, { backgroundColor: colors.primary }]} />
-          )}
-          {isOwner && (
-            <View style={[s.coverEditBadge, { backgroundColor: colors.primary }]}>
-              {isUploadingCover ? (
-                <ActivityIndicator size="small" color={colors.onPrimary} />
-              ) : (
-                <MaterialCommunityIcons name="camera" size={18} color={colors.onPrimary} />
-              )}
-            </View>
           )}
           {/* design-fixed — editorial cover gradient overlay */}
           <LinearGradient
@@ -196,7 +173,7 @@ export default function SalonDetailScreen() {
               <MaterialCommunityIcons name="heart" size={22} color="#FFFFFF" />{/* design-fixed */}
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
 
         {/* Identity sheet */}
         <View style={[s.sheet, { backgroundColor: colors.surface }]}>
@@ -394,7 +371,7 @@ const s = StyleSheet.create({
   coverImage: { width: '100%', height: 230 },
   coverActions: { position: 'absolute', top: 12, start: 8, end: 8, flexDirection: 'row', alignItems: 'center' },
   coverBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', marginStart: 4 }, // design-fixed
-  coverEditBadge: { position: 'absolute', bottom: 12, end: 12, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+
   // Sheet
   sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -22, paddingTop: 22, paddingHorizontal: 20 },
   identityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },

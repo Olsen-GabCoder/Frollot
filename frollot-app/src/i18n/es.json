@@ -303,6 +303,29 @@
     "postalCode": "Código postal",
     "description": "Descripción",
     "notFound": "Salón no encontrado",
+    "edit": {
+      "title": "Editar salón",
+      "sectionIdentity": "Identidad",
+      "sectionLocation": "Ubicación",
+      "sectionContact": "Contacto",
+      "phoneNumber": "Teléfono del salón",
+      "email": "Email del salón",
+      "websiteUrl": "Sitio web",
+      "save": "Guardar",
+      "success": "Información actualizada",
+      "coverLabel": "Foto de portada",
+      "coverSuccess": "Foto actualizada"
+    },
+    "social": {
+      "editTitle": "Perfil social del salón",
+      "edit": "Editar perfil",
+      "descriptionLabel": "Descripción social",
+      "coverLabel": "Imagen de portada social",
+      "coverHint": "Añadir una imagen",
+      "coverUploaded": "Imagen subida",
+      "save": "Guardar",
+      "saveSuccess": "Perfil social actualizado"
+    },
     "bookService": "Reservar un servicio",
     "reservations": "Citas",
     "queueOpen": "Cola abierta · ~{{minutes}} min de espera",
@@ -622,7 +645,8 @@
         "hours": "Horarios",
         "reviews": "Reseñas",
         "payments": "Pagos",
-        "queue": "Cola"
+        "queue": "Cola",
+        "editSalon": "Info salón"
       },
       "comingSoon": "Próximamente",
       "pending": {

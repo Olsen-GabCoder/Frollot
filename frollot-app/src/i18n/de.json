@@ -303,6 +303,29 @@
     "postalCode": "Postleitzahl",
     "description": "Beschreibung",
     "notFound": "Salon nicht gefunden",
+    "edit": {
+      "title": "Salon bearbeiten",
+      "sectionIdentity": "Identität",
+      "sectionLocation": "Standort",
+      "sectionContact": "Kontakt",
+      "phoneNumber": "Telefon des Salons",
+      "email": "E-Mail des Salons",
+      "websiteUrl": "Webseite",
+      "save": "Speichern",
+      "success": "Informationen aktualisiert",
+      "coverLabel": "Titelbild",
+      "coverSuccess": "Foto aktualisiert"
+    },
+    "social": {
+      "editTitle": "Soziales Profil des Salons",
+      "edit": "Profil bearbeiten",
+      "descriptionLabel": "Soziale Beschreibung",
+      "coverLabel": "Soziales Titelbild",
+      "coverHint": "Bild hinzufügen",
+      "coverUploaded": "Bild hochgeladen",
+      "save": "Speichern",
+      "saveSuccess": "Soziales Profil aktualisiert"
+    },
     "bookService": "Leistung buchen",
     "reservations": "Termine",
     "queueOpen": "Warteschlange offen · ~{{minutes}} Min. Wartezeit",
@@ -622,7 +645,8 @@
         "hours": "Öffnungszeiten",
         "reviews": "Bewertungen",
         "payments": "Zahlungen",
-        "queue": "Warteschlange"
+        "queue": "Warteschlange",
+        "editSalon": "Saloninfo"
       },
       "comingSoon": "Demnächst verfügbar",
       "pending": {

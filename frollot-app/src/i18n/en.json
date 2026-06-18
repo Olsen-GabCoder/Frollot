@@ -298,6 +298,29 @@
     "postalCode": "Postal code",
     "description": "Description",
     "notFound": "Salon not found",
+    "edit": {
+      "title": "Edit salon",
+      "sectionIdentity": "Identity",
+      "sectionLocation": "Location",
+      "sectionContact": "Contact",
+      "phoneNumber": "Salon phone",
+      "email": "Salon email",
+      "websiteUrl": "Website",
+      "save": "Save",
+      "success": "Information updated",
+      "coverLabel": "Cover photo",
+      "coverSuccess": "Photo updated"
+    },
+    "social": {
+      "editTitle": "Salon social profile",
+      "edit": "Edit profile",
+      "descriptionLabel": "Social description",
+      "coverLabel": "Social cover image",
+      "coverHint": "Add an image",
+      "coverUploaded": "Image uploaded",
+      "save": "Save",
+      "saveSuccess": "Social profile updated"
+    },
     "bookService": "Book a service",
     "reservations": "Bookings",
     "queueOpen": "Queue open · ~{{minutes}} min wait",
@@ -551,7 +574,8 @@
         "hours": "Hours",
         "reviews": "Reviews",
         "payments": "Payments",
-        "queue": "Queue"
+        "queue": "Queue",
+        "editSalon": "Salon info"
       },
       "comingSoon": "Coming soon",
       "pending": {

@@ -307,6 +307,7 @@ export default function OwnerDashboardScreen() {
     { icon: 'calendar-clock', labelKey: 'bookings', route: '/owner-bookings', routeParams: { salonId: activeSalonId || '' } },
     { icon: 'content-cut', labelKey: 'services', route: '/owner-services', routeParams: { salonId: activeSalonId || '' } },
     { icon: 'account-multiple-outline', labelKey: 'staff', route: '/owner-staff', routeParams: { salonId: activeSalonId || '' } },
+    ...(can('salon.update_info') ? [{ icon: 'store-edit-outline' as const, labelKey: 'editSalon', route: '/edit-salon', routeParams: { salonId: activeSalonId || '' } }] : []),
     { icon: 'clock-outline', labelKey: 'hours' },
     { icon: 'star-half-full', labelKey: 'reviews' },
     { icon: 'credit-card-outline', labelKey: 'payments' },

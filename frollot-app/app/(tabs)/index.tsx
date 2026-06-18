@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Pressable, FlatList, TextInput,
   StyleSheet, RefreshControl, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { I18nManager } from 'react-native';
@@ -43,6 +43,9 @@ export default function HomeScreen() {
   // Load salons when category or city filter changes
   const [refreshTick, setRefreshTick] = useState(0);
   const handleRefresh = () => { setRefreshing(true); setRefreshTick(n => n + 1); };
+
+  // Refresh salons when screen regains focus (e.g. after editing salon info/cover)
+  useFocusEffect(useCallback(() => { setRefreshTick(n => n + 1); }, []));
 
   useEffect(() => {
     let ignore = false;
