@@ -14,7 +14,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class VerificationService(
     private val userRepository: UserRepository,
-    private val salonRepository: SalonRepository
+    private val salonRepository: SalonRepository,
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     // ========== EXCEPTIONS MÉTIER ==========
@@ -78,10 +79,8 @@ class VerificationService(
                 val salon = salonRepository.findById(entityId)
                     .orElseThrow { SalonNotFoundException(entityId) }
 
-                // Vérifier que l'utilisateur authentifié est bien le propriétaire du salon
-                if (salon.owner?.id != currentUserId) {
-                    throw UnauthorizedVerificationException(currentUserId)
-                }
+                // Vérification des autorisations (owner seul)
+                salonAuthorizationService.requirePermission(currentUserId, entityId, "verification.request")
 
                 // Vérifier que le salon n'est pas déjà vérifié
                 if (salon.isVerified && salon.verificationType != null) {

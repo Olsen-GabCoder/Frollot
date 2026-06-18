@@ -20,6 +20,7 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { profilesApi } from '../../src/api/profiles';
 import { mediaApi } from '../../src/api/media';
 import { usersApi } from '../../src/api/users';
+import { salonsApi } from '../../src/api/salons';
 import { CoiffeurProfileResponse } from '../../src/types';
 import { LogoutConfirmModal } from '../../src/components/common';
 import { ProfileHeader, ProfileInfoCard, EditBottomSheet } from '../../src/components/profile';
@@ -46,6 +47,9 @@ export default function ProfileScreen() {
   const [coiffeurProfile, setCoiffeurProfile] = useState<CoiffeurProfileResponse | null>(null);
 
   const isHairstylist = user?.userType === 'hairstylist';
+
+  // Invitation count for hairstylists (badge + banner)
+  const [pendingInvCount, setPendingInvCount] = useState(0);
 
   // --- Bio edit ---
   const [showBioSheet, setShowBioSheet] = useState(false);
@@ -258,6 +262,12 @@ export default function ProfileScreen() {
         ]);
       } else if (user.userType === 'hairstylist') {
         await reloadCoiffeurProfile();
+        try {
+          const invs = await salonsApi.getMyInvitations();
+          setPendingInvCount(invs.length);
+        } catch {
+          setPendingInvCount(0);
+        }
       }
     } catch {} finally {
       setIsLoadingStats(false);
@@ -286,6 +296,17 @@ export default function ProfileScreen() {
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '?';
 
   const menuItems = [
+    ...(user?.userType === 'salon_owner' ? [{
+      icon: 'store' as const,
+      label: t('profile.ownerDashboard.menuLabel'),
+      onPress: () => router.push('/owner-dashboard'),
+    }] : []),
+    ...(isHairstylist ? [{
+      icon: 'mail-outline' as const,
+      label: t('myInvitations.title'),
+      onPress: () => router.push('/my-invitations' as any),
+      badge: pendingInvCount > 0 ? pendingInvCount : undefined,
+    }] : []),
     { icon: 'favorite-border' as const, label: t('profile.favorites'), onPress: () => router.push(`/favorites/${user?.id}`) },
     { icon: 'archive' as const, label: t('profile.archives'), onPress: () => router.push(`/archives/${user?.id}`) },
     { icon: 'collections-bookmark' as const, label: t('profile.collections'), onPress: () => router.push(`/collections/user/${user?.id}`) },
@@ -359,10 +380,29 @@ export default function ProfileScreen() {
 
         {/* Menu */}
         <View style={[s.menuCard, { backgroundColor: colors.surface }]}>
+          {/* Invitation banner for hairstylists */}
+          {isHairstylist && pendingInvCount > 0 && (
+            <TouchableOpacity
+              style={[s.invBanner, { backgroundColor: colors.tertiary + '18', borderColor: colors.tertiary + '40' }]}
+              onPress={() => router.push('/my-invitations' as any)}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="email-fast-outline" size={22} color={colors.tertiary} />
+              <Text style={[s.invBannerText, { color: colors.tertiary }]}>
+                {t('myInvitations.banner', { count: pendingInvCount })}
+              </Text>
+              <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={20} color={colors.tertiary} />
+            </TouchableOpacity>
+          )}
           {menuItems.map((item, index) => (
             <TouchableOpacity key={index} style={s.menuItem} onPress={item.onPress}>
               <MaterialIcons name={item.icon} size={24} color={colors.onSurfaceVariant} />
               <Text style={[s.menuLabel, { color: colors.onSurface }]}>{item.label}</Text>
+              {'badge' in item && (item as any).badge > 0 && (
+                <View style={[s.menuBadge, { backgroundColor: colors.error }]}>
+                  <Text style={[s.menuBadgeText, { color: colors.onError }]}>{(item as any).badge}</Text>
+                </View>
+              )}
               <MaterialIcons name={I18nManager.isRTL ? 'chevron-left' : 'chevron-right'} size={24} color={colors.onSurfaceVariant} />
             </TouchableOpacity>
           ))}
@@ -469,8 +509,12 @@ const s = StyleSheet.create({
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 999, minHeight: 40 },
   actionLabel: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
   menuCard: { borderRadius: 16, overflow: 'hidden', marginHorizontal: 16, marginTop: 16, marginBottom: 24 },
+  invBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14, borderWidth: 1 },
+  invBannerText: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600', flex: 1 },
   menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16 },
   menuLabel: { fontFamily: 'Manrope-Regular', fontSize: 16, flex: 1, marginStart: 16 },
+  menuBadge: { minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, marginEnd: 8 },
+  menuBadgeText: { fontFamily: 'Manrope-Bold', fontSize: 11, fontWeight: '700' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 28, borderWidth: 1, marginHorizontal: 16 },
   logoutLabel: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600', marginStart: 8 },
   singleInput: { fontFamily: 'Manrope-Regular', fontSize: 15, borderRadius: 14, padding: 14, minHeight: 48 },

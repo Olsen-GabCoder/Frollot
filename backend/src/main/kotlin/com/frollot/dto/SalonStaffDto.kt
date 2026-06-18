@@ -109,13 +109,30 @@ data class StaffResponse(
  */
 data class UpdateStaffRequest(
     val specialties: List<ServiceCategory>? = null,
-    val isActive: Boolean? = null
+    val isActive: Boolean? = null,
+    val role: String? = null
 ) {
+    companion object {
+        val ASSIGNABLE_ROLES = setOf("manager", "hairstylist", "apprentice")
+    }
+
     /**
      * Vérifie si la requête contient des modifications.
      */
     fun hasChanges(): Boolean {
-        return specialties != null || isActive != null
+        return specialties != null || isActive != null || role != null
+    }
+
+    /**
+     * Valide le rôle s'il est fourni.
+     * @throws IllegalArgumentException si le rôle est invalide
+     */
+    fun validateRole() {
+        role?.let {
+            require(it.lowercase() in ASSIGNABLE_ROLES) {
+                "Rôle invalide '$it'. Rôles autorisés : ${ASSIGNABLE_ROLES.joinToString()}"
+            }
+        }
     }
 
     /**
@@ -124,6 +141,7 @@ data class UpdateStaffRequest(
     fun applyTo(entity: com.frollot.model.SalonStaff): com.frollot.model.SalonStaff {
         specialties?.let { entity.specialties = it.toMutableList() }
         isActive?.let { entity.isActive = it }
+        role?.let { entity.role = it.lowercase() }
         return entity
     }
 }

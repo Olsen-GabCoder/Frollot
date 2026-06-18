@@ -130,7 +130,7 @@ class SalonServiceController(
         @Valid @RequestBody requests: List<CreateServiceRequest>
     ): ResponseEntity<List<ServiceResponse>> {
         val authenticatedUserId = getAuthenticatedUserId()
-        val services = salonServiceService.importServices(salonId, requests)
+        val services = salonServiceService.importServices(salonId, requests, authenticatedUserId)
 
         return ResponseEntity
             .status(HttpStatus.CREATED)

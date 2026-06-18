@@ -11,12 +11,12 @@ import { salonsApi } from '../../src/api/salons';
 import { socialApi } from '../../src/api/social';
 import { queueApi } from '../../src/api/queue';
 import { reviewsApi } from '../../src/api/reviews';
-import { Avatar, RatingStars } from '../../src/components/common';
+import { Avatar, RatingStars, ServiceImageStack } from '../../src/components/common';
 import { PrimaryButton, OutlineButton } from '../../src/components/ui';
 import { LoadingState, ErrorState } from '../../src/components/lists';
 import { mediaApi } from '../../src/api/media';
 import { PostCard } from '../../src/components/social';
-import { Salon, SalonService, StaffMember, Review, SalonReviewStats, QueueStatusResponse, PostResponse } from '../../src/types';
+import { Salon, SalonService, StaffMember, Review, SalonReviewStats, QueueStatusResponse, PostResponse, SERVICE_CATEGORY_META } from '../../src/types';
 import { useTheme } from '../../src/theme';
 import { resolveMediaUrl } from '../../src/utils/media';
 import { navigateToProfile } from '../../src/utils/navigateToProfile';
@@ -250,23 +250,30 @@ export default function SalonDetailScreen() {
 
         {/* Tab content */}
         <View style={[s.tabContent, { backgroundColor: colors.surface }]}>
-          {selectedTab === 'services' && services.map((svc, i) => (
-            <View key={svc.id} style={[s.serviceItem, i < services.length - 1 && [s.serviceItemBorder, { borderBottomColor: colors.outlineVariant }]]}>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.serviceCategory, { color: colors.secondary }]}>{svc.categoryLabel || svc.category}</Text>
-                <Text style={[s.serviceName, { color: colors.onSurface }]}>{svc.name}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 }}>
-                  <MaterialCommunityIcons name="clock-outline" size={15} color={colors.onSurfaceVariant} />
-                  <Text style={[s.serviceDuration, { color: colors.onSurfaceVariant }]}>{svc.formattedDuration || `${svc.durationMinutes} min`}</Text>
-                  <Text style={{ color: colors.outlineVariant, marginHorizontal: 4 }}>·</Text>
-                  <Text style={[s.servicePrice, { color: colors.onSurface }]}>{svc.price} €</Text>
+          {selectedTab === 'services' && services.length === 0 && (
+            <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>{t('salon.noServices')}</Text>
+          )}
+          {selectedTab === 'services' && services.map((svc, i) => {
+            const catMeta = SERVICE_CATEGORY_META[svc.category];
+            return (
+              <View key={svc.id} style={[s.serviceItem, i < services.length - 1 && [s.serviceItemBorder, { borderBottomColor: colors.outlineVariant }]]}>
+                <ServiceImageStack imageUrls={svc.imageUrls || []} category={svc.category} size={48} colors={colors} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.serviceCategory, { color: colors.secondary }]}>{svc.categoryLabel || svc.category}</Text>
+                  <Text style={[s.serviceName, { color: colors.onSurface }]}>{svc.name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 }}>
+                    <MaterialCommunityIcons name="clock-outline" size={15} color={colors.onSurfaceVariant} />
+                    <Text style={[s.serviceDuration, { color: colors.onSurfaceVariant }]}>{svc.formattedDuration || `${svc.durationMinutes} min`}</Text>
+                    <Text style={{ color: colors.outlineVariant, marginHorizontal: 4 }}>·</Text>
+                    <Text style={[s.servicePrice, { color: colors.onSurface }]}>{svc.price} FCFA</Text>
+                  </View>
                 </View>
+                <TouchableOpacity style={[s.reserveBtn, { borderColor: colors.primary, backgroundColor: colors.surface }]} onPress={() => router.push(`/booking/new?salonId=${id}&serviceId=${svc.id}`)}>
+                  <Text style={[s.reserveBtnText, { color: colors.primary }]}>{t('salon.book')}</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity style={[s.reserveBtn, { borderColor: colors.primary, backgroundColor: colors.surface }]} onPress={() => router.push(`/booking/new?salonId=${id}&serviceId=${svc.id}`)}>
-                <Text style={[s.reserveBtnText, { color: colors.primary }]}>{t('salon.book')}</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+            );
+          })}
 
           {selectedTab === 'team' && staff.length === 0 && (
             <Text style={[s.emptyText, { color: colors.onSurfaceVariant }]}>{t('salon.noTeam')}</Text>

@@ -8,7 +8,11 @@ import {
   UpdateServiceRequest,
   StaffMember,
   CreateStaffRequest,
+  UpdateStaffRequest,
   StaffStatistics,
+  InvitableStylist,
+  InvitationResponse,
+  MyPermissionsResponse,
 } from '../types';
 
 export const salonsApi = {
@@ -78,6 +82,39 @@ export const salonsApi = {
   addStaffMember: (data: CreateStaffRequest) =>
     api.post<StaffMember>(`/api/salons/${data.salonId}/staff`, data).then((r) => r.data),
 
+  updateStaffMember: (salonId: string, staffId: string, data: UpdateStaffRequest) =>
+    api.put<StaffMember>(`/api/salons/${salonId}/staff/${staffId}`, data).then((r) => r.data),
+
+  removeStaffMember: (salonId: string, staffId: string) =>
+    api.delete(`/api/salons/${salonId}/staff/${staffId}`).then((r) => r.data),
+
   getStaffStatistics: (salonId: string) =>
     api.get<StaffStatistics>(`/api/salons/${salonId}/staff/statistics`).then((r) => r.data),
+
+  // Invitations
+  searchInvitableStylists: (salonId: string, query: string) =>
+    api.get<InvitableStylist[]>(`/api/salons/${salonId}/staff/search`, { params: { query } }).then((r) => r.data),
+
+  createInvitation: (salonId: string, data: { invitedUserId: string; specialties?: string[] }) =>
+    api.post<InvitationResponse>(`/api/salons/${salonId}/invitations`, data).then((r) => r.data),
+
+  getSalonInvitations: (salonId: string) =>
+    api.get<InvitationResponse[]>(`/api/salons/${salonId}/invitations`).then((r) => r.data),
+
+  cancelInvitation: (salonId: string, invitationId: string) =>
+    api.delete<InvitationResponse>(`/api/salons/${salonId}/invitations/${invitationId}`).then((r) => r.data),
+
+  // Invited stylist endpoints
+  getMyInvitations: () =>
+    api.get<InvitationResponse[]>('/api/users/me/invitations').then((r) => r.data),
+
+  acceptInvitation: (invitationId: string) =>
+    api.post<InvitationResponse>(`/api/invitations/${invitationId}/accept`).then((r) => r.data),
+
+  declineInvitation: (invitationId: string) =>
+    api.post<InvitationResponse>(`/api/invitations/${invitationId}/decline`).then((r) => r.data),
+
+  // Permissions
+  getMyPermissions: (salonId: string) =>
+    api.get<MyPermissionsResponse>(`/api/salons/${salonId}/my-permissions`).then((r) => r.data),
 };

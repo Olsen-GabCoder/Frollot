@@ -83,9 +83,9 @@ class QueueController(
         return ResponseEntity.ok(status)
     }
 
-    @Operation(summary = "Appeler le prochain client (propriétaire)")
+    @Operation(summary = "Appeler le prochain client (owner/manager/coiffeur)")
     @PostMapping("/call-next")
-    @PreAuthorize("hasRole('OWNER')")
+    @PreAuthorize("isAuthenticated()")
     fun callNext(
         @PathVariable salonId: String
     ): ResponseEntity<QueueEntryResponse> {

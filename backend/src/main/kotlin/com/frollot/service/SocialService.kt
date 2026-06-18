@@ -45,7 +45,8 @@ class SocialService(
     private val userBadgeRepository: com.frollot.repository.UserBadgeRepository, // Phase E.3 - Badges et Certifications
     private val collectionRepository: com.frollot.repository.CollectionRepository, // Phase F.1 - Collections Thématiques
     private val collectionPostRepository: com.frollot.repository.CollectionPostRepository, // Phase F.1 - Collections Thématiques
-    private val reviewRepository: ReviewRepository // Lot 2 - Note coiffeur
+    private val reviewRepository: ReviewRepository, // Lot 2 - Note coiffeur
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     // ========== EXCEPTIONS MÉTIER ==========
@@ -2458,10 +2459,8 @@ class SocialService(
         val salon = salonRepository.findById(salonId)
             .orElseThrow { RuntimeException("Salon avec ID '$salonId' non trouvé") }
 
-        // Vérifier l'ownership
-        if (salon.owner?.id != currentUserId) {
-            throw UnauthorizedAccessException(currentUserId)
-        }
+        // Vérification des autorisations
+        salonAuthorizationService.requirePermission(currentUserId, salonId, "social.update_profile")
 
         // Mettre à jour les champs
         request.socialDescription?.let { salon.socialDescription = it.trim().takeIf { it.isNotBlank() } }

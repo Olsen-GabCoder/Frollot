@@ -31,7 +31,8 @@ class PortfolioService(
     private val commentRepository: CommentRepository,
     private val postTagRepository: PostTagRepository,
     private val postServiceRepository: PostServiceRepository,
-    private val postHashtagRepository: PostHashtagRepository
+    private val postHashtagRepository: PostHashtagRepository,
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     // ========== EXCEPTIONS MÉTIER ==========
@@ -75,17 +76,12 @@ class PortfolioService(
                 PortfolioOwnerType.coiffeur
             }
             PortfolioOwnerType.salon -> {
-                if (user.userType != UserType.salon_owner) {
-                    throw InvalidOwnerException("L'utilisateur doit être de type 'salon_owner' pour créer un portfolio salon")
-                }
-                // Vérifier que le salon existe et appartient à l'utilisateur
+                // Vérifier que le salon existe
                 if (!salonRepository.existsById(request.ownerId)) {
                     throw InvalidOwnerException("Salon avec ID '${request.ownerId}' non trouvé")
                 }
-                val salon = salonRepository.findById(request.ownerId).orElse(null)
-                if (salon?.owner?.id != userId) {
-                    throw InvalidOwnerException("Le salon n'appartient pas à l'utilisateur")
-                }
+                // Vérification des autorisations via le système de permissions
+                salonAuthorizationService.requirePermission(userId, request.ownerId, "portfolio.create")
                 PortfolioOwnerType.salon
             }
         }
@@ -130,9 +126,7 @@ class PortfolioService(
             .orElseThrow { PortfolioNotFoundException(portfolioId) }
 
         // Vérifier les autorisations
-        if (!hasAccessToPortfolio(portfolio, userId)) {
-            throw UnauthorizedAccessException(userId)
-        }
+        requirePortfolioMutationAccess(portfolio, userId, "portfolio.update")
 
         // Mise à jour
         request.name?.let { portfolio.name = it.trim() }
@@ -163,10 +157,8 @@ class PortfolioService(
         val portfolio = portfolioRepository.findById(portfolioId)
             .orElseThrow { PortfolioNotFoundException(portfolioId) }
 
-        // Vérifier les autorisations
-        if (!hasAccessToPortfolio(portfolio, userId)) {
-            throw UnauthorizedAccessException(userId)
-        }
+        // Vérifier les autorisations (owner SEUL pour delete)
+        requirePortfolioMutationAccess(portfolio, userId, "portfolio.delete")
 
         // Suppression (les portfolio_posts seront supprimés en cascade)
         portfolioRepository.delete(portfolio)
@@ -235,9 +227,7 @@ class PortfolioService(
             .orElseThrow { PortfolioNotFoundException(portfolioId) }
 
         // Vérifier les autorisations
-        if (!hasAccessToPortfolio(portfolio, userId)) {
-            throw UnauthorizedAccessException(userId)
-        }
+        requirePortfolioMutationAccess(portfolio, userId, "portfolio.manage_posts")
 
         // Vérifier que le post existe
         val post = postRepository.findById(postId)
@@ -283,9 +273,7 @@ class PortfolioService(
             .orElseThrow { PortfolioNotFoundException(portfolioId) }
 
         // Vérifier les autorisations
-        if (!hasAccessToPortfolio(portfolio, userId)) {
-            throw UnauthorizedAccessException(userId)
-        }
+        requirePortfolioMutationAccess(portfolio, userId, "portfolio.manage_posts")
 
         // Suppression
         portfolioPostRepository.deleteByPortfolioIdAndPostId(portfolioId, postId)
@@ -363,9 +351,7 @@ class PortfolioService(
             .orElseThrow { PortfolioNotFoundException(portfolioId) }
 
         // Vérifier les autorisations
-        if (!hasAccessToPortfolio(portfolio, userId)) {
-            throw UnauthorizedAccessException(userId)
-        }
+        requirePortfolioMutationAccess(portfolio, userId, "portfolio.manage_posts")
 
         // Mettre à jour l'ordre de chaque post
         postIds.forEachIndexed { index, postId ->
@@ -384,14 +370,28 @@ class PortfolioService(
     // ========== MÉTHODES UTILITAIRES ==========
 
     /**
-     * Vérifie si un utilisateur a accès à un portfolio.
+     * Vérifie si un utilisateur a accès à un portfolio (lecture privée / ownership simple).
      */
     private fun hasAccessToPortfolio(portfolio: Portfolio, userId: String): Boolean {
         return when (portfolio.ownerType) {
             PortfolioOwnerType.coiffeur -> portfolio.ownerId == userId
+            PortfolioOwnerType.salon -> salonAuthorizationService.hasPermission(userId, portfolio.ownerId, "portfolio.update")
+        }
+    }
+
+    /**
+     * Vérifie l'accès mutation sur un portfolio avec la permission exacte.
+     * Coiffeur perso = propriétaire direct. Salon = requirePermission.
+     */
+    private fun requirePortfolioMutationAccess(portfolio: Portfolio, userId: String, permission: String) {
+        when (portfolio.ownerType) {
+            PortfolioOwnerType.coiffeur -> {
+                if (portfolio.ownerId != userId) {
+                    throw UnauthorizedAccessException(userId)
+                }
+            }
             PortfolioOwnerType.salon -> {
-                val salon = salonRepository.findById(portfolio.ownerId).orElse(null)
-                salon?.owner?.id == userId
+                salonAuthorizationService.requirePermission(userId, portfolio.ownerId, permission)
             }
         }
     }

@@ -23,7 +23,8 @@ import java.util.*
 @Transactional
 class SalonServiceService(
     private val salonServiceRepository: SalonServiceRepository,
-    private val salonRepository: SalonRepository
+    private val salonRepository: SalonRepository,
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     // ========== EXCEPTIONS MÉTIER ==========
@@ -61,9 +62,7 @@ class SalonServiceService(
 
         // 3. Vérification des autorisations (si userId est fourni)
         userId?.let {
-            if (salon.owner?.id != userId) {
-                throw UnauthorizedAccessException(userId)
-            }
+            salonAuthorizationService.requirePermission(it, request.salonId, "service.create")
         }
 
         // 4. Vérification de l'unicité du nom dans le salon
@@ -147,9 +146,8 @@ class SalonServiceService(
 
         // 2. Vérification des autorisations (si userId est fourni)
         userId?.let {
-            if (service.salon?.owner?.id != userId) {
-                throw UnauthorizedAccessException(userId)
-            }
+            val salonId = service.salon?.id ?: throw UnauthorizedAccessException(it)
+            salonAuthorizationService.requirePermission(it, salonId, "service.update")
         }
 
         // 3. Vérification de l'unicité si le nom change
@@ -189,9 +187,8 @@ class SalonServiceService(
 
         // Vérification des autorisations (si userId est fourni)
         userId?.let {
-            if (service.salon?.owner?.id != userId) {
-                throw UnauthorizedAccessException(userId)
-            }
+            val salonId = service.salon?.id ?: throw UnauthorizedAccessException(it)
+            salonAuthorizationService.requirePermission(it, salonId, "service.delete")
         }
 
         salonServiceRepository.delete(service)
@@ -313,9 +310,14 @@ class SalonServiceService(
     }
 
     @Transactional
-    fun importServices(salonId: String, services: List<CreateServiceRequest>): List<ServiceResponse> {
+    fun importServices(salonId: String, services: List<CreateServiceRequest>, userId: String? = null): List<ServiceResponse> {
         val salon = salonRepository.findById(salonId)
             .orElseThrow { SalonNotFoundException(salonId) }
+
+        // Vérification des autorisations
+        userId?.let {
+            salonAuthorizationService.requirePermission(it, salonId, "service.import")
+        }
 
         val createdServices = mutableListOf<SalonService>()
 

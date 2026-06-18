@@ -1,6 +1,7 @@
 import api from './client';
 import {
   BookingResponse,
+  BookingSummary,
   CreateBookingRequest,
   AvailableSlotsRequest,
   AvailableSlotsResponse,
@@ -18,7 +19,7 @@ export const bookingsApi = {
     api.get<BookingResponse>(`/api/bookings/${bookingId}`).then((r) => r.data),
 
   getSalonBookings: (salonId: string) =>
-    api.get<BookingResponse[]>(`/api/bookings/salon/${salonId}`).then((r) => r.data),
+    api.get<BookingResponse[]>(`/api/salons/${salonId}/bookings`).then((r) => r.data),
 
   getUserBookings: (userId: string) =>
     api.get<BookingResponse[]>(`/api/clients/${userId}/bookings`).then((r) => r.data),
@@ -40,4 +41,7 @@ export const bookingsApi = {
 
   getBookingStatistics: (salonId: string) =>
     api.get<BookingStatistics>(`/api/salons/${salonId}/bookings/statistics`).then((r) => r.data),
+
+  getDailyBookings: (salonId: string, from: string, to: string) =>
+    api.get<BookingSummary[]>(`/api/salons/${salonId}/bookings/daily`, { params: { from, to } }).then((r) => r.data),
 };

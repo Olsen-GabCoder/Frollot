@@ -98,6 +98,7 @@ export interface AvailableSlotsRequest {
 
 export interface UpdateBookingStatusRequest {
   status: BookingStatus;
+  notesSalon?: string;
 }
 
 export interface UpdateBookingPaymentRequest {

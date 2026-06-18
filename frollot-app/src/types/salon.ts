@@ -47,14 +47,19 @@ export enum ServiceCategory {
   AUTRE = 'AUTRE',
 }
 
-export const SERVICE_CATEGORY_META: Record<ServiceCategory, { emoji: string; labelKey: string }> = {
-  [ServiceCategory.COUPE]: { emoji: '✂️', labelKey: 'service.categories.coupe' },
-  [ServiceCategory.COLORATION]: { emoji: '🎨', labelKey: 'service.categories.coloration' },
-  [ServiceCategory.SOIN]: { emoji: '💆', labelKey: 'service.categories.soin' },
-  [ServiceCategory.COIFFAGE]: { emoji: '💇', labelKey: 'service.categories.coiffage' },
-  [ServiceCategory.BARBE]: { emoji: '🧔', labelKey: 'service.categories.barbe' },
-  [ServiceCategory.TECHNIQUE]: { emoji: '🌟', labelKey: 'service.categories.technique' },
-  [ServiceCategory.AUTRE]: { emoji: '📋', labelKey: 'service.categories.autre' },
+import type { ComponentProps } from 'react';
+import type { MaterialCommunityIcons } from '@expo/vector-icons';
+
+type MCIcon = ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+export const SERVICE_CATEGORY_META: Record<ServiceCategory, { icon: MCIcon; labelKey: string }> = {
+  [ServiceCategory.COUPE]: { icon: 'content-cut', labelKey: 'service.categories.coupe' },
+  [ServiceCategory.COLORATION]: { icon: 'palette', labelKey: 'service.categories.coloration' },
+  [ServiceCategory.SOIN]: { icon: 'spa-outline', labelKey: 'service.categories.soin' },
+  [ServiceCategory.COIFFAGE]: { icon: 'hair-dryer', labelKey: 'service.categories.coiffage' },
+  [ServiceCategory.BARBE]: { icon: 'face-man-shimmer', labelKey: 'service.categories.barbe' },
+  [ServiceCategory.TECHNIQUE]: { icon: 'creation', labelKey: 'service.categories.technique' },
+  [ServiceCategory.AUTRE]: { icon: 'clipboard-text-outline', labelKey: 'service.categories.autre' },
 };
 
 export interface SalonService {
@@ -113,9 +118,54 @@ export interface CreateStaffRequest {
   isActive: boolean;
 }
 
+export interface UpdateStaffRequest {
+  specialties?: ServiceCategory[];
+  isActive?: boolean;
+  role?: string;
+}
+
+// Staff invitations
+export enum Invitability {
+  INVITABLE = 'INVITABLE',
+  ALREADY_MEMBER_ELSEWHERE = 'ALREADY_MEMBER_ELSEWHERE',
+  ALREADY_INVITED = 'ALREADY_INVITED',
+  ALREADY_IN_THIS_SALON = 'ALREADY_IN_THIS_SALON',
+}
+
+export interface InvitableStylist {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  email: string | null;
+  invitability: Invitability;
+}
+
+export interface InvitationResponse {
+  id: string;
+  salonId: string;
+  salonName: string;
+  salonCoverUrl: string | null;
+  invitedUserId: string | null;
+  invitedUserName: string | null;
+  invitedUserAvatar: string | null;
+  invitedEmail: string | null;
+  role: string;
+  specialties: ServiceCategory[];
+  status: string;
+  expiresAt: string;
+  createdAt: string | null;
+}
+
 export interface StaffStatistics {
   totalStaff: number;
   activeStaff: number;
   inactiveStaff: number;
   specialtyDistribution: Record<string, number>;
+}
+
+// Permissions — GET /api/salons/{salonId}/my-permissions
+export interface MyPermissionsResponse {
+  role: string;
+  permissions: string[];
 }

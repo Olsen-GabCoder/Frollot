@@ -316,6 +316,7 @@
     "noPostsMessage": "Las publicaciones etiquetadas con este salón aparecerán aquí.",
     "postsLoadError": "No se pudieron cargar las publicaciones del salón",
     "allServices": "Todos los servicios",
+    "noServices": "No hay servicios disponibles.",
     "noTeam": "No hay miembros en el equipo.",
     "roles": {
       "owner": "Propietario",
@@ -598,6 +599,112 @@
       "title": "Tus especialidades",
       "other": "Otro..."
     },
+    "ownerDashboard": {
+      "title": "Panel de control",
+      "menuLabel": "Mi salón",
+      "noSalon": "Aún no tienes un salón",
+      "createSalon": "Crear un salón",
+      "activity": "Actividad",
+      "bookings": "Reservas",
+      "mySalon": "Mi salón",
+      "community": "Comunidad",
+      "metrics": {
+        "bookings": "Reservas",
+        "revenue": "Ingresos",
+        "rating": "Nota media",
+        "followers": "Seguidores"
+      },
+      "manage": "Gestionar mi salón",
+      "tiles": {
+        "bookings": "Reservas",
+        "services": "Servicios",
+        "staff": "Equipo",
+        "hours": "Horarios",
+        "reviews": "Reseñas",
+        "payments": "Pagos",
+        "queue": "Cola"
+      },
+      "comingSoon": "Próximamente",
+      "pending": {
+        "title": "Por confirmar",
+        "badge": "{{count}} pendientes",
+        "confirm": "Confirmar",
+        "decline": "Rechazar",
+        "empty": "Sin reservas pendientes",
+        "declineTitle": "Rechazar reserva",
+        "declineReason": "Motivo (opcional)",
+        "declineConfirm": "Confirmar rechazo",
+        "confirmSuccess": "Reserva confirmada",
+        "declineSuccess": "Reserva rechazada",
+        "viewAll": "Ver todo"
+      },
+      "completeness": "Perfil completado al {{pct}} %",
+      "topServices": "Servicios más solicitados",
+      "topServicesEmpty": "Aún no hay datos",
+      "chart": {
+        "title": "Evolución de las reservas",
+        "today": "Hoy",
+        "7d": "7 días",
+        "28d": "28 días",
+        "empty": "Aún no hay datos"
+      }
+    },
+    "ownerServices": {
+      "title": "Mis servicios",
+      "count": "{{count}} servicios",
+      "empty": "Aún no hay servicios",
+      "addFirst": "Añadir un servicio",
+      "add": "Añadir",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "deleteTitle": "Eliminar servicio",
+      "deleteMessage": "¿Eliminar «{{name}}»? Esta acción es irreversible.",
+      "deleteConfirm": "Eliminar",
+      "noPhoto": "Añadir una foto"
+    },
+    "ownerStaff": {
+      "title": "Mi equipo",
+      "count": "{{count}} miembros",
+      "empty": "Aún no hay miembros en el equipo",
+      "inviteFirst": "Invitar a un estilista",
+      "invite": "Invitar",
+      "edit": "Editar",
+      "remove": "Retirar del salón",
+      "removeTitle": "Retirar este miembro",
+      "removeMessage": "¿Retirar a «{{name}}» del equipo? Esta acción es irreversible.",
+      "removeConfirm": "Retirar",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "ownerProtected": "El propietario no puede ser retirado.",
+      "inviteTitle": "Invitar a un estilista",
+      "inviteSent": "Invitación enviada a {{name}}",
+      "invitationCancelled": "Invitación cancelada",
+      "memberRemoved": "{{name}} ha sido eliminado del equipo",
+      "pendingSection": "Invitaciones pendientes ({{count}})",
+      "pendingLabel": "Pendiente",
+      "expiresOn": "Expira el {{date}}",
+      "cancelInvTitle": "Cancelar invitación",
+      "cancelInvMessage": "¿Cancelar la invitación enviada a {{name}}?",
+      "cancelInvConfirm": "Cancelar",
+      "search": {
+        "placeholder": "Nombre o email del estilista",
+        "minChars": "Escribe al menos 2 caracteres",
+        "noResults": "Ningún estilista encontrado",
+        "onFrollot": "Estilista · en Frollot",
+        "memberElsewhere": "Ya en otro salón",
+        "alreadyInvited": "Ya invitado",
+        "alreadyHere": "Ya en tu equipo"
+      },
+      "editDialog": {
+        "title": "Editar miembro",
+        "roleLabel": "Rol",
+        "specialtiesLabel": "Especialidades",
+        "activeLabel": "Miembro activo",
+        "save": "Guardar",
+        "saveSuccess": "Miembro actualizado",
+        "saveError": "Error al actualizar el miembro"
+      }
+    },
     "favorites": "Favoritos",
     "archives": "Archivos",
     "collections": "Colecciones",
@@ -802,8 +909,26 @@
     "minutes": "{{count}} min",
     "addImages": "Añadir imágenes",
     "createdSuccess": "{{name}} se ha creado con éxito",
+    "editService": "Editar servicio",
+    "saveChanges": "Guardar",
+    "updatedSuccess": "{{name}} actualizado con éxito",
     "durationUnit": "min",
     "priceUnit": "EUR"
+  },
+  "myInvitations": {
+    "title": "Mis invitaciones",
+    "banner": "{{count}} invitacion(es) pendiente(s)",
+    "invitedAs": "Te invita como {{role}}",
+    "expiresIn": "Expira en {{days}} dia(s)",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "declineTitle": "Rechazar invitacion",
+    "declineMessage": "Rechazar la invitacion de {{salon}}?",
+    "declineConfirm": "Rechazar",
+    "acceptedMessage": "Te has unido al equipo de {{salon}}",
+    "empty": "Sin invitaciones por ahora",
+    "emptyHint": "Los salones pueden invitarte a unirte a su equipo",
+    "exclusivityNote": "Al aceptar, te unes al equipo de este salon. Un estilista solo puede pertenecer a un salon."
   },
   "staff": {
     "addStaff": "Añadir integrante",
@@ -840,5 +965,12 @@
     "cancelled": "Cancelado",
     "completed": "Completado",
     "estimatedWait": "~{{count}} min"
+  },
+  "permissions": {
+    "accessDenied": {
+      "title": "Acceso restringido",
+      "message": "No tienes acceso a esta seccion. Contacta con el propietario del salon si crees que es un error.",
+      "back": "Volver"
+    }
   }
 }

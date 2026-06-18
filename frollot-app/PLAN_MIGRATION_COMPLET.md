@@ -4188,3 +4188,469 @@ ecrans morts) -> L3 equipe (idem) -> L4 bookings owner complets (confirmer/refus
 salon -> L6 profil social salon -> L7 avis+reponses -> L8 stats -> L9 horaires (full-stack).
 Recommandation : commencer par L1 (hub) car sans point d'entree centralise, les autres lots
 n'ont pas de chemin d'acces coherent.
+
+### TABLEAU DE BORD OWNER LOT 1 (T1+T2+T4) (2026-06-16)
+
+T1 — Point d'entree + ossature :
+- Menu Mon Profil : item « Mon salon » (icone store) VISIBLE UNIQUEMENT si salon_owner, navigue
+  vers /owner-dashboard. Les autres types ne le voient pas.
+- Ecran owner-dashboard.tsx : topBar + pills categories (Activite actif, les 3 autres visuelles
+  non interactives — design preserve, navigation interne viendra dans lots suivants).
+- Bandeau salon actif : charge getSalonsByOwner. Si 1 salon = affichage simple. Si multi-salon =
+  selecteur via Alert (chaque salon = bouton). Si 0 salon = etat vide avec lien create-salon.
+  Photo + nom + ville du salon actif.
+
+T2 — 4 cartes metriques (grille 2x2, donnees GLOBALES sans periode) :
+- Reservations : bookingsApi.getBookingStatistics -> totalBookings.
+- Revenus : bookingStats.revenue -> arrondi FCFA.
+- Note moyenne : reviewsApi.getSalonReviewStats -> averageRating (totalReviews entre parentheses).
+- Abonnes : salonsApi.getSalonById -> followersCount (getSalonsByOwner renvoie null pour ce champ).
+- Chargement en parallele (Promise.allSettled), chaque echec gere isolement (affiche « — »).
+- PAS de variation/tendance % (pas de periode, c'est T7).
+
+T4 — Grille « Gerer mon salon » (7 tuiles) :
+- ACTIVES (route existante) : Reservations -> /owner-bookings, File d'attente -> /queue-management.
+- « BIENTOT » (opacite 0.5, toast « Bientot disponible ») : Prestations, Equipe, Horaires, Avis,
+  Paiements — ecrans cibles a construire dans L2-L9.
+
+i18n : 21 cles (ownerDashboard.*) x 5 langues. Total 719/743, 0 ecart.
+Backend NON modifie. salon/[id].tsx NON modifie.
+Baselines : tsc=0, i18n 719/743 0 ecart.
+
+### TABLEAU DE BORD OWNER T3 (a confirmer + actions) (2026-06-16)
+
+Section « A confirmer » inseree entre metriques et grille « Gerer mon salon ».
+- CHARGEMENT : getSalonBookings -> filtre client-side PENDING, en parallele avec metriques.
+  Spinner pendant chargement ; erreur -> console.error + liste vide.
+- AFFICHAGE : titre « A confirmer » + badge rouge « N en attente ». Par reservation :
+  initiales client (cercle primaryContainer), nom, service, date/heure lisible + prix.
+  MAX 3 affichees, « Voir tout » -> /owner-bookings si > 3.
+  Zero pending -> message « Aucune reservation en attente » (section VISIBLE, pas masquee).
+- CONFIRMER : updateBookingStatus(id, { status: CONFIRMED }). Succes -> retire de la liste
+  + refresh metriques + Alert succes. Erreur -> Alert erreur, reste en liste.
+- REFUSER : ouvre EditBottomSheet (prop saveLabel ajoutee) avec TextInput raison optionnel.
+  Appel updateBookingStatus(id, { status: CANCELLED, notesSalon? }). Meme pattern succes/erreur.
+- COHERENCE : apres chaque action, loadMetrics() relance -> carte « Reservations » et badge
+  a jour. Pull-to-refresh recharge tout (metriques + pending).
+- EditBottomSheet : ajout prop saveLabel?: string (fallback t('common.actions.save')).
+
+i18n : +11 cles (pending.*) x 5 langues. Total 730/754, 0 ecart.
+Backend NON modifie. salon/[id].tsx NON modifie.
+Baselines : tsc=0, i18n 730/754 0 ecart.
+
+---
+
+### DIAGNOSTIC : Inventaire permissions roles (2026-06-17)
+
+Chantier transversal OWNER -> systeme de permissions par role.
+Statut : INVENTAIRE TERMINE, matrice vide livree, en attente decision humaine.
+
+#### Mecanisme actuel
+- Autorisation owner = `salon.owner?.id != userId` DUPLIQUE dans ~15 endroits / 8 services
+- staff.role JAMAIS lu pour autoriser (purement cosmetique)
+- Frontend : `user.userType === 'salon_owner'` = seule source, pas de garde de route
+- 3 classes d'exception differentes pour le meme concept (UnauthorizedAccessException x2, UnauthorizedException)
+
+#### Failles identifiees (AUCUN owner check)
+- CRITIQUE : GET /api/salons/{salonId}/bookings/statistics + /daily (revenus exposes)
+- CRITIQUE : GET /api/salons/{salonId}/bookings + /upcoming (donnees clients)
+- ELEVE : GET /api/payments/salon/{salonId} (historique financier)
+- ELEVE : GET /api/staff/{staffId}/bookings (RDV d'un autre coiffeur)
+- MOYEN : GET /api/bookings/{bookingId} (check incomplet, commentaire "on laisse passer")
+
+#### Matrice vide livree
+33 actions x 4 roles (owner/manager/hairstylist/apprentice).
+7 domaines : SALON, PRESTATIONS, EQUIPE, INVITATIONS, RESERVATIONS, FILE_ATTENTE, AVIS,
+PORTFOLIO, PAIEMENTS, PROFIL_SOCIAL, VERIFICATION.
+Decoupage propose : 8 lots (Lot 0 decision -> Lot 7 tests).
+
+Baselines inchangees : tsc=0, i18n 796 cles 0 ecart, backend BUILD SUCCESSFUL.
+
+### LOT SECURITE : Fermeture endpoints sans owner check (2026-06-17)
+
+Failles fermees (5/5), pattern `salon.owner?.id != userId` reutilise, exception
+`BookingService.UnauthorizedAccessException` (coherent avec l'existant).
+
+| Faille | Endpoint | Check ajoute | Curl OWNER | Curl OTHER |
+|--------|----------|-------------|------------|------------|
+| F1 CRITIQUE | GET /salons/{id}/bookings/statistics | owner-only (service) | 200 | 403 |
+| F1 CRITIQUE | GET /salons/{id}/bookings/daily | owner-only (service) | 200 | 403 |
+| F2 CRITIQUE | GET /salons/{id}/bookings | owner-only (service) | 200 | 403 |
+| F2 CRITIQUE | GET /salons/{id}/bookings/upcoming | owner-only (service) | 200 | 403 |
+| F3 ELEVE | GET /payments/salon/{id} | owner-only (controller) | 200 | 403 |
+| F4 ELEVE | GET /staff/{id}/bookings | self OR owner (service) | 200 | 403 |
+| F5 MOYEN | GET /bookings/{id} | client OR staff OR owner (service) | 200 | 403 |
+
+Fichiers modifies (backend uniquement) :
+- BookingService.kt : +userId param sur 5 methodes, checks owner/staff/client
+- BookingController.kt : passe authenticatedUserId a chaque appel service
+- PaymentController.kt : +SalonRepository, +getAuthenticatedUserId, check owner sur getPaymentsBySalon
+
+Non-regression frontend : les 4 appels (owner-dashboard.tsx, owner-bookings.tsx) passent le
+token OWNER -> toujours 200. Aucun ecran non-owner n'appelle ces endpoints.
+Backend BUILD SUCCESSFUL. PAS de commit.
+
+### PERMISSIONS LOT 1 : Socle backend (tables + seed matrice + service central) (2026-06-17)
+
+Architecture choisie : OPTION B (table en base). Owner = cas special (TRUE direct, pas dans la table).
+
+#### Migration V048
+- Table `permissions` : 32 permissions (cle unique VARCHAR(60))
+- Table `role_permissions` : seed matrice 26 lignes (manager=21, hairstylist=4, apprentice=1)
+- Index sur (role)
+
+#### Fichiers crees
+- V048__create_role_permissions.sql (migration + seed)
+- RolePermissionRepository.kt (JdbcTemplate, charge matrice role->permissions)
+- SalonAuthorizationService.kt (service central : hasPermission, requirePermission, getUserRole,
+  getUserPermissions)
+- SalonController.kt modifie (+endpoint GET /api/salons/{salonId}/my-permissions)
+
+#### Logique SalonAuthorizationService
+1. userId == salon.owner.id -> TRUE (toutes permissions, court-circuit)
+2. Sinon, cherche SalonStaff(salonId, userId) -> pas de staff ou inactif -> FALSE
+3. Verifie role_permissions cache (charge @PostConstruct, reloadPermissions() si besoin)
+
+#### Cache
+- Matrice role->permissions chargee UNE FOIS au demarrage (@PostConstruct)
+- Donnees de reference stables -> pas de TTL, invalidation par redemarrage ou reloadPermissions()
+- Le lien user->salon->role est resolu a chaque appel (Hibernate L1 cache en transaction)
+
+#### Tests curl (my-permissions)
+| Role | Perms count | service.create | staff.add | payment.refund | booking.view_own |
+|------|------------|----------------|-----------|----------------|------------------|
+| owner | 32 (toutes) | TRUE | TRUE | TRUE | TRUE |
+| manager | 21 | TRUE | FALSE | FALSE | TRUE |
+| hairstylist | 4 | FALSE | FALSE | FALSE | TRUE |
+| no-staff | 0 | FALSE | FALSE | FALSE | FALSE |
+
+#### Recommandation scope OWN (booking.manage_status / booking.cancel coiffeur)
+Le coiffeur a la PERMISSION mais ne peut agir que sur SES reservations (staff assigne).
+Recommandation : au lot branchement bookings, le service BookingService verifiera :
+  1. requirePermission(userId, salonId, "booking.manage_status")
+  2. SI role != owner && role != manager -> verifier booking.staff.user.id == userId
+Pas de permission distincte "booking.manage_own_status" (surcharge inutile) — le scope
+est un CHECK SUPPLEMENTAIRE dans la logique metier, pas dans la matrice.
+
+AUCUN endpoint existant modifie par ce lot. Backend BUILD SUCCESSFUL. PAS de commit.
+
+### PERMISSIONS LOT 3 : Branchement prestations/equipe/invitations (2026-06-18)
+
+Remplacement des checks owner en dur par requirePermission dans 3 services.
+
+#### Fichiers modifies (backend uniquement)
+- SalonServiceService.kt : +injection SalonAuthorizationService, 3 checks remplaces (create/update/delete) + 1 check AJOUTE (importServices n'avait AUCUN check)
+- SalonStaffService.kt : +injection SalonAuthorizationService, 3 checks remplaces (add/update/remove)
+- InvitationService.kt : +injection SalonAuthorizationService, 4 checks remplaces (search/create/list/cancel) avec permissions DIFFERENTES par endpoint
+- SalonServiceController.kt : fix importServices — userId n'etait pas passe au service (1 ligne)
+
+#### Mapping endpoint -> permission applique
+| Endpoint | Permission | Roles autorises |
+|----------|-----------|-----------------|
+| POST /salons/{id}/services | service.create | owner + manager |
+| PUT /salons/{id}/services/{sid} | service.update | owner + manager |
+| DELETE /salons/{id}/services/{sid} | service.delete | owner + manager |
+| POST /salons/{id}/services/batch | service.import | owner + manager |
+| POST /salons/{id}/staff | staff.add | owner SEUL |
+| PUT /salons/{id}/staff/{sid} | staff.update | owner SEUL |
+| DELETE /salons/{id}/staff/{sid} | staff.remove | owner SEUL |
+| GET /salons/{id}/staff/search | invitation.search | owner SEUL |
+| POST /salons/{id}/invitations | invitation.create | owner SEUL |
+| GET /salons/{id}/invitations | invitation.list | owner + manager |
+| DELETE /salons/{id}/invitations/{iid} | invitation.cancel | owner SEUL |
+
+#### Tests curl par role (tous PASS)
+PRESTATIONS (service.create/update/delete/batch) :
+| Role | create | update | delete | batch |
+|------|--------|--------|--------|-------|
+| owner | 201 | 200 | 204 | 201 |
+| manager | 201 | 200 | 204 | 201 |
+| hairstylist | 403 | 403 | 403 | 403 |
+| no-staff | 403 | 403 | 403 | 403 |
+
+EQUIPE (staff.add/update/remove) :
+| Role | add | update | remove |
+|------|-----|--------|--------|
+| owner | (auth pass) | 200 | (skip preserve data) |
+| manager | 403 | 403 | 403 |
+| hairstylist | 403 | 403 | 403 |
+| no-staff | 403 | 403 | 403 |
+
+INVITATIONS (search/create/list/cancel) :
+| Role | search | create | list | cancel |
+|------|--------|--------|------|--------|
+| owner | 200 | 404(auth pass) | 200 | 404(auth pass) |
+| manager | 403 | 403 | 200 | 403 |
+| hairstylist | 403 | 403 | 403 | 403 |
+| no-staff | 403 | 403 | 403 | 403 |
+
+#### Non-regression
+- GET publics (lister prestations/equipe sans auth) : 200 OK
+- Endpoints coiffeur (me/invitations, accept, decline) : inchanges, fonctionnels
+- invitation.list ouvert au manager MAIS search/create/cancel restent owner-seul : CONFIRME
+
+#### Bug preexistant note (hors scope)
+- Table `services` (Flyway) a `price_min`/`price_max`, entite SalonService mappe `price` -> mismatch.
+  L'entite utilise en fait `salon_services` (table distincte). La table `services` est orpheline.
+
+Frontend NON touche. Backend BUILD SUCCESSFUL. PAS de commit.
+
+### Fix UI pilules dashboard owner : placement + lisibilite (2026-06-18)
+
+Probleme : barre de pilules de categories chevauchait l'en-tete, 1re pilule tronquee.
+
+#### Cause
+- Aucun espacement vertical entre topBar et pillsScroll (pas de marginTop)
+- topBar paddingBottom=12 insuffisant, pillsContainer paddingVertical=8 trop serree
+- pill sans alignItems/justifyContent ni lineHeight explicite -> texte potentiellement rogne
+
+#### Corrections (owner-dashboard.tsx uniquement)
+- topBar: paddingBottom 12->14
+- pillsScroll: +marginTop:4 (separation nette sous le header)
+- pillsContainer: paddingVertical 8->10, gap 8->10
+- pill: +alignItems:'center', +justifyContent:'center' (centrage garanti)
+- pillText: +lineHeight:20 (texte jamais rogne)
+- Couleurs (deja correctes, confirmees) : actif=primary+onPrimary, inactif=surface+outlineVariant+onSurface
+
+Metro relance avec --clear. PAS de commit.
+
+### PERMISSIONS LOT 4 : Branchement domaines secondaires — DERNIER LOT BACKEND (2026-06-18)
+
+Remplacement des checks owner en dur par requirePermission dans 6 services.
+
+#### Fichiers modifies (backend uniquement)
+- SalonService.kt : +injection, cover-photo check remplace
+- PortfolioService.kt : +injection, +requirePortfolioMutationAccess(portfolio, userId, permission)
+  qui branche salon->requirePermission ou coiffeur->ownerId==userId selon ownerType.
+  create/update/manage_posts = owner+manager, delete = owner SEUL.
+- QueueService.kt : +injection, callNextClient check remplace
+- QueueController.kt : @PreAuthorize("hasRole('OWNER')") -> isAuthenticated() sur call-next
+  (double barriere eliminee, permission fine dans le service)
+- SocialService.kt : +injection, updateSalonSocialProfile check remplace
+- VerificationService.kt : +injection, requestVerification cas "salon" remplace (cas "user" inchange)
+
+#### Points delicats documentes
+1. FILE D'ATTENTE (double barriere) : annotation @PreAuthorize("hasRole('OWNER')") sur controller
+   BLOQUAIT tout non-owner AVANT le service. Remplacee par isAuthenticated(). Permission fine
+   queue.call_next dans le service (owner+manager+coiffeur).
+2. PORTFOLIO (salon vs perso) : requirePortfolioMutationAccess distingue ownerType :
+   - salon -> salonAuthorizationService.requirePermission(userId, ownerId, permission)
+   - coiffeur -> ownerId == userId (logique perso preservee, AUCUNE permission salon appliquee)
+   hasAccessToPortfolio (lecture privee) : salon -> hasPermission("portfolio.update"), coiffeur -> ownerId==userId
+3. VERIFICATION : requestVerification a 2 cas (when "user" / "salon"). Seul le cas "salon" est
+   branche sur requirePermission("verification.request"). Le cas "user" reste inchange (user.id == currentUserId).
+
+#### Tests curl par role (tous PASS)
+| # | Endpoint | owner | mgr | hair | ns |
+|---|----------|-------|-----|------|----|
+| 1 | PUT cover-photo | 200 | 200 | 403 | 403 |
+| 2 | PUT social profile | 200 | 200 | 403 | 403 |
+| 3 | POST queue call-next | 500* | 500* | 500* | 403 |
+| 4 | POST portfolio create (salon) | 201 | 201 | 403 | 403 |
+| 5 | PUT portfolio update | 200 | 200 | 403 | 403 |
+| 6 | DELETE portfolio (owner SEUL) | 200 | 403 | 403 | 403 |
+| 7 | POST verification salon | 200 | 403 | 403 | 403 |
+*500 = permission passee, erreur metier (pas de client en attente) — NS=403 confirme le blocage.
+
+#### Non-regression
+- Verification user (requestVerification cas "user") : 200 OK (pas casse)
+- GET publics portfolios/social profile : 401 sans auth — BUG PREEXISTANT (pas dans permitAll
+  SecurityConfig), PAS cause par ce lot
+- Portfolio perso coiffeur : logique preservee (ownerId==userId)
+
+TOUT le backend est maintenant couvert par le systeme de permissions.
+Frontend NON touche. Backend BUILD SUCCESSFUL. PAS de commit.
+
+### diagnostic lot 5 : contexte salon + permissions frontend (2026-06-18)
+
+Points diagnostiques (A-F) : detection owner = user.userType === 'salon_owner' (profile.tsx:299),
+salonId = etat local owner-dashboard (getSalonsByOwner[0], picker Alert si multi), passe en route
+param aux sous-ecrans. Stores : authStore + preferencesStore (Zustand), ToastContext (React Context),
+AUCUN store/contexte salon. API client.ts intercepteur Bearer+refresh. Endpoint my-permissions
+confirme : { role: string, permissions: string[] } (SalonController:369). Types TS : StaffMember.role
+= string, aucun type Permission/MyPermissions existant.
+
+Decision architecture Lot 5 : OPTION A (hook usePermissions(salonId)) retenue.
+- src/types/salon.ts : +MyPermissionsResponse
+- src/api/salons.ts : +getMyPermissions(salonId)
+- src/hooks/usePermissions.ts : CREER (hook ~30L, expose { role, permissions, can(key), isLoading })
+- 0 i18n, 0 refactor de routes
+Lot 6 consommera can() dans les ecrans owner existants.
+
+Baselines inchangees : tsc=0, i18n 796 cles 0 ecart.
+
+### PERMISSIONS LOT 5 : hook usePermissions + API getMyPermissions + type (2026-06-18)
+
+Plomberie frontend seule (aucun ecran modifie, aucun masquage UI — Lot 6).
+
+#### Fichiers crees/modifies
+- src/types/salon.ts : +MyPermissionsResponse { role: string; permissions: string[] }
+  (exporte via barrel src/types/index.ts, deja couvert par `export * from './salon'`)
+- src/api/salons.ts : +getMyPermissions(salonId) — meme pattern que getSalonStaff
+  (+import MyPermissionsResponse)
+- src/hooks/usePermissions.ts : CREE (nouveau dossier src/hooks/)
+
+#### Hook usePermissions(salonId: string | null | undefined)
+- useState { role, permissions, isLoading, error }
+- useEffect avec cleanup cancelled (anti setState apres unmount), refetch si salonId change
+- salonId falsy -> role='none', permissions=[], isLoading=false (pas de fetch)
+- Retourne { role, permissions, isLoading, error, can(key), isOwner }
+- REGLE moindre privilege : can() retourne FALSE pendant chargement ET en cas d'erreur
+- isLoading expose separement (l'ecran choisit loader vs masquage)
+- Source de verite = backend (pas d'heuristique userType cote front)
+- Pas de toast/erreur UI (log __DEV__ discret)
+
+#### Verifications
+- tsc --noEmit = 0 erreur
+- check-keys.js = 796 cles, 0 ecart (aucune cle i18n ajoutee)
+- curl my-permissions non re-teste (rate limit login) — contrat confirme par lecture code
+  SalonController:369-385 + tests curl lots 1-4 documentes ci-dessus
+
+Backend NON touche. Aucun ecran owner modifie. PAS de commit.
+
+### PERMISSIONS LOT 6a : Gardes de route + composant AccessDenied partage (2026-06-18)
+
+#### Composant AccessDenied
+- src/components/common/AccessDenied.tsx : CREE. Props { message?, onBack? }. Icone shield-alert-outline
+  dans cercle errorContainer, titre + message i18n, bouton Retour (router.back || replace /(tabs)).
+  Exporte via barrel src/components/common/index.ts.
+- Design : centre vertical, couleurs theme (useTheme), typo projet (Cormorant titre, Manrope body+btn).
+
+#### i18n : +3 cles permissions.accessDenied.{title,message,back} dans 5 langues
+- fr/en/es/de/ar. Total 799 cles (796+3), 0 ecart, parite 5 langues.
+
+#### Gardes de route : 6 ecrans proteges
+| Ecran | salonId source | Garde |
+|-------|---------------|-------|
+| owner-dashboard | activeSalonId (local, async getSalonsByOwner) | isLoadingSalons OR (activeSalonId AND permLoading) -> loader ; activeSalonId AND role=none -> AccessDenied ; salons.length=0 -> empty state existant (pas AccessDenied) |
+| owner-services | useLocalSearchParams | permLoading -> loader ; role=none -> AccessDenied |
+| owner-staff | useLocalSearchParams | permLoading -> loader ; role=none -> AccessDenied |
+| owner-bookings | useLocalSearchParams | permLoading -> loader ; role=none -> AccessDenied |
+| create-service | useLocalSearchParams | permLoading -> loader ; role=none -> AccessDenied |
+| create-staff | useLocalSearchParams | permLoading -> loader ; role=none -> AccessDenied |
+
+#### Regle des hooks verifiee : usePermissions appele AVANT tout return dans les 6 ecrans.
+#### PIEGE evite : AccessDenied JAMAIS affiche pendant isLoading (loader d'abord, AccessDenied ensuite).
+#### Masquage fin des actions (boutons/sections par permission) = Lot 6b (PAS fait ici).
+
+#### Verifications
+- tsc --noEmit = 0 erreur
+- check-keys.js = 799 cles, 0 ecart
+- Backend NON touche. PAS de commit.
+
+### PERMISSIONS LOT 6b ecran 1 : masquage fin owner-services (2026-06-18)
+
+Masquage COMPLET (elements caches, pas grises) base sur can().
+
+#### Elements masques
+| Element | Condition | Roles qui voient |
+|---------|-----------|------------------|
+| FAB « + » (ajouter prestation) | can('service.create') | owner, manager |
+| CTA empty state « Ajouter ma premiere prestation » | can('service.create') | owner, manager |
+| Bouton « ... » (menu par prestation) | canEdit OR canDelete | owner, manager |
+| Action « Modifier » dans le menu | can('service.update') | owner, manager |
+| Action « Supprimer » dans le menu | can('service.delete') | owner, manager |
+
+#### Rendu par role
+- OWNER / MANAGER : FAB visible, menu ... avec Modifier+Supprimer -> inchange vs avant.
+- COIFFEUR / APPRENTI : liste lecture seule (pas de FAB, pas de menu ..., pas de CTA empty state).
+  Les prestations s'affichent normalement, visuellement coherent.
+- Menu vide = bouton « ... » cache (hasMenuActions = canEdit || canDelete).
+- FAB = position absolute, masque sans impact layout.
+
+#### Fichier modifie : owner-services.tsx uniquement.
+- Destructure `can` depuis usePermissions (deja branche au 6a).
+- canEdit/canDelete/hasMenuActions = variables derivees en haut du composant.
+- openMenu construit les actions dynamiquement.
+
+tsc=0, i18n=799 inchange. Backend NON touche. PAS de commit.
+
+### PERMISSIONS LOT 6b ecran 2 : masquage fin owner-dashboard (2026-06-18)
+
+| Element | Condition | Qui voit |
+|---------|-----------|----------|
+| Carte metrique « Revenus » | can('payment.view_salon') | owner SEUL |
+
+- Spread conditionnel dans le tableau metrics (... can() ? [carte] : []).
+- Grille metriques = flexWrap+flexGrow : a 3 cartes (sans Revenus), 2 en haut + 1 pleine largeur
+  en bas. Layout propre, pas de trou.
+- Autres cartes (Reservations, Note, Abonnes) + graphique + sections : inchanges, visibles pour
+  tout role ayant acces.
+
+tsc=0. Fichier : owner-dashboard.tsx uniquement. PAS de commit.
+
+### PERMISSIONS LOT 6b ecran 3 : masquage fin owner-staff (2026-06-18)
+
+| Element | Condition | Qui voit |
+|---------|-----------|----------|
+| FAB « Inviter un coiffeur » | can('invitation.create') | owner SEUL |
+| CTA empty state « Inviter » | can('invitation.create') | owner SEUL |
+| Section « Invitations en attente » (liste) | can('invitation.list') | owner + manager |
+| Bouton « Annuler » par invitation | can('invitation.cancel') | owner SEUL |
+| Bouton « ... » par membre (menu) | canEditStaff OR canRemoveStaff | owner SEUL |
+| Action « Modifier » dans menu | can('staff.update') | owner SEUL |
+| Action « Retirer » dans menu | can('staff.remove') + !isOwner + !isSelf | owner SEUL |
+
+Fetch getSalonInvitations conditionne a canListInvitations (evite 403 pour coiffeur/apprenti).
+
+#### Rendu par role
+- OWNER : tout visible (FAB, invitations, menu ..., retrait) — inchange.
+- MANAGER : voit la liste des invitations (sans boutons Annuler), voit les membres (sans menu ...).
+  Pas de FAB. Liste lecture seule + section invitations en lecture seule.
+- COIFFEUR / APPRENTI : liste des membres en lecture seule uniquement. Pas de section invitations,
+  pas de FAB, pas de menu ...
+
+tsc=0. Fichier : owner-staff.tsx uniquement. PAS de commit.
+
+### PERMISSIONS LOT 6b ecran 4 : masquage fin owner-bookings (2026-06-18)
+
+#### Diagnostic cas coiffeur
+- getSalonBookings appelle GET /api/salons/{id}/bookings -> requirePermission("booking.view_all")
+  (BookingService:202). booking.view_all = owner + manager UNIQUEMENT (V048:67).
+- Un coiffeur qui entre sur owner-bookings voit un message d'erreur (403 catch -> booking.loadError).
+- Decision : OPTION (a) retenue — restreindre l'ENTREE a can('booking.view_all'). Les RDV perso du
+  coiffeur sont sur l'ecran client bookings.tsx, pas ici.
+
+#### Elements masques / gardes renforcees
+| Element | Condition | Qui voit |
+|---------|-----------|----------|
+| Garde d'entree renforcee | can('booking.view_all') | owner + manager (coiffeur/apprenti -> AccessDenied) |
+| Bouton « Annuler » par reservation | can('booking.cancel') | owner + manager |
+
+#### Rendu par role
+- OWNER / MANAGER : tout visible (stats, filtres, liste, bouton Annuler) — inchange.
+- COIFFEUR / APPRENTI : AccessDenied (pas d'acces a l'ecran, coherent avec le backend).
+
+tsc=0, i18n=799 inchange. Fichier : owner-bookings.tsx uniquement. PAS de commit.
+
+### L3 edition membre : dialog specialites+actif+role, backend role dans UpdateStaffRequest (2026-06-18)
+
+Full-stack. Le menu « Modifier » d'un membre (owner-staff) ouvre desormais un dialog d'edition
+au lieu de "comingSoon".
+
+#### Backend
+- SalonStaffDto.kt : UpdateStaffRequest +val role: String? = null, +ASSIGNABLE_ROLES = {manager,
+  hairstylist, apprentice}, +validateRole() (IllegalArgumentException -> 400 si role invalide ou
+  "owner"), applyTo() applique entity.role = it.lowercase().
+- SalonStaffService.kt : +request.validateRole() avant applyTo() (etape 3 du updateStaff).
+- Garde existante : requirePermission("staff.update") = owner seul (inchange, lot 3).
+- Curl non teste (rate limit login) — resultats attendus par lecture code :
+  PUT role=manager -> 200 ; role=owner -> 400 ; role=bidon -> 400.
+
+#### Frontend
+- UpdateStaffRequest TS : +role?: string.
+- owner-staff.tsx : dialog Modal centre (pattern LogoutConfirmModal) contenant :
+  * Picker de role (3 chips : manager/hairstylist/apprentice, libelles salon.roles.*)
+  * Multi-select specialites (SERVICE_CATEGORY_META, icones + labels)
+  * Toggle Switch actif/inactif
+  * Boutons Annuler / Enregistrer
+  Succes = toast + recharge liste (loadStaff). Erreur = toast avec message backend.
+- « Modifier » NON propose sur le membre role==='owner' (en plus du masquage permission).
+- i18n : +7 cles profile.ownerStaff.editDialog.{title,roleLabel,specialtiesLabel,activeLabel,
+  save,saveSuccess,saveError} dans 5 langues (parite). Total 806 cles, 0 ecart.
+
+#### Verifications
+- backend classes BUILD SUCCESSFUL
+- tsc --noEmit = 0 erreur
+- check-keys = 806 cles (+7), 0 ecart, parite 5 langues
+- Backend NON commite. Frontend NON commite. PAS de commit.

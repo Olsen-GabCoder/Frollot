@@ -20,7 +20,8 @@ import java.util.*
 class SalonService(
     private val salonRepository: SalonRepository,
     private val userRepository: UserRepository,
-    private val postTagRepository: PostTagRepository // Phase C.3 - Pour calculer l'engagement
+    private val postTagRepository: PostTagRepository, // Phase C.3 - Pour calculer l'engagement
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     fun createSalon(request: CreateSalonRequest): SalonResponse {
@@ -123,10 +124,8 @@ class SalonService(
         val salon = salonRepository.findById(salonId)
             .orElseThrow { NoSuchElementException("Salon avec l'ID $salonId introuvable") }
 
-        // Vérifier que l'utilisateur est bien le propriétaire
-        if (salon.owner!!.id != ownerId) {
-            throw RuntimeException("Seul le propriétaire peut modifier la photo de couverture")
-        }
+        // Vérification des autorisations
+        salonAuthorizationService.requirePermission(ownerId, salonId, "salon.update_cover")
 
         salon.coverPhotoUrl = coverPhotoUrl
         val updatedSalon = salonRepository.save(salon)

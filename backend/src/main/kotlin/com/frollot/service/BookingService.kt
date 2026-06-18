@@ -5,6 +5,8 @@ import com.frollot.model.*
 import com.frollot.repository.*
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.*
@@ -26,6 +28,7 @@ class BookingService(
     private val userRepository: UserRepository,
     private val salonServiceRepository: SalonServiceRepository,
     private val salonStaffRepository: SalonStaffRepository,
+    private val salonAuthorizationService: SalonAuthorizationService,
     private val emailService: EmailService? = null, // Optionnel pour éviter les erreurs si non configuré
     private val notificationService: NotificationService? = null // Optionnel pour éviter les erreurs si non configuré
 ) {
@@ -169,23 +172,34 @@ class BookingService(
 
     /**
      * Récupère une réservation par son ID.
+     * Accessible au client de la réservation, au staff assigné, ou au propriétaire du salon.
      */
     @Transactional(readOnly = true)
-    fun getBookingById(bookingId: String): BookingResponse {
+    fun getBookingById(bookingId: String, userId: String): BookingResponse {
         val booking = bookingRepository.findById(bookingId)
             .orElseThrow { BookingNotFoundException(bookingId) }
+
+        val isClient = booking.client?.id == userId
+        val isStaff = booking.staff?.user?.id == userId
+        val salonId = booking.salon?.id ?: throw UnauthorizedAccessException(userId)
+        val hasViewPermission = salonAuthorizationService.hasPermission(userId, salonId, "booking.view_all")
+        if (!isClient && !isStaff && !hasViewPermission) {
+            throw UnauthorizedAccessException(userId)
+        }
 
         return BookingResponse.fromEntity(booking)
     }
 
     /**
      * Récupère toutes les réservations d'un salon.
+     * Seul le propriétaire du salon peut y accéder.
      */
     @Transactional(readOnly = true)
-    fun getBookingsBySalon(salonId: String): List<BookingResponse> {
+    fun getBookingsBySalon(salonId: String, userId: String): List<BookingResponse> {
         if (!salonRepository.existsById(salonId)) {
             throw SalonServiceService.SalonNotFoundException(salonId)
         }
+        salonAuthorizationService.requirePermission(userId, salonId, "booking.view_all")
 
         val bookings = bookingRepository.findBySalonIdOrderByBookingDatetimeDesc(salonId)
         return bookings.map { BookingResponse.fromEntity(it) }
@@ -193,12 +207,14 @@ class BookingService(
 
     /**
      * Récupère les réservations à venir d'un salon.
+     * Seul le propriétaire du salon peut y accéder.
      */
     @Transactional(readOnly = true)
-    fun getUpcomingBookingsBySalon(salonId: String): List<BookingResponse> {
+    fun getUpcomingBookingsBySalon(salonId: String, userId: String): List<BookingResponse> {
         if (!salonRepository.existsById(salonId)) {
             throw SalonServiceService.SalonNotFoundException(salonId)
         }
+        salonAuthorizationService.requirePermission(userId, salonId, "booking.view_upcoming")
 
         val bookings = bookingRepository.findUpcomingBookingsBySalon(salonId)
         return bookings.map { BookingResponse.fromEntity(it) }
@@ -232,11 +248,17 @@ class BookingService(
 
     /**
      * Récupère les réservations d'un coiffeur.
+     * Accessible au staff lui-même (userId == staff.user.id) ou au propriétaire du salon.
      */
     @Transactional(readOnly = true)
-    fun getBookingsByStaff(staffId: String): List<BookingResponse> {
-        if (!salonStaffRepository.existsById(staffId)) {
-            throw SalonStaffService.StaffNotFoundException(staffId)
+    fun getBookingsByStaff(staffId: String, userId: String): List<BookingResponse> {
+        val staff = salonStaffRepository.findById(staffId)
+            .orElseThrow { SalonStaffService.StaffNotFoundException(staffId) }
+
+        val isSelf = staff.user?.id == userId
+        val isOwner = staff.salon?.owner?.id == userId
+        if (!isSelf && !isOwner) {
+            throw UnauthorizedAccessException(userId)
         }
 
         val bookings = bookingRepository.findByStaffIdOrderByBookingDatetimeAsc(staffId)
@@ -257,12 +279,20 @@ class BookingService(
         val booking = bookingRepository.findById(bookingId)
             .orElseThrow { BookingNotFoundException(bookingId) }
 
-        // Vérification des autorisations (propriétaire du salon ou client)
+        // Vérification des autorisations : client de la resa OU permission salon (avec scope OWN)
         userId?.let {
-            val isOwner = booking.salon?.owner?.id == userId
+            val salonId = booking.salon?.id ?: throw UnauthorizedAccessException(userId)
             val isClient = booking.client?.id == userId
-            if (!isOwner && !isClient) {
-                throw UnauthorizedAccessException(userId)
+            if (!isClient) {
+                // Pas le client → doit avoir la permission sur le salon
+                salonAuthorizationService.requirePermission(userId, salonId, "booking.manage_status")
+                // Scope OWN : coiffeur/apprenti → seulement sa propre réservation
+                val role = salonAuthorizationService.getUserRole(userId, salonId)
+                if (role != "owner" && role != "manager") {
+                    if (booking.staff?.user?.id != userId) {
+                        throw UnauthorizedAccessException(userId)
+                    }
+                }
             }
         }
 
@@ -316,11 +346,10 @@ class BookingService(
         val booking = bookingRepository.findById(bookingId)
             .orElseThrow { BookingNotFoundException(bookingId) }
 
-        // Vérification des autorisations (propriétaire du salon uniquement)
+        // Vérification des autorisations (permission booking.manage_payment → owner seul via matrice)
         userId?.let {
-            if (booking.salon?.owner?.id != userId) {
-                throw UnauthorizedAccessException(userId)
-            }
+            val salonId = booking.salon?.id ?: throw UnauthorizedAccessException(userId)
+            salonAuthorizationService.requirePermission(userId, salonId, "booking.manage_payment")
         }
 
         booking.paymentStatus = request.paymentStatus
@@ -347,12 +376,20 @@ class BookingService(
             throw InvalidBookingException("Cette réservation ne peut plus être annulée")
         }
 
-        // Vérification des autorisations
+        // Vérification des autorisations : client de la resa OU permission salon (avec scope OWN)
         userId?.let {
-            val isOwner = booking.salon?.owner?.id == userId
+            val salonId = booking.salon?.id ?: throw UnauthorizedAccessException(userId)
             val isClient = booking.client?.id == userId
-            if (!isOwner && !isClient) {
-                throw UnauthorizedAccessException(userId)
+            if (!isClient) {
+                // Pas le client → doit avoir la permission sur le salon
+                salonAuthorizationService.requirePermission(userId, salonId, "booking.cancel")
+                // Scope OWN : coiffeur/apprenti → seulement sa propre réservation
+                val role = salonAuthorizationService.getUserRole(userId, salonId)
+                if (role != "owner" && role != "manager") {
+                    if (booking.staff?.user?.id != userId) {
+                        throw UnauthorizedAccessException(userId)
+                    }
+                }
             }
         }
 
@@ -460,12 +497,14 @@ class BookingService(
 
     /**
      * Récupère les statistiques d'un salon.
+     * Seul le propriétaire du salon peut y accéder.
      */
     @Transactional(readOnly = true)
-    fun getBookingStatistics(salonId: String): BookingStatistics {
+    fun getBookingStatistics(salonId: String, userId: String): BookingStatistics {
         if (!salonRepository.existsById(salonId)) {
             throw SalonServiceService.SalonNotFoundException(salonId)
         }
+        salonAuthorizationService.requirePermission(userId, salonId, "booking.view_statistics")
 
         val total = bookingRepository.countBySalonId(salonId).toInt()
         val pending = bookingRepository.countBySalonIdAndStatus(salonId, BookingStatus.pending).toInt()
@@ -485,5 +524,48 @@ class BookingService(
             totalRevenue = totalRevenue,
             averagePrice = averagePrice
         )
+    }
+
+    /**
+     * Série temporelle journalière : un point par jour sur [from, to] (bornes incluses).
+     *
+     * count = réservations hors cancelled/no_show (cohérent avec findBySalonAndDatetimeRange).
+     * revenue = somme priceFinal des bookings completed + paid du jour (cohérent avec calculateTotalRevenue).
+     * Les jours sans réservation sont renvoyés avec count=0, revenue=0.
+     */
+    /**
+     * Série temporelle journalière. Seul le propriétaire du salon peut y accéder.
+     */
+    @Transactional(readOnly = true)
+    fun getDailyBookings(salonId: String, from: LocalDate, to: LocalDate, userId: String): List<DailyBookingPoint> {
+        if (!salonRepository.existsById(salonId)) {
+            throw SalonServiceService.SalonNotFoundException(salonId)
+        }
+        salonAuthorizationService.requirePermission(userId, salonId, "booking.view_daily")
+        require(from <= to) { "from ($from) doit être <= to ($to)" }
+        require(from.plusDays(366) >= to) { "Plage maximale : 366 jours" }
+
+        val start = from.atStartOfDay()
+        val end = to.plusDays(1).atStartOfDay() // exclusive upper bound
+
+        // findBySalonAndDatetimeRange exclut déjà cancelled/no_show
+        val bookings = bookingRepository.findBySalonAndDatetimeRange(salonId, start, end)
+
+        // Grouper par date locale
+        val grouped = bookings.groupBy { it.bookingDatetime.toLocalDate() }
+
+        // Série complète et continue
+        val result = mutableListOf<DailyBookingPoint>()
+        var current = from
+        while (!current.isAfter(to)) {
+            val dayBookings = grouped[current] ?: emptyList()
+            val count = dayBookings.size
+            val revenue = dayBookings
+                .filter { it.status == BookingStatus.completed && it.paymentStatus == PaymentStatus.paid }
+                .sumOf { it.priceFinal ?: BigDecimal.ZERO }
+            result.add(DailyBookingPoint(date = current, count = count, revenue = revenue))
+            current = current.plusDays(1)
+        }
+        return result
     }
 }

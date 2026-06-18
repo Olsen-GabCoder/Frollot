@@ -27,7 +27,8 @@ import java.util.*
 class SalonStaffService(
     private val salonStaffRepository: SalonStaffRepository,
     private val salonRepository: SalonRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     // ========== EXCEPTIONS MÉTIER ==========
@@ -60,9 +61,7 @@ class SalonStaffService(
 
         // 3. Vérification des autorisations (si ownerId est fourni)
         ownerId?.let {
-            if (salon.owner?.id != ownerId) {
-                throw UnauthorizedAccessException(ownerId)
-            }
+            salonAuthorizationService.requirePermission(it, request.salonId, "staff.add")
         }
 
         // 4. Vérification de l'existence de l'utilisateur
@@ -189,12 +188,14 @@ class SalonStaffService(
 
         // 2. Vérification des autorisations
         ownerId?.let {
-            if (staff.salon?.owner?.id != ownerId) {
-                throw UnauthorizedAccessException(ownerId)
-            }
+            val salonId = staff.salon?.id ?: throw UnauthorizedAccessException(it)
+            salonAuthorizationService.requirePermission(it, salonId, "staff.update")
         }
 
-        // 3. Application des modifications
+        // 3. Validation du rôle (rejette owner et valeurs inconnues)
+        request.validateRole()
+
+        // 4. Application des modifications
         val updatedStaff = request.applyTo(staff)
 
         // 4. Persistance
@@ -216,9 +217,8 @@ class SalonStaffService(
 
         // Vérification des autorisations
         ownerId?.let {
-            if (staff.salon?.owner?.id != ownerId) {
-                throw UnauthorizedAccessException(ownerId)
-            }
+            val salonId = staff.salon?.id ?: throw UnauthorizedAccessException(it)
+            salonAuthorizationService.requirePermission(it, salonId, "staff.remove")
         }
 
         salonStaffRepository.delete(staff)

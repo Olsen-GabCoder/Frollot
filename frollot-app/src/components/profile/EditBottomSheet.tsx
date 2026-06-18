@@ -23,6 +23,7 @@ interface EditBottomSheetProps {
   onSave: () => void;
   isSaving: boolean;
   saveDisabled?: boolean;
+  saveLabel?: string;
 }
 
 export function EditBottomSheet({
@@ -33,6 +34,7 @@ export function EditBottomSheet({
   onSave,
   isSaving,
   saveDisabled,
+  saveLabel,
 }: EditBottomSheetProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -114,7 +116,7 @@ export function EditBottomSheet({
                 <ActivityIndicator size="small" color={colors.onPrimary} />
               ) : (
                 <Text style={[styles.btnText, { color: colors.onPrimary }]}>
-                  {t('common.actions.save')}
+                  {saveLabel || t('common.actions.save')}
                 </Text>
               )}
             </TouchableOpacity>

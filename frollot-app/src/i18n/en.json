@@ -311,6 +311,7 @@
     "noPostsMessage": "Posts tagged with this salon will appear here.",
     "postsLoadError": "Unable to load salon posts",
     "allServices": "All services",
+    "noServices": "No services available.",
     "noTeam": "No team members.",
     "roles": {
       "owner": "Owner",
@@ -435,8 +436,26 @@
     "minutes": "{{count}} min",
     "addImages": "Add images",
     "createdSuccess": "{{name}} created successfully",
+    "editService": "Edit service",
+    "saveChanges": "Save",
+    "updatedSuccess": "{{name}} updated successfully",
     "durationUnit": "min",
     "priceUnit": "EUR"
+  },
+  "myInvitations": {
+    "title": "My invitations",
+    "banner": "{{count}} pending invitation(s)",
+    "invitedAs": "Invites you as {{role}}",
+    "expiresIn": "Expires in {{days}} day(s)",
+    "accept": "Accept",
+    "decline": "Decline",
+    "declineTitle": "Decline invitation",
+    "declineMessage": "Decline the invitation from {{salon}}?",
+    "declineConfirm": "Decline",
+    "acceptedMessage": "You have joined the team at {{salon}}",
+    "empty": "No invitations yet",
+    "emptyHint": "Salons can invite you to join their team",
+    "exclusivityNote": "By accepting, you join this salon's team. A stylist can only belong to one salon."
   },
   "staff": {
     "addStaff": "Add a member",
@@ -508,6 +527,112 @@
     "editSpec": {
       "title": "Your specialties",
       "other": "Other..."
+    },
+    "ownerDashboard": {
+      "title": "Dashboard",
+      "menuLabel": "My salon",
+      "noSalon": "You don't have a salon yet",
+      "createSalon": "Create a salon",
+      "activity": "Activity",
+      "bookings": "Bookings",
+      "mySalon": "My salon",
+      "community": "Community",
+      "metrics": {
+        "bookings": "Bookings",
+        "revenue": "Revenue",
+        "rating": "Average rating",
+        "followers": "Followers"
+      },
+      "manage": "Manage my salon",
+      "tiles": {
+        "bookings": "Bookings",
+        "services": "Services",
+        "staff": "Team",
+        "hours": "Hours",
+        "reviews": "Reviews",
+        "payments": "Payments",
+        "queue": "Queue"
+      },
+      "comingSoon": "Coming soon",
+      "pending": {
+        "title": "To confirm",
+        "badge": "{{count}} pending",
+        "confirm": "Confirm",
+        "decline": "Decline",
+        "empty": "No pending bookings",
+        "declineTitle": "Decline booking",
+        "declineReason": "Reason (optional)",
+        "declineConfirm": "Confirm decline",
+        "confirmSuccess": "Booking confirmed",
+        "declineSuccess": "Booking declined",
+        "viewAll": "View all"
+      },
+      "completeness": "Profile {{pct}}% complete",
+      "topServices": "Most requested services",
+      "topServicesEmpty": "No data yet",
+      "chart": {
+        "title": "Booking trends",
+        "today": "Today",
+        "7d": "7 days",
+        "28d": "28 days",
+        "empty": "No data yet"
+      }
+    },
+    "ownerServices": {
+      "title": "My services",
+      "count": "{{count}} services",
+      "empty": "No services yet",
+      "addFirst": "Add a service",
+      "add": "Add",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete service",
+      "deleteMessage": "Delete \"{{name}}\"? This cannot be undone.",
+      "deleteConfirm": "Delete",
+      "noPhoto": "Add a photo"
+    },
+    "ownerStaff": {
+      "title": "My team",
+      "count": "{{count}} members",
+      "empty": "No team members yet",
+      "inviteFirst": "Invite a stylist",
+      "invite": "Invite",
+      "edit": "Edit",
+      "remove": "Remove from salon",
+      "removeTitle": "Remove this member",
+      "removeMessage": "Remove \"{{name}}\" from the team? This cannot be undone.",
+      "removeConfirm": "Remove",
+      "active": "Active",
+      "inactive": "Inactive",
+      "ownerProtected": "The owner cannot be removed.",
+      "inviteTitle": "Invite a stylist",
+      "inviteSent": "Invitation sent to {{name}}",
+      "invitationCancelled": "Invitation cancelled",
+      "memberRemoved": "{{name}} has been removed from the team",
+      "pendingSection": "Pending invitations ({{count}})",
+      "pendingLabel": "Pending",
+      "expiresOn": "Expires on {{date}}",
+      "cancelInvTitle": "Cancel invitation",
+      "cancelInvMessage": "Cancel the invitation sent to {{name}}?",
+      "cancelInvConfirm": "Cancel",
+      "search": {
+        "placeholder": "Stylist name or email",
+        "minChars": "Type at least 2 characters",
+        "noResults": "No stylist found",
+        "onFrollot": "Stylist · on Frollot",
+        "memberElsewhere": "Already in another salon",
+        "alreadyInvited": "Already invited",
+        "alreadyHere": "Already in your team"
+      },
+      "editDialog": {
+        "title": "Edit member",
+        "roleLabel": "Role",
+        "specialtiesLabel": "Specialties",
+        "activeLabel": "Active member",
+        "save": "Save",
+        "saveSuccess": "Member updated",
+        "saveError": "Error updating member"
+      }
     },
     "favorites": "Favorites",
     "archives": "Archives",
@@ -839,6 +964,13 @@
       "portfolio": "Portfolio",
       "tendance": "Trending",
       "personnel": "Personal"
+    }
+  },
+  "permissions": {
+    "accessDenied": {
+      "title": "Access restricted",
+      "message": "You don't have access to this section. Contact the salon owner if you think this is an error.",
+      "back": "Go back"
     }
   }
 }

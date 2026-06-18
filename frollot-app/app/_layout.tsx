@@ -17,6 +17,7 @@ import {
 } from '@expo-google-fonts/manrope';
 import { useAuthStore } from '../src/stores/authStore';
 import { usePreferencesStore } from '../src/stores/preferencesStore';
+import { ToastProvider } from '../src/contexts/ToastContext';
 import '../src/i18n';
 
 SplashScreen.preventAutoHideAsync();
@@ -57,7 +58,7 @@ export default function RootLayout() {
   const effectiveScheme = themeMode === 'system' ? colorScheme : themeMode;
 
   return (
-    <>
+    <ToastProvider>
       <StatusBar style={effectiveScheme === 'dark' ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
@@ -65,6 +66,6 @@ export default function RootLayout() {
         <Stack.Screen name="salon/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="booking/[id]" options={{ headerShown: true, title: '' }} />
       </Stack>
-    </>
+    </ToastProvider>
   );
 }

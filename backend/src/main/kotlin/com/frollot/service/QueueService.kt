@@ -27,7 +27,8 @@ class QueueService(
     private val userRepository: UserRepository,
     private val salonServiceRepository: SalonServiceRepository,
     private val emailService: EmailService? = null, // Optionnel pour éviter les erreurs si non configuré
-    private val notificationService: NotificationService? = null // Optionnel pour éviter les erreurs si non configuré
+    private val notificationService: NotificationService? = null, // Optionnel pour éviter les erreurs si non configuré
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     class QueueNotFoundException(salonId: String) :
@@ -173,9 +174,8 @@ class QueueService(
             ?: throw QueueNotFoundException(salonId)
 
         userId?.let {
-            if (queue.salon?.owner?.id != it) {
-                throw UnauthorizedAccessException(it)
-            }
+            val salonId = queue.salon?.id ?: throw UnauthorizedAccessException(it)
+            salonAuthorizationService.requirePermission(it, salonId, "queue.call_next")
         }
 
         val nextEntry = queueEntryRepository.findFirstByQueueIdAndStatusOrderByJoinedAtAsc(

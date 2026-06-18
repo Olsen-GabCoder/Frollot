@@ -12,7 +12,11 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import com.frollot.model.User
+import com.frollot.repository.SalonRepository
+import com.frollot.service.SalonAuthorizationService
 import com.stripe.exception.SignatureVerificationException
 import com.stripe.model.Event
 import com.stripe.net.Webhook
@@ -25,9 +29,18 @@ import com.stripe.net.Webhook
 )
 class PaymentController(
     private val paymentService: PaymentService,
+    private val salonRepository: SalonRepository,
+    private val salonAuthorizationService: SalonAuthorizationService,
     @Value("\${stripe.webhook-secret:}")
     private val stripeWebhookSecret: String
 ) {
+    private fun getAuthenticatedUserId(): String {
+        val authentication = SecurityContextHolder.getContext().authentication
+        if (authentication == null || !authentication.isAuthenticated) {
+            throw IllegalStateException("Aucun utilisateur authentifié")
+        }
+        return (authentication.principal as User).id!!
+    }
     private val logger = LoggerFactory.getLogger(PaymentController::class.java)
 
     /**
@@ -311,6 +324,7 @@ class PaymentController(
 
     /**
      * Récupère tous les paiements d'un salon.
+     * Seul le propriétaire du salon peut y accéder.
      */
     @Operation(summary = "Paiements d'un salon", description = "Récupère tous les paiements d'un salon")
     @GetMapping("/salon/{salonId}")
@@ -318,6 +332,8 @@ class PaymentController(
     fun getPaymentsBySalon(
         @PathVariable salonId: String
     ): ResponseEntity<List<PaymentResponse>> {
+        val authenticatedUserId = getAuthenticatedUserId()
+        salonAuthorizationService.requirePermission(authenticatedUserId, salonId, "payment.view_salon")
         val payments = paymentService.getPaymentsBySalon(salonId)
         return ResponseEntity.ok(payments)
     }

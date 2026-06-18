@@ -149,22 +149,7 @@ class BookingController(
         @PathVariable bookingId: String
     ): ResponseEntity<BookingResponse> {
         val authenticatedUserId = getAuthenticatedUserId()
-        val booking = bookingService.getBookingById(bookingId)
-
-        // Vérifier les autorisations : client ou propriétaire du salon
-        val isClient = booking.clientId == authenticatedUserId
-        val isStaff = booking.staffId == authenticatedUserId
-
-        // Note: Pour vérifier si l'utilisateur est propriétaire du salon,
-        // nous aurions besoin d'une requête supplémentaire.
-        // Pour l'instant, nous laissons la vérification au niveau service.
-
-        if (!isClient && !isStaff) {
-            // Nous vérifions dans le service si l'utilisateur est propriétaire
-            // En attendant, nous autorisons et laissons la vérification au service
-            // lors des opérations de modification
-        }
-
+        val booking = bookingService.getBookingById(bookingId, authenticatedUserId)
         return ResponseEntity.ok(booking)
     }
 
@@ -182,8 +167,8 @@ class BookingController(
     fun getBookingsBySalon(
         @PathVariable salonId: String
     ): ResponseEntity<List<BookingResponse>> {
-        // La vérification que l'utilisateur est propriétaire se fera dans le service
-        val bookings = bookingService.getBookingsBySalon(salonId)
+        val authenticatedUserId = getAuthenticatedUserId()
+        val bookings = bookingService.getBookingsBySalon(salonId, authenticatedUserId)
         return ResponseEntity.ok(bookings)
     }
 
@@ -199,7 +184,8 @@ class BookingController(
     fun getUpcomingBookingsBySalon(
         @PathVariable salonId: String
     ): ResponseEntity<List<BookingResponse>> {
-        val bookings = bookingService.getUpcomingBookingsBySalon(salonId)
+        val authenticatedUserId = getAuthenticatedUserId()
+        val bookings = bookingService.getUpcomingBookingsBySalon(salonId, authenticatedUserId)
         return ResponseEntity.ok(bookings)
     }
 
@@ -267,10 +253,8 @@ class BookingController(
     fun getBookingsByStaff(
         @PathVariable staffId: String
     ): ResponseEntity<List<BookingResponse>> {
-        // Note: Ici staffId est l'ID du SalonStaff, pas l'ID utilisateur.
-        // Nous devons vérifier que l'utilisateur authentifié est bien ce staff.
-        // Pour l'instant, nous laissons la vérification au niveau métier si nécessaire.
-        val bookings = bookingService.getBookingsByStaff(staffId)
+        val authenticatedUserId = getAuthenticatedUserId()
+        val bookings = bookingService.getBookingsByStaff(staffId, authenticatedUserId)
         return ResponseEntity.ok(bookings)
     }
 
@@ -424,8 +408,30 @@ class BookingController(
     fun getBookingStatistics(
         @PathVariable salonId: String
     ): ResponseEntity<BookingStatistics> {
-        val statistics = bookingService.getBookingStatistics(salonId)
+        val authenticatedUserId = getAuthenticatedUserId()
+        val statistics = bookingService.getBookingStatistics(salonId, authenticatedUserId)
         return ResponseEntity.ok(statistics)
+    }
+
+    /**
+     * Série temporelle journalière des réservations d'un salon.
+     *
+     * Renvoie un point par jour sur [from, to] (jours vides inclus avec count=0, revenue=0).
+     */
+    @Operation(
+        summary = "Série temporelle journalière",
+        description = "Retourne count + revenue par jour sur une plage, y compris les jours sans réservation"
+    )
+    @GetMapping("/api/salons/{salonId}/bookings/daily")
+    @PreAuthorize("isAuthenticated()")
+    fun getDailyBookings(
+        @PathVariable salonId: String,
+        @RequestParam from: java.time.LocalDate,
+        @RequestParam to: java.time.LocalDate
+    ): ResponseEntity<List<DailyBookingPoint>> {
+        val authenticatedUserId = getAuthenticatedUserId()
+        val daily = bookingService.getDailyBookings(salonId, from, to, authenticatedUserId)
+        return ResponseEntity.ok(daily)
     }
 
     // ========== GESTION DES ERREURS GLOBALES ==========

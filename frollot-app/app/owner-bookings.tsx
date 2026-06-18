@@ -17,6 +17,8 @@ import { formatDateTimeShort } from '../src/utils/formatDate';
 import { useTheme } from '../src/theme';
 import { bookingsApi } from '../src/api/bookings';
 import { BookingResponse, BookingStatus } from '../src/types';
+import { AccessDenied } from '../src/components/common';
+import { usePermissions } from '../src/hooks/usePermissions';
 
 type BookingFilter = 'ALL' | BookingStatus;
 
@@ -34,6 +36,7 @@ export default function OwnerBookingsManagementScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const { colors, typography: typo } = theme;
+  const { role, isLoading: permLoading, can } = usePermissions(salonId);
 
   const STATUS_COLORS: Record<BookingStatus, string> = {
     [BookingStatus.PENDING]: colors.warning,
@@ -90,6 +93,13 @@ export default function OwnerBookingsManagementScreen() {
       },
     ]);
   };
+
+  if (permLoading) {
+    return <View style={[styles.centered, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.primary} /></View>;
+  }
+  if (role === 'none' || !can('booking.view_all')) {
+    return <AccessDenied />;
+  }
 
   if (isLoading) {
     return <View style={[styles.centered, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.primary} /></View>;
@@ -192,7 +202,7 @@ export default function OwnerBookingsManagementScreen() {
               )}
 
               {/* Actions */}
-              {item.canBeCancelled && (
+              {item.canBeCancelled && can('booking.cancel') && (
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
                     style={[styles.cancelBtn, { borderColor: colors.error }]}

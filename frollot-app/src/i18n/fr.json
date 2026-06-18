@@ -311,6 +311,7 @@
     "noPostsMessage": "Les posts tagués avec ce salon apparaîtront ici.",
     "postsLoadError": "Impossible de charger les posts du salon",
     "allServices": "Tous services",
+    "noServices": "Aucune prestation disponible.",
     "noTeam": "Aucun membre dans l'equipe.",
     "roles": {
       "owner": "Proprietaire",
@@ -435,8 +436,26 @@
     "minutes": "{{count}} min",
     "addImages": "Ajouter des images",
     "createdSuccess": "{{name}} créé avec succès",
+    "editService": "Modifier la prestation",
+    "saveChanges": "Enregistrer",
+    "updatedSuccess": "{{name}} mis à jour avec succès",
     "durationUnit": "min",
     "priceUnit": "EUR"
+  },
+  "myInvitations": {
+    "title": "Mes invitations",
+    "banner": "{{count}} invitation(s) en attente",
+    "invitedAs": "Vous invite comme {{role}}",
+    "expiresIn": "Expire dans {{days}} jour(s)",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "declineTitle": "Refuser l'invitation",
+    "declineMessage": "Refuser l'invitation de {{salon}} ?",
+    "declineConfirm": "Refuser",
+    "acceptedMessage": "Vous avez rejoint l'equipe de {{salon}}",
+    "empty": "Aucune invitation pour l'instant",
+    "emptyHint": "Les salons peuvent vous inviter a rejoindre leur equipe",
+    "exclusivityNote": "En acceptant, vous rejoignez l'equipe de ce salon. Un coiffeur ne peut appartenir qu'a un seul salon."
   },
   "staff": {
     "addStaff": "Ajouter un membre",
@@ -508,6 +527,112 @@
     "editSpec": {
       "title": "Tes spécialités",
       "other": "Autre..."
+    },
+    "ownerDashboard": {
+      "title": "Tableau de bord",
+      "menuLabel": "Mon salon",
+      "noSalon": "Vous n'avez pas encore de salon",
+      "createSalon": "Créer un salon",
+      "activity": "Activité",
+      "bookings": "Réservations",
+      "mySalon": "Mon salon",
+      "community": "Communauté",
+      "metrics": {
+        "bookings": "Réservations",
+        "revenue": "Revenus",
+        "rating": "Note moyenne",
+        "followers": "Abonnés"
+      },
+      "manage": "Gérer mon salon",
+      "tiles": {
+        "bookings": "Réservations",
+        "services": "Prestations",
+        "staff": "Équipe",
+        "hours": "Horaires",
+        "reviews": "Avis",
+        "payments": "Paiements",
+        "queue": "File d'attente"
+      },
+      "comingSoon": "Bientôt disponible",
+      "pending": {
+        "title": "À confirmer",
+        "badge": "{{count}} en attente",
+        "confirm": "Confirmer",
+        "decline": "Refuser",
+        "empty": "Aucune réservation en attente",
+        "declineTitle": "Refuser la réservation",
+        "declineReason": "Raison (optionnel)",
+        "declineConfirm": "Confirmer le refus",
+        "confirmSuccess": "Réservation confirmée",
+        "declineSuccess": "Réservation refusée",
+        "viewAll": "Voir tout"
+      },
+      "completeness": "Profil complété à {{pct}} %",
+      "topServices": "Prestations les plus demandées",
+      "topServicesEmpty": "Pas encore de données",
+      "chart": {
+        "title": "Évolution des réservations",
+        "today": "Aujourd'hui",
+        "7d": "7 jours",
+        "28d": "28 jours",
+        "empty": "Pas encore de données"
+      }
+    },
+    "ownerServices": {
+      "title": "Mes prestations",
+      "count": "{{count}} services",
+      "empty": "Aucune prestation pour l'instant",
+      "addFirst": "Ajouter une prestation",
+      "add": "Ajouter",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "deleteTitle": "Supprimer la prestation",
+      "deleteMessage": "Supprimer « {{name}} » ? Cette action est irréversible.",
+      "deleteConfirm": "Supprimer",
+      "noPhoto": "Ajouter une photo"
+    },
+    "ownerStaff": {
+      "title": "Mon équipe",
+      "count": "{{count}} membres",
+      "empty": "Aucun membre dans l'équipe",
+      "inviteFirst": "Inviter un coiffeur",
+      "invite": "Inviter",
+      "edit": "Modifier",
+      "remove": "Retirer du salon",
+      "removeTitle": "Retirer ce membre",
+      "removeMessage": "Retirer « {{name}} » de l'équipe ? Cette action est irréversible.",
+      "removeConfirm": "Retirer",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "ownerProtected": "Le propriétaire ne peut pas être retiré.",
+      "inviteTitle": "Inviter un coiffeur",
+      "inviteSent": "Invitation envoyée à {{name}}",
+      "invitationCancelled": "Invitation annulée",
+      "memberRemoved": "{{name}} a été retiré de l'équipe",
+      "pendingSection": "Invitations en attente ({{count}})",
+      "pendingLabel": "En attente",
+      "expiresOn": "Expire le {{date}}",
+      "cancelInvTitle": "Annuler l'invitation",
+      "cancelInvMessage": "Annuler l'invitation envoyée à {{name}} ?",
+      "cancelInvConfirm": "Annuler",
+      "search": {
+        "placeholder": "Nom ou email du coiffeur",
+        "minChars": "Tapez au moins 2 caractères",
+        "noResults": "Aucun coiffeur trouvé",
+        "onFrollot": "Coiffeur · sur Frollot",
+        "memberElsewhere": "Déjà dans un autre salon",
+        "alreadyInvited": "Déjà invité",
+        "alreadyHere": "Déjà dans votre équipe"
+      },
+      "editDialog": {
+        "title": "Modifier le membre",
+        "roleLabel": "Role",
+        "specialtiesLabel": "Specialites",
+        "activeLabel": "Membre actif",
+        "save": "Enregistrer",
+        "saveSuccess": "Membre mis a jour",
+        "saveError": "Erreur lors de la mise a jour"
+      }
     },
     "favorites": "Favoris",
     "archives": "Archives",
@@ -840,5 +965,12 @@
     "cancelled": "Annulé",
     "completed": "Terminé",
     "estimatedWait": "~{{count}} min"
+  },
+  "permissions": {
+    "accessDenied": {
+      "title": "Acces reserve",
+      "message": "Vous n'avez pas acces a cet espace. Contactez le proprietaire du salon si vous pensez qu'il s'agit d'une erreur.",
+      "back": "Retour"
+    }
   }
 }

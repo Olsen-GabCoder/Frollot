@@ -31,7 +31,8 @@ import org.springframework.web.bind.annotation.*
 )
 class SalonController(
     private val salonService: SalonService,
-    private val followService: FollowService // Phase D.2 - Pour les informations de follow
+    private val followService: FollowService, // Phase D.2 - Pour les informations de follow
+    private val salonAuthorizationService: com.frollot.service.SalonAuthorizationService
 ) {
 
     // ========== MÉTHODES UTILITAIRES ==========
@@ -357,6 +358,30 @@ class SalonController(
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(mapOf("error" to "Erreur serveur"))
         }
+    }
+
+    // ========== PERMISSIONS ==========
+
+    @Operation(
+        summary = "Mes permissions sur ce salon",
+        description = "Retourne le rôle et la liste des permissions de l'appelant pour ce salon"
+    )
+    @GetMapping("/{salonId}/my-permissions")
+    @PreAuthorize("isAuthenticated()")
+    fun getMyPermissions(
+        @PathVariable salonId: String
+    ): ResponseEntity<Map<String, Any>> {
+        val userId = getAuthenticatedUserId()
+        val role = salonAuthorizationService.getUserRole(userId, salonId)
+            ?: return ResponseEntity.ok(mapOf(
+                "role" to "none",
+                "permissions" to emptyList<String>()
+            ))
+        val permissions = salonAuthorizationService.getUserPermissions(userId, salonId)
+        return ResponseEntity.ok(mapOf(
+            "role" to role,
+            "permissions" to permissions.sorted()
+        ))
     }
 
     // ========== GESTION DES ERREURS ==========

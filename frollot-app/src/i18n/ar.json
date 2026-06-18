@@ -324,6 +324,7 @@
     "noPostsMessage": "ستظهر هنا المنشورات المرتبطة بهذا الصالون.",
     "postsLoadError": "تعذر تحميل منشورات الصالون",
     "allServices": "جميع الخدمات",
+    "noServices": "لا توجد خدمات متاحة.",
     "noTeam": "لا يوجد أعضاء في الفريق.",
     "roles": {
       "owner": "المالك",
@@ -610,6 +611,112 @@
       "title": "تخصصاتك",
       "other": "أخرى..."
     },
+    "ownerDashboard": {
+      "title": "لوحة التحكم",
+      "menuLabel": "صالوني",
+      "noSalon": "ليس لديك صالون بعد",
+      "createSalon": "إنشاء صالون",
+      "activity": "النشاط",
+      "bookings": "الحجوزات",
+      "mySalon": "صالوني",
+      "community": "المجتمع",
+      "metrics": {
+        "bookings": "الحجوزات",
+        "revenue": "الإيرادات",
+        "rating": "التقييم المتوسط",
+        "followers": "المتابعون"
+      },
+      "manage": "إدارة صالوني",
+      "tiles": {
+        "bookings": "الحجوزات",
+        "services": "الخدمات",
+        "staff": "الفريق",
+        "hours": "ساعات العمل",
+        "reviews": "التقييمات",
+        "payments": "المدفوعات",
+        "queue": "قائمة الانتظار"
+      },
+      "comingSoon": "قريباً",
+      "pending": {
+        "title": "للتأكيد",
+        "badge": "{{count}} قيد الانتظار",
+        "confirm": "تأكيد",
+        "decline": "رفض",
+        "empty": "لا توجد حجوزات قيد الانتظار",
+        "declineTitle": "رفض الحجز",
+        "declineReason": "السبب (اختياري)",
+        "declineConfirm": "تأكيد الرفض",
+        "confirmSuccess": "تم تأكيد الحجز",
+        "declineSuccess": "تم رفض الحجز",
+        "viewAll": "عرض الكل"
+      },
+      "completeness": "اكتمل الملف الشخصي بنسبة {{pct}} %",
+      "topServices": "الخدمات الأكثر طلبًا",
+      "topServicesEmpty": "لا توجد بيانات بعد",
+      "chart": {
+        "title": "تطور الحجوزات",
+        "today": "اليوم",
+        "7d": "٧ أيام",
+        "28d": "٢٨ يومًا",
+        "empty": "لا توجد بيانات بعد"
+      }
+    },
+    "ownerServices": {
+      "title": "خدماتي",
+      "count": "{{count}} خدمات",
+      "empty": "لا توجد خدمات حتى الآن",
+      "addFirst": "إضافة خدمة",
+      "add": "إضافة",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "deleteTitle": "حذف الخدمة",
+      "deleteMessage": "حذف «{{name}}»؟ لا يمكن التراجع عن هذا الإجراء.",
+      "deleteConfirm": "حذف",
+      "noPhoto": "إضافة صورة"
+    },
+    "ownerStaff": {
+      "title": "فريقي",
+      "count": "{{count}} أعضاء",
+      "empty": "لا يوجد أعضاء في الفريق حتى الآن",
+      "inviteFirst": "دعوة مصفف شعر",
+      "invite": "دعوة",
+      "edit": "تعديل",
+      "remove": "إزالة من الصالون",
+      "removeTitle": "إزالة هذا العضو",
+      "removeMessage": "إزالة «{{name}}» من الفريق؟ لا يمكن التراجع عن هذا الإجراء.",
+      "removeConfirm": "إزالة",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "ownerProtected": "لا يمكن إزالة المالك.",
+      "inviteTitle": "دعوة مصفف شعر",
+      "inviteSent": "تم إرسال الدعوة إلى {{name}}",
+      "invitationCancelled": "تم إلغاء الدعوة",
+      "memberRemoved": "تمت إزالة {{name}} من الفريق",
+      "pendingSection": "الدعوات المعلقة ({{count}})",
+      "pendingLabel": "معلّقة",
+      "expiresOn": "تنتهي في {{date}}",
+      "cancelInvTitle": "إلغاء الدعوة",
+      "cancelInvMessage": "إلغاء الدعوة المرسلة إلى {{name}}؟",
+      "cancelInvConfirm": "إلغاء",
+      "search": {
+        "placeholder": "اسم أو بريد المصفف",
+        "minChars": "اكتب حرفين على الأقل",
+        "noResults": "لم يتم العثور على مصفف",
+        "onFrollot": "مصفف · على فرولوت",
+        "memberElsewhere": "موجود في صالون آخر",
+        "alreadyInvited": "تمت دعوته بالفعل",
+        "alreadyHere": "موجود بالفعل في فريقك"
+      },
+      "editDialog": {
+        "title": "تعديل العضو",
+        "roleLabel": "الدور",
+        "specialtiesLabel": "التخصصات",
+        "activeLabel": "عضو نشط",
+        "save": "حفظ",
+        "saveSuccess": "تم تحديث العضو",
+        "saveError": "خطأ أثناء التحديث"
+      }
+    },
     "favorites": "المفضلة",
     "archives": "الأرشيف",
     "collections": "المجموعات",
@@ -826,8 +933,26 @@
     "minutes": "{{count}} دقيقة",
     "addImages": "إضافة صور",
     "createdSuccess": "تم إنشاء {{name}} بنجاح",
+    "editService": "تعديل الخدمة",
+    "saveChanges": "حفظ",
+    "updatedSuccess": "تم تحديث {{name}} بنجاح",
     "durationUnit": "دقيقة",
     "priceUnit": "EUR"
+  },
+  "myInvitations": {
+    "title": "دعواتي",
+    "banner": "{{count}} دعوة(دعوات) معلّقة",
+    "invitedAs": "يدعوك بصفة {{role}}",
+    "expiresIn": "تنتهي خلال {{days}} يوم(أيام)",
+    "accept": "قبول",
+    "decline": "رفض",
+    "declineTitle": "رفض الدعوة",
+    "declineMessage": "رفض دعوة {{salon}}؟",
+    "declineConfirm": "رفض",
+    "acceptedMessage": "لقد انضممت إلى فريق {{salon}}",
+    "empty": "لا توجد دعوات حتى الآن",
+    "emptyHint": "يمكن للصالونات دعوتك للانضمام إلى فريقها",
+    "exclusivityNote": "بالقبول، تنضم إلى فريق هذا الصالون. لا يمكن للمصفف الانتماء إلا لصالون واحد."
   },
   "staff": {
     "addStaff": "إضافة عضو",
@@ -864,5 +989,12 @@
     "cancelled": "ملغى",
     "completed": "مكتمل",
     "estimatedWait": "~{{count}} د"
+  },
+  "permissions": {
+    "accessDenied": {
+      "title": "وصول مقيد",
+      "message": "ليس لديك صلاحية الوصول إلى هذا القسم. تواصل مع مالك الصالون إذا كنت تعتقد أن هذا خطأ.",
+      "back": "رجوع"
+    }
   }
 }

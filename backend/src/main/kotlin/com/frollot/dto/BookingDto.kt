@@ -264,3 +264,12 @@ data class BookingStatistics(
     val totalRevenue: BigDecimal,
     val averagePrice: BigDecimal
 )
+
+/**
+ * Un point de la série temporelle journalière (bookings/daily).
+ */
+data class DailyBookingPoint(
+    val date: java.time.LocalDate,
+    val count: Int,
+    val revenue: BigDecimal
+)

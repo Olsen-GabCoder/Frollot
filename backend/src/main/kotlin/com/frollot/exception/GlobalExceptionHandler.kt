@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDateTime
 
 /**
@@ -104,6 +105,21 @@ class GlobalExceptionHandler {
             timestamp = LocalDateTime.now()
         )
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse)
+    }
+
+    /**
+     * Gère les ResponseStatusException (ex: SalonAuthorizationService.PermissionDeniedException).
+     * Renvoie le code HTTP porté par l'exception (403, 404, etc.).
+     */
+    @ExceptionHandler(ResponseStatusException::class)
+    fun handleResponseStatusException(ex: ResponseStatusException): ResponseEntity<ErrorResponse> {
+        val errorResponse = ErrorResponse(
+            status = ex.statusCode.value(),
+            error = ex.statusCode.toString(),
+            message = ex.reason ?: "Erreur",
+            timestamp = LocalDateTime.now()
+        )
+        return ResponseEntity.status(ex.statusCode).body(errorResponse)
     }
 
     /**

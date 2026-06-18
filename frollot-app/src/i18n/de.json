@@ -316,6 +316,7 @@
     "noPostsMessage": "Beiträge, die mit diesem Salon markiert sind, werden hier angezeigt.",
     "postsLoadError": "Salon-Beiträge konnten nicht geladen werden",
     "allServices": "Alle Leistungen",
+    "noServices": "Keine Leistungen verfügbar.",
     "noTeam": "Keine Teammitglieder.",
     "roles": {
       "owner": "Inhaber",
@@ -598,6 +599,112 @@
       "title": "Ihre Spezialitäten",
       "other": "Andere..."
     },
+    "ownerDashboard": {
+      "title": "Dashboard",
+      "menuLabel": "Mein Salon",
+      "noSalon": "Sie haben noch keinen Salon",
+      "createSalon": "Salon erstellen",
+      "activity": "Aktivität",
+      "bookings": "Buchungen",
+      "mySalon": "Mein Salon",
+      "community": "Community",
+      "metrics": {
+        "bookings": "Buchungen",
+        "revenue": "Einnahmen",
+        "rating": "Durchschnittsbewertung",
+        "followers": "Follower"
+      },
+      "manage": "Salon verwalten",
+      "tiles": {
+        "bookings": "Buchungen",
+        "services": "Dienstleistungen",
+        "staff": "Team",
+        "hours": "Öffnungszeiten",
+        "reviews": "Bewertungen",
+        "payments": "Zahlungen",
+        "queue": "Warteschlange"
+      },
+      "comingSoon": "Demnächst verfügbar",
+      "pending": {
+        "title": "Zu bestätigen",
+        "badge": "{{count}} ausstehend",
+        "confirm": "Bestätigen",
+        "decline": "Ablehnen",
+        "empty": "Keine ausstehenden Buchungen",
+        "declineTitle": "Buchung ablehnen",
+        "declineReason": "Grund (optional)",
+        "declineConfirm": "Ablehnung bestätigen",
+        "confirmSuccess": "Buchung bestätigt",
+        "declineSuccess": "Buchung abgelehnt",
+        "viewAll": "Alle anzeigen"
+      },
+      "completeness": "Profil zu {{pct}} % vollständig",
+      "topServices": "Meistgefragte Leistungen",
+      "topServicesEmpty": "Noch keine Daten",
+      "chart": {
+        "title": "Buchungsentwicklung",
+        "today": "Heute",
+        "7d": "7 Tage",
+        "28d": "28 Tage",
+        "empty": "Noch keine Daten"
+      }
+    },
+    "ownerServices": {
+      "title": "Meine Leistungen",
+      "count": "{{count}} Leistungen",
+      "empty": "Noch keine Leistungen",
+      "addFirst": "Leistung hinzufügen",
+      "add": "Hinzufügen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "deleteTitle": "Leistung löschen",
+      "deleteMessage": "«{{name}}» löschen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteConfirm": "Löschen",
+      "noPhoto": "Foto hinzufügen"
+    },
+    "ownerStaff": {
+      "title": "Mein Team",
+      "count": "{{count}} Mitglieder",
+      "empty": "Noch keine Teammitglieder",
+      "inviteFirst": "Friseur einladen",
+      "invite": "Einladen",
+      "edit": "Bearbeiten",
+      "remove": "Vom Salon entfernen",
+      "removeTitle": "Mitglied entfernen",
+      "removeMessage": "«{{name}}» aus dem Team entfernen? Dies kann nicht rückgängig gemacht werden.",
+      "removeConfirm": "Entfernen",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "ownerProtected": "Der Inhaber kann nicht entfernt werden.",
+      "inviteTitle": "Friseur einladen",
+      "inviteSent": "Einladung an {{name}} gesendet",
+      "invitationCancelled": "Einladung storniert",
+      "memberRemoved": "{{name}} wurde aus dem Team entfernt",
+      "pendingSection": "Ausstehende Einladungen ({{count}})",
+      "pendingLabel": "Ausstehend",
+      "expiresOn": "Läuft am {{date}} ab",
+      "cancelInvTitle": "Einladung abbrechen",
+      "cancelInvMessage": "Einladung an {{name}} abbrechen?",
+      "cancelInvConfirm": "Abbrechen",
+      "search": {
+        "placeholder": "Name oder E-Mail des Friseurs",
+        "minChars": "Mindestens 2 Zeichen eingeben",
+        "noResults": "Kein Friseur gefunden",
+        "onFrollot": "Friseur · auf Frollot",
+        "memberElsewhere": "Bereits in einem anderen Salon",
+        "alreadyInvited": "Bereits eingeladen",
+        "alreadyHere": "Bereits in Ihrem Team"
+      },
+      "editDialog": {
+        "title": "Mitglied bearbeiten",
+        "roleLabel": "Rolle",
+        "specialtiesLabel": "Fachgebiete",
+        "activeLabel": "Aktives Mitglied",
+        "save": "Speichern",
+        "saveSuccess": "Mitglied aktualisiert",
+        "saveError": "Fehler beim Aktualisieren"
+      }
+    },
     "favorites": "Favoriten",
     "archives": "Archiv",
     "collections": "Sammlungen",
@@ -802,8 +909,26 @@
     "minutes": "{{count}} Min.",
     "addImages": "Bilder hinzufügen",
     "createdSuccess": "{{name}} erfolgreich erstellt",
+    "editService": "Leistung bearbeiten",
+    "saveChanges": "Speichern",
+    "updatedSuccess": "{{name}} erfolgreich aktualisiert",
     "durationUnit": "Min.",
     "priceUnit": "EUR"
+  },
+  "myInvitations": {
+    "title": "Meine Einladungen",
+    "banner": "{{count}} ausstehende Einladung(en)",
+    "invitedAs": "Ladt Sie ein als {{role}}",
+    "expiresIn": "Lauft in {{days}} Tag(en) ab",
+    "accept": "Annehmen",
+    "decline": "Ablehnen",
+    "declineTitle": "Einladung ablehnen",
+    "declineMessage": "Einladung von {{salon}} ablehnen?",
+    "declineConfirm": "Ablehnen",
+    "acceptedMessage": "Sie sind dem Team von {{salon}} beigetreten",
+    "empty": "Noch keine Einladungen",
+    "emptyHint": "Salons konnen Sie einladen, ihrem Team beizutreten",
+    "exclusivityNote": "Mit der Annahme treten Sie dem Team dieses Salons bei. Ein Friseur kann nur einem Salon angehoren."
   },
   "staff": {
     "addStaff": "Mitglied hinzufügen",
@@ -840,5 +965,12 @@
     "cancelled": "Abgesagt",
     "completed": "Abgeschlossen",
     "estimatedWait": "~{{count}} Min."
+  },
+  "permissions": {
+    "accessDenied": {
+      "title": "Zugriff eingeschrankt",
+      "message": "Sie haben keinen Zugriff auf diesen Bereich. Kontaktieren Sie den Saloninhaber, wenn Sie glauben, dass es sich um einen Fehler handelt.",
+      "back": "Zuruck"
+    }
   }
 }
