@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
   Platform,
   NativeSyntheticEvent,
   TextInputSelectionChangeEventData,
-  I18nManager,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -20,12 +21,15 @@ import { Image } from 'expo-image';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../src/theme';
+import { useToast } from '../src/contexts/ToastContext';
 import { useAuthStore } from '../src/stores/authStore';
 import { socialApi } from '../src/api/social';
+import { salonsApi } from '../src/api/salons';
 import { usersApi } from '../src/api/users';
 import { mediaApi } from '../src/api/media';
 import { Avatar } from '../src/components/common';
-import { PostType, PostVisibility, PostMediaType, CreatePostMediaRequest, CreateTagRequest, TaggedType, User, HairHashtagResponse } from '../src/types';
+import { PostType, PostVisibility, PostMediaType, CreatePostMediaRequest, CreateTagRequest, TaggedType, User, HairHashtagResponse, Salon } from '../src/types';
+import { resolveMediaUrl } from '../src/utils/media';
 
 const POST_TYPE_KEYS: { key: PostType; i18nKey: string }[] = [
   { key: PostType.GENERAL, i18nKey: 'social.postTypes.general' },
@@ -55,6 +59,7 @@ export default function CreatePostScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const { user } = useAuthStore();
+  const { showToast } = useToast();
   const { colors, typography: typo } = theme;
 
   const [content, setContent] = useState('');
@@ -72,7 +77,30 @@ export default function CreatePostScreen() {
   const [hashtagSuggestions, setHashtagSuggestions] = useState<HairHashtagResponse[]>([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
+  // Lot C: salon context selector
+  const [mySalons, setMySalons] = useState<Salon[]>([]);
+  const [postAsSalonId, setPostAsSalonId] = useState<string | null>(null);
+  const [showContextPicker, setShowContextPicker] = useState(false);
+  const [tagSalonId, setTagSalonId] = useState<string | null>(null);
+  const [showTagSalonPicker, setShowTagSalonPicker] = useState(false);
+
   const MAX_CHARS = 5000;
+
+  // Load salons where user is owner or staff
+  useEffect(() => {
+    salonsApi.getMySalons().then((salons) => {
+      setMySalons(salons);
+      // Pre-select if salonId is passed via route params
+      if (salonId && salons.some((s) => s.id === salonId)) {
+        setPostAsSalonId(salonId);
+      }
+    }).catch((err) => {
+      console.warn('[create-post] getMySalons failed:', err?.message ?? err);
+      showToast(t('social.compose.loadSalonsError'), 'error');
+    });
+  }, [salonId]);
+
+  const selectedSalon = mySalons.find((s) => s.id === postAsSalonId);
 
   // Detect active token at cursor position
   const getActiveToken = (): { type: 'mention' | 'hashtag'; token: string; start: number } | null => {
@@ -170,6 +198,13 @@ export default function CreatePostScreen() {
     setMedia((prev) => prev.filter((_, i) => i !== index).map((m, i) => ({ ...m, orderIndex: i })));
   };
 
+  const selectContext = useCallback((sId: string | null) => {
+    setPostAsSalonId(sId);
+    // If switching to salon context, clear tag toggle (redundant)
+    if (sId) setTagSalonId(null);
+    setShowContextPicker(false);
+  }, []);
+
   const handlePublish = async () => {
     if (!user || !content.trim()) {
       Alert.alert(t('common.states.error'), t('social.compose.contentRequired'));
@@ -205,7 +240,7 @@ export default function CreatePostScreen() {
         .filter(t => (t as any)._displayName && trimmedContent.includes('@' + (t as any)._displayName))
         .map(({ taggedType, taggedId }) => ({ taggedType, taggedId }));
 
-      await socialApi.createPost({
+      const newPost = await socialApi.createPost({
         authorId: user.id,
         content: trimmedContent,
         imageUrl: uploadedMedia[0]?.mediaUrl,
@@ -213,7 +248,18 @@ export default function CreatePostScreen() {
         visibility,
         tags: reconciledTags.length > 0 ? reconciledTags : undefined,
         media: uploadedMedia,
+        postAsSalonId: postAsSalonId ?? undefined,
       });
+
+      // Lot C mode 2: tag salon after post creation (personal post + tag toggle on)
+      if (!postAsSalonId && tagSalonId && newPost?.id) {
+        try {
+          await socialApi.addTag(newPost.id, { taggedType: TaggedType.SALON, taggedId: tagSalonId });
+        } catch (tagErr: any) {
+          console.warn('[create-post] addTag failed:', tagErr?.message ?? tagErr);
+          showToast(t('social.compose.tagSalonError'), 'error');
+        }
+      }
 
       router.back();
     } catch (e: any) {
@@ -223,6 +269,11 @@ export default function CreatePostScreen() {
       setIsUploading(false);
     }
   };
+
+  // Display name/avatar for current context
+  const contextLabel = selectedSalon ? selectedSalon.name : `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
+  const contextAvatarUrl = selectedSalon ? selectedSalon.coverPhotoUrl : user?.avatarUrl;
+  const contextInitial = selectedSalon ? (selectedSalon.name?.[0] || 'S') : (user?.firstName?.[0] || 'F');
 
   return (
     <KeyboardAvoidingView
@@ -253,29 +304,90 @@ export default function CreatePostScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        {/* Author info */}
-        <View style={styles.authorRow}>
-          <View style={[styles.avatar, { backgroundColor: colors.primaryContainer }]}>
-            <Text style={[typo.titleMedium, { color: colors.onPrimaryContainer }]}>
-              {(user?.firstName?.[0] || 'F').toUpperCase()}
+        {/* Author context row — tap to open selector if user has salons */}
+        <TouchableOpacity
+          style={styles.authorRow}
+          onPress={mySalons.length > 0 ? () => setShowContextPicker(true) : undefined}
+          activeOpacity={mySalons.length > 0 ? 0.7 : 1}
+        >
+          <Avatar
+            initials={contextInitial.toUpperCase()}
+            size={44}
+            ring
+            tone="primary"
+            imageUrl={contextAvatarUrl ? resolveMediaUrl(contextAvatarUrl) : undefined}
+          />
+          <View style={{ marginStart: 12, flex: 1 }}>
+            <Text style={[typo.titleSmall, { color: colors.onSurface }]} numberOfLines={1}>
+              {contextLabel}
             </Text>
+            {mySalons.length > 0 && (
+              <View style={styles.visibilityIndicator}>
+                <MaterialIcons name="swap-horiz" size={14} color={colors.primary} />
+                <Text style={[typo.bodySmall, { color: colors.primary, marginStart: 4 }]}>
+                  {t('social.compose.publishAs')}
+                </Text>
+              </View>
+            )}
+            {mySalons.length === 0 && (
+              <View style={styles.visibilityIndicator}>
+                <MaterialIcons
+                  name={VISIBILITY_KEYS.find((v) => v.key === visibility)?.icon || 'public'}
+                  size={14}
+                  color={colors.onSurfaceVariant}
+                />
+                <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
+                  {t(VISIBILITY_KEYS.find((v) => v.key === visibility)?.i18nKey || 'social.visibility.public')}
+                </Text>
+              </View>
+            )}
           </View>
-          <View style={{ marginStart: 12 }}>
-            <Text style={[typo.titleSmall, { color: colors.onSurface }]}>
-              {user?.firstName} {user?.lastName}
+          {mySalons.length > 0 && (
+            <MaterialIcons name="expand-more" size={22} color={colors.onSurfaceVariant} />
+          )}
+        </TouchableOpacity>
+
+        {/* Tag salon toggle — only when posting as self and user has salons */}
+        {!postAsSalonId && mySalons.length > 0 && (
+          <TouchableOpacity
+            style={[
+              styles.tagToggle,
+              {
+                backgroundColor: tagSalonId ? colors.tertiaryContainer : colors.surfaceContainerHigh,
+                borderColor: tagSalonId ? colors.tertiary : colors.outlineVariant,
+              },
+            ]}
+            onPress={() => {
+              if (tagSalonId) {
+                setTagSalonId(null);
+              } else if (mySalons.length === 1) {
+                setTagSalonId(mySalons[0].id);
+              } else {
+                setShowTagSalonPicker(true);
+              }
+            }}
+          >
+            <MaterialIcons
+              name="storefront"
+              size={16}
+              color={tagSalonId ? colors.onTertiaryContainer : colors.onSurfaceVariant}
+            />
+            <Text
+              style={[
+                typo.labelMedium,
+                {
+                  color: tagSalonId ? colors.onTertiaryContainer : colors.onSurfaceVariant,
+                  marginStart: 6,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {tagSalonId
+                ? t('social.compose.taggedAsSalon', { name: mySalons.find((s) => s.id === tagSalonId)?.name ?? '' })
+                : t('social.compose.tagMySalon')}
             </Text>
-            <View style={styles.visibilityIndicator}>
-              <MaterialIcons
-                name={VISIBILITY_KEYS.find((v) => v.key === visibility)?.icon || 'public'}
-                size={14}
-                color={colors.onSurfaceVariant}
-              />
-              <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant, marginStart: 4 }]}>
-                {t(VISIBILITY_KEYS.find((v) => v.key === visibility)?.i18nKey || 'social.visibility.public')}
-              </Text>
-            </View>
-          </View>
-        </View>
+          </TouchableOpacity>
+        )}
 
         {/* Post type selector */}
         <Text style={[typo.labelLarge, { color: colors.onSurface, marginBottom: 8 }]}>
@@ -436,6 +548,94 @@ export default function CreatePostScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Tag salon picker modal (multi-salon) */}
+      <Modal visible={showTagSalonPicker} transparent animationType="fade" onRequestClose={() => setShowTagSalonPicker(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowTagSalonPicker(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: colors.surfaceContainerHighest, borderColor: colors.outlineVariant }]}>
+            <Text style={[typo.titleMedium, { color: colors.onSurface, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }]}>
+              {t('social.compose.pickSalonToTag')}
+            </Text>
+            {mySalons.map((salon) => (
+              <TouchableOpacity
+                key={salon.id}
+                style={[styles.contextOption, tagSalonId === salon.id && { backgroundColor: colors.tertiaryContainer }]}
+                onPress={() => { setTagSalonId(salon.id); setShowTagSalonPicker(false); }}
+              >
+                <Avatar
+                  initials={(salon.name?.[0] || 'S').toUpperCase()}
+                  size={40}
+                  tone="tertiary"
+                  imageUrl={salon.coverPhotoUrl ? resolveMediaUrl(salon.coverPhotoUrl) : undefined}
+                />
+                <View style={{ marginStart: 12, flex: 1 }}>
+                  <Text style={[typo.titleSmall, { color: colors.onSurface }]} numberOfLines={1}>
+                    {salon.name}
+                  </Text>
+                </View>
+                {tagSalonId === salon.id && <MaterialIcons name="check" size={20} color={colors.tertiary} />}
+              </TouchableOpacity>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Context picker modal */}
+      <Modal visible={showContextPicker} transparent animationType="fade" onRequestClose={() => setShowContextPicker(false)}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowContextPicker(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[styles.modalCard, { backgroundColor: colors.surfaceContainerHighest, borderColor: colors.outlineVariant }]}>
+            <Text style={[typo.titleMedium, { color: colors.onSurface, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12 }]}>
+              {t('social.compose.publishAs')}
+            </Text>
+
+            {/* "Me" option */}
+            <TouchableOpacity
+              style={[styles.contextOption, !postAsSalonId && { backgroundColor: colors.primaryContainer }]}
+              onPress={() => selectContext(null)}
+            >
+              <Avatar
+                initials={(user?.firstName?.[0] || 'F').toUpperCase()}
+                size={40}
+                imageUrl={user?.avatarUrl ? resolveMediaUrl(user.avatarUrl) : undefined}
+              />
+              <View style={{ marginStart: 12, flex: 1 }}>
+                <Text style={[typo.titleSmall, { color: colors.onSurface }]}>
+                  {user?.firstName} {user?.lastName}
+                </Text>
+                <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>
+                  {t('social.compose.personalPost')}
+                </Text>
+              </View>
+              {!postAsSalonId && <MaterialIcons name="check" size={20} color={colors.primary} />}
+            </TouchableOpacity>
+
+            {/* Salon options */}
+            {mySalons.map((salon) => (
+              <TouchableOpacity
+                key={salon.id}
+                style={[styles.contextOption, postAsSalonId === salon.id && { backgroundColor: colors.primaryContainer }]}
+                onPress={() => selectContext(salon.id)}
+              >
+                <Avatar
+                  initials={(salon.name?.[0] || 'S').toUpperCase()}
+                  size={40}
+                  tone="tertiary"
+                  imageUrl={salon.coverPhotoUrl ? resolveMediaUrl(salon.coverPhotoUrl) : undefined}
+                />
+                <View style={{ marginStart: 12, flex: 1 }}>
+                  <Text style={[typo.titleSmall, { color: colors.onSurface }]} numberOfLines={1}>
+                    {salon.name}
+                  </Text>
+                  <Text style={[typo.bodySmall, { color: colors.onSurfaceVariant }]}>
+                    {t('social.compose.asSalon')}
+                  </Text>
+                </View>
+                {postAsSalonId === salon.id && <MaterialIcons name="check" size={20} color={colors.primary} />}
+              </TouchableOpacity>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -449,9 +649,14 @@ const styles = StyleSheet.create({
   },
   publishBtn: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 999 },
   scrollContent: { padding: 16 },
-  authorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+  authorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   visibilityIndicator: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  tagToggle: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 8, paddingHorizontal: 14,
+    borderRadius: 999, borderWidth: 1,
+    marginBottom: 16, alignSelf: 'flex-start',
+  },
   chipsScroll: { marginBottom: 8 },
   chip: {
     flexDirection: 'row', alignItems: 'center',
@@ -488,4 +693,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   errorCard: { padding: 12, borderRadius: 12, marginTop: 16 },
+  // Context picker modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)', // design-fixed
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingBottom: 8,
+    maxHeight: '70%',
+  },
+  contextOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
 });

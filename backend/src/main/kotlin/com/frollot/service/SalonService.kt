@@ -12,6 +12,7 @@ import com.frollot.model.UserType
 import com.frollot.model.TaggedType
 import com.frollot.repository.PostTagRepository
 import com.frollot.repository.SalonRepository
+import com.frollot.repository.SalonStaffRepository
 import com.frollot.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,6 +21,7 @@ import java.util.*
 @Service
 class SalonService(
     private val salonRepository: SalonRepository,
+    private val salonStaffRepository: SalonStaffRepository,
     private val userRepository: UserRepository,
     private val postTagRepository: PostTagRepository, // Phase C.3 - Pour calculer l'engagement
     private val salonAuthorizationService: SalonAuthorizationService
@@ -109,6 +111,19 @@ class SalonService(
 
     fun getSalonsByOwner(ownerId: String): List<SalonResponse> {
         return salonRepository.findByOwnerId(ownerId).map { toSalonResponse(it) }
+    }
+
+    /** Retourne tous les salons dont l'utilisateur est owner OU staff actif (dédoublonnés). */
+    @Transactional(readOnly = true)
+    fun getMySalons(userId: String): List<SalonResponse> {
+        val ownedSalons = salonRepository.findByOwnerId(userId)
+        val staffSalons = salonStaffRepository.findByUserId(userId)
+            .filter { it.isActive }
+            .mapNotNull { it.salon }
+        val allSalons = (ownedSalons + staffSalons)
+            .distinctBy { it.id }
+            .sortedBy { it.name }
+        return allSalons.map { toSalonResponse(it) }
     }
 
     /**

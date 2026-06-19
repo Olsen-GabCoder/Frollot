@@ -61,6 +61,10 @@ export interface PostResponse {
   authorEmail?: string;
   authorAvatarUrl?: string;
   authorUserType?: string;
+  postAuthorType?: 'user' | 'salon' | 'staff';
+  salonId?: string;
+  salonName?: string;
+  salonAvatarUrl?: string;
   content: string;
   imageUrl?: string;
   postType: PostType;
@@ -96,6 +100,7 @@ export interface CreatePostRequest {
   tags?: CreateTagRequest[];
   serviceIds?: string[];
   media?: CreatePostMediaRequest[];
+  postAsSalonId?: string;
 }
 
 export interface CreatePostMediaRequest {
@@ -115,6 +120,9 @@ export interface TagResponse {
   postId: string;
   taggedType: TaggedType;
   taggedId: string;
+  taggedName?: string;
+  taggedSlug?: string;
+  taggedAvatarUrl?: string;
 }
 
 export interface CommentResponse {

@@ -7,6 +7,14 @@ import org.hibernate.annotations.UpdateTimestamp
 import java.time.LocalDateTime
 
 /**
+ * Type d'auteur d'un post : user (personnel), salon (au nom du salon), staff (futur).
+ * Valeurs en minuscules pour correspondre à l'ENUM MySQL.
+ */
+enum class AuthorType {
+    user, salon, staff
+}
+
+/**
  * Entité représentant un post dans le réseau social.
  */
 @Entity
@@ -22,10 +30,17 @@ data class Post(
     @Column(length = 36, columnDefinition = "CHAR(36)", nullable = false)
     var id: String? = null,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "author_type", nullable = false, length = 10)
+    var authorType: AuthorType = AuthorType.user,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "author_id", nullable = false)
     @JsonIgnore
     var author: User? = null,
+
+    @Column(name = "salon_id", length = 36, columnDefinition = "CHAR(36)")
+    var salonId: String? = null,
 
     @Column(columnDefinition = "TEXT", nullable = false)
     var content: String = "",

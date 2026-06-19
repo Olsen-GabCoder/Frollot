@@ -49,6 +49,12 @@
       "or": "OR",
       "yes": "Yes",
       "no": "No"
+    },
+    "time": {
+      "justNow": "just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "yesterday": "yesterday"
     }
   },
   "auth": {
@@ -192,6 +198,7 @@
       "salonOwner": "Salon",
       "hairstylist": "Stylist"
     },
+    "taggedSalon": "at {{name}}",
     "menu": {
       "viewPost": "View post",
       "addToCollection": "Add to a collection",
@@ -255,7 +262,15 @@
     "compose": {
       "contentRequired": "Content is required",
       "beforeAfterMinImages": "Before/After requires at least 2 images",
-      "media": "Media"
+      "media": "Media",
+      "publishAs": "Publish as",
+      "personalPost": "Personal post",
+      "asSalon": "On behalf of salon",
+      "tagMySalon": "Tag my salon",
+      "taggedAsSalon": "at {{name}}",
+      "pickSalonToTag": "Which salon to tag?",
+      "loadSalonsError": "Unable to load your salons",
+      "tagSalonError": "The salon could not be tagged"
     },
     "hashtagCount_one": "{{count}} post",
     "hashtagCount_other": "{{count}} posts",

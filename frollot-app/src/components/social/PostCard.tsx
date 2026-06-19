@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Pressable, Modal, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { router } from 'expo-router';
 import { Avatar } from '../common/Avatar';
-import { PostResponse } from '../../types';
+import { PostResponse, TaggedType } from '../../types';
 import { useTheme } from '../../theme';
 import { resolveMediaUrl } from '../../utils/media';
+import { formatRelativeShort } from '../../utils/formatDate';
+
+/** Is this post published "as salon" (mode 3)? */
+const isSalonPost = (post: PostResponse) => post.postAuthorType === 'salon' && post.salonName;
 
 interface PostCardProps {
   post: PostResponse;
@@ -39,26 +44,56 @@ export function PostCard({
   const hashtags = post.content?.match(/#\w+/g) || [];
   const textWithoutTags = post.content?.replace(/#\w+/g, '').trim();
   const isOwn = currentUserId && post.authorId === currentUserId;
+  const salonTags = useMemo(
+    () => (post.tags ?? []).filter(tag => tag.taggedType === TaggedType.SALON && tag.taggedName),
+    [post.tags],
+  );
+  const relativeDate = useMemo(() => {
+    if (!post.createdAt) return '';
+    const d = new Date(post.createdAt);
+    return formatRelativeShort(d, t);
+  }, [post.createdAt, t]);
 
   return (
     <View style={[styles.article, { backgroundColor: colors.surface, borderColor: colors.outlineVariant }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onProfilePress}>
-          <Avatar initials={post.authorName?.[0] || 'U'} size={44} ring tone="primary" imageUrl={post.authorAvatarUrl} />
+        <TouchableOpacity onPress={isSalonPost(post) ? () => router.push(`/salon/${post.salonId}`) : onProfilePress}>
+          <Avatar
+            initials={isSalonPost(post) ? (post.salonName?.[0] || 'S') : (post.authorName?.[0] || 'U')}
+            size={44}
+            ring
+            tone={isSalonPost(post) ? 'tertiary' : 'primary'}
+            imageUrl={isSalonPost(post) ? (post.salonAvatarUrl ? resolveMediaUrl(post.salonAvatarUrl) : undefined) : post.authorAvatarUrl}
+          />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: colors.onSurface }]} numberOfLines={1}>{post.authorName}</Text>
+            <Text style={[styles.name, { color: colors.onSurface }]} numberOfLines={1}>
+              {isSalonPost(post) ? post.salonName : post.authorName}
+            </Text>
             <MaterialCommunityIcons name="check-decagram" size={16} color={colors.primary} />
           </View>
           <View style={styles.metaRow}>
-            {post.authorUserType && (
+            {isSalonPost(post) ? (
+              <View style={[styles.typeBadge, { backgroundColor: colors.tertiaryContainer }]}>
+                <Text style={[styles.typeText, { color: colors.tertiary }]}>{t('social.authorTypes.salonOwner')}</Text>
+              </View>
+            ) : post.authorUserType ? (
               <View style={[styles.typeBadge, { backgroundColor: colors.secondaryContainer }]}>
                 <Text style={[styles.typeText, { color: colors.secondary }]}>{post.authorUserType === 'salon_owner' ? t('social.authorTypes.salonOwner') : t('social.authorTypes.hairstylist')}</Text>
               </View>
+            ) : null}
+            {salonTags.length > 0 && !isSalonPost(post) && (
+              <TouchableOpacity style={styles.salonTagBtn} onPress={() => router.push(`/salon/${salonTags[0].taggedId}`)}>
+                <Text style={[styles.salonTag, { color: colors.tertiary }]} numberOfLines={1}>
+                  {'\u00B7 ' + t('social.taggedSalon', { name: salonTags.map(tag => tag.taggedName).join(', ') })}
+                </Text>
+              </TouchableOpacity>
             )}
-            <Text style={[styles.date, { color: colors.onSurfaceVariant }]}>· {post.createdAt || ''}</Text>
+            {relativeDate !== '' && (
+              <Text style={[styles.date, { color: colors.onSurfaceVariant }]}>{'\u00B7 ' + relativeDate}</Text>
+            )}
           </View>
         </View>
         <TouchableOpacity style={styles.iconBtn} onPress={() => setShowMenu(true)}>
@@ -185,14 +220,16 @@ const styles = StyleSheet.create({
   headerInfo: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   name: { fontFamily: 'Manrope-SemiBold', fontSize: 15, fontWeight: '600' },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1, overflow: 'hidden' },
   typeBadge: {
     paddingHorizontal: 8,
     paddingVertical: 1,
     borderRadius: 999,
   },
   typeText: { fontFamily: 'Manrope-Bold', fontSize: 11, fontWeight: '700' },
-  date: { fontFamily: 'Manrope-Regular', fontSize: 12 },
+  date: { fontFamily: 'Manrope-Regular', fontSize: 12, flexShrink: 0 },
+  salonTagBtn: { flexShrink: 1, minWidth: 0 },
+  salonTag: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600' },
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   textSection: { paddingHorizontal: 16, paddingBottom: 12 },
   body: { fontFamily: 'Manrope-Regular', fontSize: 14, lineHeight: 21.7 },

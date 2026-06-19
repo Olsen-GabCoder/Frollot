@@ -49,6 +49,12 @@
       "or": "O",
       "yes": "Sí",
       "no": "No"
+    },
+    "time": {
+      "justNow": "ahora",
+      "minutesAgo": "hace {{count}} min",
+      "hoursAgo": "hace {{count}} h",
+      "yesterday": "ayer"
     }
   },
   "auth": {
@@ -197,6 +203,7 @@
       "salonOwner": "Salón",
       "hairstylist": "Estilista"
     },
+    "taggedSalon": "en {{name}}",
     "menu": {
       "viewPost": "Ver publicación",
       "addToCollection": "Añadir a una colección",
@@ -260,7 +267,15 @@
     "compose": {
       "contentRequired": "El contenido es obligatorio",
       "beforeAfterMinImages": "Antes/Después requiere al menos 2 imágenes",
-      "media": "Multimedia"
+      "media": "Multimedia",
+      "publishAs": "Publicar como",
+      "personalPost": "Publicación personal",
+      "asSalon": "En nombre del salón",
+      "tagMySalon": "Etiquetar mi salón",
+      "taggedAsSalon": "en {{name}}",
+      "pickSalonToTag": "Cual salon etiquetar?",
+      "loadSalonsError": "No se pudieron cargar sus salones",
+      "tagSalonError": "No se pudo etiquetar el salon"
     },
     "hashtagCount_one": "{{count}} publicación",
     "hashtagCount_other": "{{count}} publicaciones",

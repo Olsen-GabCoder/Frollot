@@ -43,7 +43,8 @@ data class CreatePostRequest(
     val visibility: com.frollot.model.PostVisibility = com.frollot.model.PostVisibility.PUBLIC, // Phase F.3 - Visibilité des Posts
     val tags: List<CreateTagRequest> = emptyList(),
     val serviceIds: List<String> = emptyList(),
-    val media: List<CreatePostMediaRequest> = emptyList() // Médias multiples (pour AVANT_APRES)
+    val media: List<CreatePostMediaRequest> = emptyList(), // Médias multiples (pour AVANT_APRES)
+    val postAsSalonId: String? = null // Lot C : publier au nom de ce salon (null = post perso)
 ) {
     /**
      * Valide les données de la requête.
@@ -218,6 +219,10 @@ data class PostResponse(
     val authorEmail: String,
     val authorUserType: com.frollot.model.UserType? = null, // Type d'utilisateur de l'auteur
     val authorAvatarUrl: String? = null, // Avatar de l'auteur
+    val postAuthorType: com.frollot.model.AuthorType = com.frollot.model.AuthorType.user,
+    val salonId: String? = null,
+    val salonName: String? = null,
+    val salonAvatarUrl: String? = null,
     val content: String,
     val imageUrl: String?, // Image principale (rétrocompatibilité)
     val postType: PostType,
@@ -254,13 +259,15 @@ data class PostResponse(
             tags: List<TagResponse> = emptyList(),
             services: List<ServiceResponse> = emptyList(),
             hashtags: List<HairHashtagResponse> = emptyList(),
-            media: List<PostMediaResponse> = emptyList()
+            media: List<PostMediaResponse> = emptyList(),
+            salonName: String? = null,
+            salonAvatarUrl: String? = null
         ): PostResponse {
             val author = post.author!!
             // Convertir Map<ReactionType, Int> en Map<String, Int> avec clés en lowercase
             // pour correspondre au format attendu par le frontend
             val reactionsMap = reactions.mapKeys { it.key.name.lowercase() }
-            
+
             return PostResponse(
                 id = post.id!!,
                 authorId = author.id!!,
@@ -268,6 +275,10 @@ data class PostResponse(
                 authorEmail = author.email,
                 authorUserType = author.userType, // Type d'utilisateur de l'auteur
                 authorAvatarUrl = author.avatarUrl,
+                postAuthorType = post.authorType,
+                salonId = post.salonId,
+                salonName = salonName,
+                salonAvatarUrl = salonAvatarUrl,
                 content = post.content,
                 imageUrl = post.imageUrl,
                 postType = post.postType,
@@ -415,11 +426,15 @@ data class TagResponse(
     val postId: String,
     val taggedType: TaggedType,
     val taggedId: String,
+    val taggedName: String? = null,
+    val taggedSlug: String? = null,
+    val taggedAvatarUrl: String? = null,
     val createdAt: LocalDateTime?
 ) {
     companion object {
         /**
-         * Convertit une entité PostTag en TagResponse.
+         * Convertit une entité PostTag en TagResponse (sans résolution du nom).
+         * Pour obtenir taggedName/slug/avatar, utiliser SocialService.buildTagResponse().
          */
         fun fromEntity(tag: PostTag): TagResponse {
             return TagResponse(

@@ -131,10 +131,29 @@ class SocialService(
         val author = userRepository.findById(request.authorId)
             .orElseThrow { RuntimeException("Utilisateur avec ID '${request.authorId}' non trouvé") }
 
+        // Lot C : déterminer le contexte (post perso ou au nom du salon)
+        val authorType: com.frollot.model.AuthorType
+        val salonId: String?
+        if (request.postAsSalonId != null) {
+            if (!salonRepository.existsById(request.postAsSalonId)) {
+                throw RuntimeException("Salon avec ID '${request.postAsSalonId}' non trouvé")
+            }
+            salonAuthorizationService.requirePermission(
+                request.authorId, request.postAsSalonId, "social.post_as_salon"
+            )
+            authorType = com.frollot.model.AuthorType.salon
+            salonId = request.postAsSalonId
+        } else {
+            authorType = com.frollot.model.AuthorType.user
+            salonId = null
+        }
+
         // Création du post
         val post = Post(
             id = UUID.randomUUID().toString(),
+            authorType = authorType,
             author = author,
+            salonId = salonId,
             content = request.content.trim(),
             postType = request.postType,
             imageUrl = request.imageUrl?.trim()?.takeIf { it.isNotBlank() },
@@ -188,7 +207,7 @@ class SocialService(
 
                     if (tag.isValid()) {
                         val savedTag = postTagRepository.save(tag)
-                        tags.add(TagResponse.fromEntity(savedTag))
+                        tags.add(buildTagResponse(savedTag))
                         println("🏷️ Tag ajouté: ${tagRequest.taggedType} - ${tagRequest.taggedId}")
                     }
                 }
@@ -281,6 +300,7 @@ class SocialService(
 
         val commentsCount = commentRepository.countByPostId(savedPost.id!!).toInt()
         val hashtags = HairHashtagResponse.fromEntities(associatedHashtags)
+        val (sName, sAvatar) = resolveSalonInfo(savedPost)
         return PostResponse.fromEntity(
             savedPost,
             isLikedByCurrentUser = false,
@@ -291,7 +311,9 @@ class SocialService(
             tags = tags,
             services = emptyList(),
             hashtags = hashtags,
-            media = mediaList
+            media = mediaList,
+            salonName = sName,
+            salonAvatarUrl = sAvatar
         )
     }
 
@@ -372,7 +394,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -424,7 +446,7 @@ class SocialService(
         val reactions = getReactionsByPost(postId) // Phase D.4
         val currentUserReaction = currentUserId?.let { getUserReaction(postId, it) } // Phase D.4
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         val services = postServiceRepository.findServicesByPostId(postId)
             .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
         val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -539,7 +561,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -613,13 +635,14 @@ class SocialService(
             val reactions = getReactionsByPost(postId) // Phase D.4
             val currentUserReaction = currentUserId?.let { getUserReaction(postId, it) } // Phase D.4
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
                 .map { HairHashtagResponse.fromEntity(it) }
             val media = postMediaRepository.findByPostIdOrderByMediaTypeAscOrderIndexAsc(postId)
                 .map { PostMediaResponse.fromEntity(it) }
+            val (sN, sA) = resolveSalonInfo(post)
             PostResponse.fromEntity(
                 post,
                 isLikedByCurrentUser = isLiked,
@@ -632,7 +655,9 @@ class SocialService(
                 tags = tags,
                 services = services,
                 hashtags = hashtags,
-                media = media
+                media = media,
+                salonName = sN,
+                salonAvatarUrl = sA
             )
         }
     }
@@ -676,7 +701,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -779,7 +804,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -849,7 +874,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -939,7 +964,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -996,7 +1021,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1113,7 +1138,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1228,7 +1253,7 @@ class SocialService(
         val isFavorited = postFavoriteRepository.existsByPostIdAndUserId(postId, userId)
         val commentsCount = commentRepository.countByPostId(postId).toInt()
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         return PostResponse.fromEntity(
             post,
             isLikedByCurrentUser = willBeLiked,
@@ -1301,7 +1326,7 @@ class SocialService(
         val isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId)
         val commentsCount = commentRepository.countByPostId(postId).toInt()
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         return PostResponse.fromEntity(
             post,
             isLikedByCurrentUser = isLiked,
@@ -1343,7 +1368,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1442,7 +1467,7 @@ class SocialService(
             val isFavorited = currentUserId?.let { postFavoriteRepository.existsByPostIdAndUserId(postId, it) } ?: false
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1533,7 +1558,7 @@ class SocialService(
         val commentsCount = commentRepository.countByPostId(postId).toInt()
         val sharesCount = post.sharesCount
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         val services = postServiceRepository.findServicesByPostId(postId)
             .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
         val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1599,7 +1624,7 @@ class SocialService(
         val commentsCount = commentRepository.countByPostId(postId).toInt()
         val sharesCount = post.sharesCount
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         val services = postServiceRepository.findServicesByPostId(postId)
             .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
         val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1698,7 +1723,7 @@ class SocialService(
         val reactions = getReactionsByPost(postId)
         val currentUserReaction = reactionType
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         val services = postServiceRepository.findServicesByPostId(postId)
             .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
         val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1758,7 +1783,7 @@ class SocialService(
         val reactions = getReactionsByPost(postId)
         val currentUserReaction: com.frollot.model.ReactionType? = null
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         val services = postServiceRepository.findServicesByPostId(postId)
             .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
         val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -1945,7 +1970,7 @@ class SocialService(
 
         println("🏷️ Tag ajouté: Post $postId, Type $taggedType, ID $taggedId")
 
-        return TagResponse.fromEntity(savedTag)
+        return buildTagResponse(savedTag)
     }
 
     /**
@@ -1980,7 +2005,7 @@ class SocialService(
 
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
 
-        return tags.map { TagResponse.fromEntity(it) }
+        return tags.map { buildTagResponse(it) }
     }
 
     // ========== Phase E.1 - Profil Coiffeur Enrichi ==========
@@ -2159,7 +2184,7 @@ class SocialService(
             val commentsCount = commentRepository.countByPostId(postId).toInt()
             val sharesCount = postShareRepository.countByPostId(postId).toInt()
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -3030,7 +3055,7 @@ class SocialService(
             val reactions = getReactionsByPost(postId)
             val currentUserReaction = currentUserId?.let { getUserReaction(postId, it) }
             val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-                .map { TagResponse.fromEntity(it) }
+                .map { buildTagResponse(it) }
             val services = postServiceRepository.findServicesByPostId(postId)
                 .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
             val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
@@ -3058,6 +3083,36 @@ class SocialService(
      * Helper pour construire un PostResponse avec tous les détails.
      * Phase F.2 - Posts Épinglés pour Salons
      */
+    /** Lot B : enrichit un PostTag avec le nom/slug/avatar de l'entité taguée. */
+    private fun buildTagResponse(tag: PostTag): TagResponse {
+        val base = TagResponse.fromEntity(tag)
+        return when (tag.taggedType) {
+            TaggedType.salon -> {
+                val salon = salonRepository.findById(tag.taggedId).orElse(null)
+                if (salon != null) base.copy(
+                    taggedName = salon.name,
+                    taggedSlug = salon.slug,
+                    taggedAvatarUrl = salon.coverPhotoUrl
+                ) else base
+            }
+            TaggedType.user -> {
+                val user = userRepository.findById(tag.taggedId).orElse(null)
+                if (user != null) base.copy(
+                    taggedName = listOfNotNull(user.firstName, user.lastName).joinToString(" "),
+                    taggedAvatarUrl = user.avatarUrl
+                ) else base
+            }
+        }
+    }
+
+    /** Lot C : résout salonName/salonAvatarUrl pour un post publié au nom d'un salon. */
+    private fun resolveSalonInfo(post: Post): Pair<String?, String?> {
+        val sid = post.salonId ?: return Pair(null, null)
+        if (post.authorType != com.frollot.model.AuthorType.salon) return Pair(null, null)
+        val salon = salonRepository.findById(sid).orElse(null) ?: return Pair(null, null)
+        return Pair(salon.name, salon.coverPhotoUrl)
+    }
+
     private fun buildPostResponse(post: Post, userId: String): PostResponse {
         val postId = post.id!!
         val isLiked = postLikeRepository.existsByPostIdAndUserId(postId, userId)
@@ -3068,13 +3123,14 @@ class SocialService(
         val reactions = getReactionsByPost(postId)
         val currentUserReaction = getUserReaction(postId, userId)
         val tags = postTagRepository.findByPostIdOrderByCreatedAtAsc(postId)
-            .map { TagResponse.fromEntity(it) }
+            .map { buildTagResponse(it) }
         val services = postServiceRepository.findServicesByPostId(postId)
             .map { com.frollot.dto.ServiceResponse.fromEntity(it) }
         val hashtags = postHashtagRepository.findHashtagsByPostId(postId)
             .map { HairHashtagResponse.fromEntity(it) }
         val media = postMediaRepository.findByPostIdOrderByMediaTypeAscOrderIndexAsc(postId)
             .map { PostMediaResponse.fromEntity(it) }
+        val (sName, sAvatar) = resolveSalonInfo(post)
         return PostResponse.fromEntity(
             post,
             isLikedByCurrentUser = isLiked,
@@ -3087,7 +3143,9 @@ class SocialService(
             tags = tags,
             services = services,
             hashtags = hashtags,
-            media = media
+            media = media,
+            salonName = sName,
+            salonAvatarUrl = sAvatar
         )
     }
 }

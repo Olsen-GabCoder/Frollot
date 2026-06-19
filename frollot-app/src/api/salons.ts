@@ -30,6 +30,9 @@ export const salonsApi = {
   getSalonsByOwner: (ownerId: string) =>
     api.get<Salon[]>(`/api/salons/owner/${ownerId}`).then((r) => r.data),
 
+  getMySalons: () =>
+    api.get<Salon[]>('/api/salons/mine').then((r) => r.data),
+
   createSalon: (data: CreateSalonRequest) =>
     api.post<Salon>('/api/salons', data).then((r) => r.data),
 

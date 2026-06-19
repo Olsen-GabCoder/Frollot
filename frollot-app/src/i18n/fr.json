@@ -49,6 +49,12 @@
       "or": "OU",
       "yes": "Oui",
       "no": "Non"
+    },
+    "time": {
+      "justNow": "a l'instant",
+      "minutesAgo": "il y a {{count}} min",
+      "hoursAgo": "il y a {{count}} h",
+      "yesterday": "hier"
     }
   },
   "auth": {
@@ -192,6 +198,7 @@
       "salonOwner": "Salon",
       "hairstylist": "Coiffeur"
     },
+    "taggedSalon": "chez {{name}}",
     "menu": {
       "viewPost": "Voir le post",
       "addToCollection": "Ajouter à une collection",
@@ -255,7 +262,15 @@
     "compose": {
       "contentRequired": "Le contenu est requis",
       "beforeAfterMinImages": "Avant/Après requiert au moins 2 images",
-      "media": "Média"
+      "media": "Média",
+      "publishAs": "Publier en tant que",
+      "personalPost": "Publication personnelle",
+      "asSalon": "Au nom du salon",
+      "tagMySalon": "Identifier mon salon",
+      "taggedAsSalon": "chez {{name}}",
+      "pickSalonToTag": "Identifier quel salon ?",
+      "loadSalonsError": "Impossible de charger vos salons",
+      "tagSalonError": "Le salon n'a pas pu etre identifie"
     },
     "hashtagCount_one": "{{count}} post",
     "hashtagCount_other": "{{count}} posts",

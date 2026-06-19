@@ -69,6 +69,9 @@ ETAPE 6  : Appliquer le design v2 aux 5 ecrans maquettes           ~4j   [FAIT]
 ETAPE 6B : Migration theming - Dark mode (P0 CRITIQUE)             ~2j   [FAIT]
 ETAPE 7  : Enrichir les ecrans existants (features manquantes)     ~5j   [FAIT]
 ETAPE 8  : Creer les 14 ecrans manquants (revise, paiement retire) ~3j
+LOT B SOCIAL : Tags salon enrichis + affichage PostCard            ~0.5j [FAIT]
+FIX PostCard : date relative + metaRow une ligne (ellipsis tag)          [FAIT]
+LOT C BACKEND : publier au nom du salon (author_type+salonId, perm)      [FAIT]
 ETAPE 9  : Completer les traductions i18n (5 langues)              ~2j
 ETAPE 10 : Navigation avancee (drawer, deep links, auth guards)    ~1.5j
 ETAPE 11 : Gestion offline + performance                           ~1.5j

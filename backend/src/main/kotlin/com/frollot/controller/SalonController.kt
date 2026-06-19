@@ -174,6 +174,21 @@ class SalonController(
     }
 
     /**
+     * Récupère tous les salons où l'utilisateur connecté est owner ou staff actif.
+     * IMPORTANT : déclaré AVANT /{id} pour éviter que Spring ne capture "mine" comme un id.
+     */
+    @Operation(
+        summary = "Récupérer mes salons",
+        description = "Retourne les salons dont l'utilisateur connecté est propriétaire ou membre actif du staff"
+    )
+    @GetMapping("/mine")
+    fun getMySalons(): ResponseEntity<List<SalonResponse>> {
+        val userId = (SecurityContextHolder.getContext().authentication.principal as User).id!!
+        val salons = salonService.getMySalons(userId)
+        return ResponseEntity.ok(salons)
+    }
+
+    /**
      * Récupère un salon spécifique par son ID.
      */
     @Operation(

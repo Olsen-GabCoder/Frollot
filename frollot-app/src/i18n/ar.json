@@ -49,6 +49,12 @@
       "or": "أو",
       "yes": "نعم",
       "no": "لا"
+    },
+    "time": {
+      "justNow": "الآن",
+      "minutesAgo": "منذ {{count}} د",
+      "hoursAgo": "منذ {{count}} س",
+      "yesterday": "أمس"
     }
   },
   "auth": {
@@ -197,6 +203,7 @@
       "salonOwner": "صالون",
       "hairstylist": "مصفف شعر"
     },
+    "taggedSalon": "في {{name}}",
     "menu": {
       "viewPost": "عرض المنشور",
       "addToCollection": "إضافة إلى مجموعة",
@@ -260,7 +267,15 @@
     "compose": {
       "contentRequired": "المحتوى مطلوب",
       "beforeAfterMinImages": "قبل/بعد يتطلب صورتين على الأقل",
-      "media": "وسائط"
+      "media": "وسائط",
+      "publishAs": "النشر باسم",
+      "personalPost": "منشور شخصي",
+      "asSalon": "باسم الصالون",
+      "tagMySalon": "الإشارة إلى صالوني",
+      "taggedAsSalon": "في {{name}}",
+      "pickSalonToTag": "اي صالون تريد الاشارة اليه؟",
+      "loadSalonsError": "تعذر تحميل صالوناتك",
+      "tagSalonError": "تعذرت الاشارة الى الصالون"
     },
     "hashtagCount_zero": "{{count}} منشور",
     "hashtagCount_one": "{{count}} منشور",

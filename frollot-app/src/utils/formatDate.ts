@@ -91,3 +91,45 @@ export function formatMonthName(date: Date): string {
     month: 'long',
   }).format(date);
 }
+
+/**
+ * Relative short date for posts: "a l'instant", "il y a 5 min", "il y a 3 h",
+ * "hier", then short date ("18 juin" / "Jun 18").
+ * Requires i18n keys common.time.{justNow,minutesAgo,hoursAgo,yesterday}.
+ */
+export function formatRelativeShort(date: Date, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  if (!isValid(date)) return '';
+  const now = Date.now();
+  const diffMs = now - date.getTime();
+  if (diffMs < 0) return formatDateShort(date);
+
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return t('common.time.justNow');
+  if (diffMin < 60) return t('common.time.minutesAgo', { count: diffMin });
+
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return t('common.time.hoursAgo', { count: diffH });
+
+  const today = new Date();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+  if (
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate()
+  ) {
+    return t('common.time.yesterday');
+  }
+
+  return formatDateShort(date);
+}
+
+/** "18 juin" / "Jun 18" — short date without year (same year) or with year */
+function formatDateShort(date: Date): string {
+  const now = new Date();
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return new Intl.DateTimeFormat(locale(), {
+    day: 'numeric',
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  }).format(date);
+}

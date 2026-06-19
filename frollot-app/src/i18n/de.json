@@ -49,6 +49,12 @@
       "or": "ODER",
       "yes": "Ja",
       "no": "Nein"
+    },
+    "time": {
+      "justNow": "gerade",
+      "minutesAgo": "vor {{count}} Min.",
+      "hoursAgo": "vor {{count}} Std.",
+      "yesterday": "gestern"
     }
   },
   "auth": {
@@ -197,6 +203,7 @@
       "salonOwner": "Salon",
       "hairstylist": "Friseur/in"
     },
+    "taggedSalon": "bei {{name}}",
     "menu": {
       "viewPost": "Beitrag anzeigen",
       "addToCollection": "Zu einer Sammlung hinzufügen",
@@ -260,7 +267,15 @@
     "compose": {
       "contentRequired": "Inhalt ist erforderlich",
       "beforeAfterMinImages": "Vorher/Nachher erfordert mindestens 2 Bilder",
-      "media": "Medien"
+      "media": "Medien",
+      "publishAs": "Veröffentlichen als",
+      "personalPost": "Persönlicher Beitrag",
+      "asSalon": "Im Namen des Salons",
+      "tagMySalon": "Meinen Salon markieren",
+      "taggedAsSalon": "bei {{name}}",
+      "pickSalonToTag": "Welchen Salon markieren?",
+      "loadSalonsError": "Salons konnten nicht geladen werden",
+      "tagSalonError": "Der Salon konnte nicht markiert werden"
     },
     "hashtagCount_one": "{{count}} Beitrag",
     "hashtagCount_other": "{{count}} Beiträge",
