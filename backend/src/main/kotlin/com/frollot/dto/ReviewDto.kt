@@ -34,6 +34,34 @@ data class CreateReviewRequest(
     }
 }
 
+/**
+ * DTO pour répondre à un avis (owner/manager).
+ */
+/**
+ * DTO pour creer un avis-salon (sans reservation).
+ */
+data class CreateSalonReviewRequest(
+    val salonId: String,
+    val rating: Int,
+    val title: String? = null,
+    val content: String? = null
+) {
+    fun validate() {
+        require(rating in 1..5) { "La note doit être entre 1 et 5" }
+        require(salonId.isNotBlank()) { "L'ID du salon est obligatoire" }
+        require((content?.length ?: 0) <= 2000) { "Le contenu ne peut pas dépasser 2000 caractères" }
+    }
+}
+
+data class ReplyToReviewRequest(
+    val reply: String
+) {
+    fun validate() {
+        require(reply.isNotBlank()) { "La réponse ne peut pas être vide" }
+        require(reply.length <= 2000) { "La réponse ne peut pas dépasser 2000 caractères" }
+    }
+}
+
 // ============================================
 // RESPONSE DTOs (Serveur → Client)
 // ============================================
@@ -58,6 +86,7 @@ data class ReviewResponse(
     val content: String?,
     val responseSalon: String?,
     val responseAt: LocalDateTime?,
+    val responseByName: String? = null,
     val isVerified: Boolean,
     val isVisible: Boolean,
     val createdAt: LocalDateTime?
@@ -66,7 +95,7 @@ data class ReviewResponse(
         /**
          * Convertit une entité Review en ReviewResponse.
          */
-        fun fromEntity(review: Review): ReviewResponse {
+        fun fromEntity(review: Review, responseByName: String? = null): ReviewResponse {
             val salon = review.salon!!
             val client = review.client!!
             val staff = review.staff
@@ -90,6 +119,7 @@ data class ReviewResponse(
                 content = review.content,
                 responseSalon = review.responseSalon,
                 responseAt = review.responseAt,
+                responseByName = responseByName,
                 isVerified = review.isVerified,
                 isVisible = review.isVisible,
                 createdAt = review.createdAt
@@ -105,20 +135,32 @@ data class SalonReviewStats(
     val salonId: String,
     val averageRating: BigDecimal,
     val totalReviews: Int,
-    val ratingDistribution: Map<Int, Long> // Map<rating, count>
+    val ratingDistribution: Map<Int, Long>,
+    val verifiedAverage: BigDecimal = BigDecimal.ZERO,
+    val verifiedCount: Int = 0,
+    val generalAverage: BigDecimal = BigDecimal.ZERO,
+    val generalCount: Int = 0
 ) {
     companion object {
         fun fromSalonAndDistribution(
             salonId: String,
             averageRating: BigDecimal,
             totalReviews: Int,
-            distribution: Map<Int, Long>
+            distribution: Map<Int, Long>,
+            verifiedAverage: BigDecimal = BigDecimal.ZERO,
+            verifiedCount: Int = 0,
+            generalAverage: BigDecimal = BigDecimal.ZERO,
+            generalCount: Int = 0
         ): SalonReviewStats {
             return SalonReviewStats(
                 salonId = salonId,
                 averageRating = averageRating,
                 totalReviews = totalReviews,
-                ratingDistribution = distribution
+                ratingDistribution = distribution,
+                verifiedAverage = verifiedAverage,
+                verifiedCount = verifiedCount,
+                generalAverage = generalAverage,
+                generalCount = generalCount
             )
         }
     }

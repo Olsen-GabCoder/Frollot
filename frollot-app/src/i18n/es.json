@@ -204,6 +204,7 @@
       "hairstylist": "Estilista"
     },
     "taggedSalon": "en {{name}}",
+    "byAuthor": "por {{name}}",
     "menu": {
       "viewPost": "Ver publicación",
       "addToCollection": "Añadir a una colección",
@@ -906,6 +907,18 @@
     "noReviews": "Sin reseñas",
     "ratingRequired": "Selecciona una nota",
     "successMessage": "Reseña publicada con éxito",
+    "writeSalonReview": "Dar mi opinion",
+    "verifiedRating": "{{rating}} verificada ({{count}})",
+    "generalRating": "{{rating}} general ({{count}})",
+    "verifiedBadge": "Visita",
+    "alreadySalonReview": "Ya dejaste una resena para este salon",
+    "replyButton": "Responder",
+    "replyTitle": "Responder a esta reseña",
+    "replyPlaceholder": "Su respuesta...",
+    "replySubmit": "Enviar",
+    "replyFrom": "Respuesta de {{salon}}",
+    "replySuccess": "Respuesta publicada",
+    "replyError": "No se pudo publicar la respuesta",
     "rating": {
       "bad": "Malo",
       "average": "Regular",
@@ -913,6 +926,14 @@
       "veryGood": "Muy bien",
       "excellent": "Excelente"
     }
+  },
+  "ownerReviews": {
+    "totalLabel": "Total",
+    "unrepliedLabel": "Sin respuesta",
+    "filterAll": "Todos",
+    "filterUnreplied": "Sin respuesta",
+    "filterReplied": "Respondidos",
+    "noUnreplied": "Todas las resenas han sido respondidas"
   },
   "payment": {
     "pay": "Pagar",

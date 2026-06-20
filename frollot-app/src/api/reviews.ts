@@ -1,5 +1,5 @@
 import api from './client';
-import { Review, CreateReviewRequest, SalonReviewStats, PageResponse } from '../types';
+import { Review, CreateReviewRequest, CreateSalonReviewRequest, SalonReviewStats, PageResponse } from '../types';
 
 export const reviewsApi = {
   createReview: (data: CreateReviewRequest) =>
@@ -22,4 +22,10 @@ export const reviewsApi = {
 
   getSalonReviewStats: (salonId: string) =>
     api.get<SalonReviewStats>(`/api/salons/${salonId}/reviews/stats`).then((r) => r.data),
+
+  replyToReview: (salonId: string, reviewId: string, reply: string) =>
+    api.put<Review>(`/api/salons/${salonId}/reviews/${reviewId}/reply`, { reply }).then((r) => r.data),
+
+  createSalonReview: (salonId: string, data: CreateSalonReviewRequest) =>
+    api.post<Review>(`/api/salons/${salonId}/reviews`, data).then((r) => r.data),
 };

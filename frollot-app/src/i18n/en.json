@@ -199,6 +199,7 @@
       "hairstylist": "Stylist"
     },
     "taggedSalon": "at {{name}}",
+    "byAuthor": "by {{name}}",
     "menu": {
       "viewPost": "View post",
       "addToCollection": "Add to a collection",
@@ -520,6 +521,18 @@
     "noReviews": "No reviews",
     "ratingRequired": "Please select a rating",
     "successMessage": "Review published successfully",
+    "writeSalonReview": "Share your opinion",
+    "verifiedRating": "{{rating}} verified ({{count}})",
+    "generalRating": "{{rating}} general ({{count}})",
+    "verifiedBadge": "Visit",
+    "alreadySalonReview": "You already left a review for this salon",
+    "replyButton": "Reply",
+    "replyTitle": "Reply to this review",
+    "replyPlaceholder": "Your reply...",
+    "replySubmit": "Send",
+    "replyFrom": "Reply from {{salon}}",
+    "replySuccess": "Reply published",
+    "replyError": "Unable to publish the reply",
     "rating": {
       "bad": "Bad",
       "average": "Average",
@@ -527,6 +540,14 @@
       "veryGood": "Very good",
       "excellent": "Excellent"
     }
+  },
+  "ownerReviews": {
+    "totalLabel": "Total",
+    "unrepliedLabel": "Unreplied",
+    "filterAll": "All",
+    "filterUnreplied": "Unreplied",
+    "filterReplied": "Replied",
+    "noUnreplied": "All reviews have been replied to"
   },
   "payment": {
     "pay": "Pay",

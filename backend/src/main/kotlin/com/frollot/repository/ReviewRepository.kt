@@ -107,6 +107,36 @@ interface ReviewRepository : JpaRepository<Review, String> {
     fun countByStaffIdsAndIsVisibleTrue(@Param("staffIds") staffIds: List<String>): Long
 
     /**
+     * Verifie si un avis-salon (sans booking) existe deja pour un client sur un salon.
+     */
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM Review r WHERE r.salon.id = :salonId AND r.client.id = :clientId AND r.booking IS NULL")
+    fun existsBySalonIdAndClientIdAndBookingIsNull(@Param("salonId") salonId: String, @Param("clientId") clientId: String): Boolean
+
+    /**
+     * Moyenne des avis VERIFIES (booking IS NOT NULL) d'un salon.
+     */
+    @Query("SELECT COALESCE(AVG(r.rating), 0.0) FROM Review r WHERE r.salon.id = :salonId AND r.isVisible = true AND r.booking IS NOT NULL")
+    fun findVerifiedAverageRatingBySalonId(@Param("salonId") salonId: String): BigDecimal
+
+    /**
+     * Nombre d'avis VERIFIES (booking IS NOT NULL) d'un salon.
+     */
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.salon.id = :salonId AND r.isVisible = true AND r.booking IS NOT NULL")
+    fun countVerifiedBySalonId(@Param("salonId") salonId: String): Long
+
+    /**
+     * Moyenne des avis GENERAUX (booking IS NULL) d'un salon.
+     */
+    @Query("SELECT COALESCE(AVG(r.rating), 0.0) FROM Review r WHERE r.salon.id = :salonId AND r.isVisible = true AND r.booking IS NULL")
+    fun findGeneralAverageRatingBySalonId(@Param("salonId") salonId: String): BigDecimal
+
+    /**
+     * Nombre d'avis GENERAUX (booking IS NULL) d'un salon.
+     */
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.salon.id = :salonId AND r.isVisible = true AND r.booking IS NULL")
+    fun countGeneralBySalonId(@Param("salonId") salonId: String): Long
+
+    /**
      * Trouve tous les avis d'un salon avec leurs relations chargées.
      */
     @Query(

@@ -122,6 +122,15 @@ data class Review(
     )
     var responseAt: LocalDateTime? = null,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+        name = "response_by",
+        nullable = true,
+        foreignKey = ForeignKey(name = "fk_review_response_by")
+    )
+    @JsonIgnore
+    var responseBy: User? = null,
+
     @Column(
         name = "is_verified",
         nullable = false

@@ -13,6 +13,7 @@ export interface Review {
   content?: string;
   responseSalon?: string;
   responseAt?: string;
+  responseByName?: string;
   isVerified: boolean;
   isVisible: boolean;
   createdAt?: string;
@@ -26,9 +27,21 @@ export interface CreateReviewRequest {
   content?: string;
 }
 
+export interface CreateSalonReviewRequest {
+  salonId: string;
+  rating: number;
+  title?: string;
+  content?: string;
+}
+
+
 export interface SalonReviewStats {
   salonId: string;
   averageRating: number;
   totalReviews: number;
   ratingDistribution: Record<string, number>;
+  verifiedAverage: number;
+  verifiedCount: number;
+  generalAverage: number;
+  generalCount: number;
 }

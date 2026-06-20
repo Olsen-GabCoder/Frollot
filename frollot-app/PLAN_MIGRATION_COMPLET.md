@@ -4726,3 +4726,38 @@ au lieu de "comingSoon".
   can('social.update_profile') + AccessDenied. Image uploade et URL stockee, tout part au save.
 - **i18n** : +8 cles salon.social.* (5 langues, parite 826/850)
 - tsc --noEmit = 0, check-keys 0 ecart. NON commite.
+
+### LOT A : AVIS-SALON LIBRE (2026-06-20)
+
+Diagnostic : le MODELE reviews.booking_id est DEJA NULLABLE (base + entite). 8 avis seed ont
+booking_id=NULL. Le flux createReview bloquait l'avis-salon (6 checks + bookingId obligatoire).
+Decision humain : NOTES SEPAREES (verifiee vs generale) + anti-abus 1/user/salon.
+
+Construction :
+- **Backend** : CreateSalonReviewRequest DTO + ReviewRepository (+existsBySalonIdAndClientIdAndBookingIsNull
+  anti-abus + 4 queries stats verified/general) + ReviewService.createSalonReview (anti-abus +
+  owner interdit + isVerified=false, booking=null) + SalonReviewStats DTO enrichi
+  (verifiedAverage/Count, generalAverage/Count backward-compatible) + endpoint POST
+  /api/salons/{salonId}/reviews @PreAuthorize("isAuthenticated()"). Flux avis-reservation INCHANGE.
+- **curl** : 201 isVerified=false | doublon 400 | stats verified=4.0(1) general=4.33(9) | non-regression OK
+- **Frontend** : CreateSalonReviewRequest TS + reviewsApi.createSalonReview + create-review.tsx
+  bookingId optionnel (mode salon = toast, pas Alert) + salon/[id].tsx onglet Avis (stats 2 sous-lignes
+  + bouton "Donner mon avis" connecte non-owner sans avis existant + badge "Visite" isVerified)
+- **i18n** : +5 cles review.* x 5 langues. Parite 852 FR, 0 ecart.
+- tsc=0, check-keys=0 ecart. 15 fichiers. NON commite.
+
+### LOT B : ECRAN OWNER-REVIEWS (2026-06-20) — DERNIER LOT CHANTIER AVIS
+
+Construction (frontend seul — endpoints backend existants) :
+- **owner-reviews.tsx** (nouveau) : ecran dedie consulter/repondre aux avis depuis le dashboard.
+  Garde permission usePermissions(salonId) -> AccessDenied si role=none. useFocusEffect pour
+  charger getAllSalonReviews + getSalonReviewStats. Bandeau stats (moyenne + total + non-repondus en
+  rouge). Filtre chips (Sans reponse | Repondus | Tous), defaut = Sans reponse (priorite owner).
+  Liste : ReviewCard avec avatar, nom, note etoiles, date, badge "Visite" (isVerified), contenu,
+  bloc reponse existante OU bouton Repondre (si canReply). Modal reply (meme pattern que
+  salon/[id].tsx) -> reviewsApi.replyToReview -> toast + refresh liste. Etats loading/erreur/vide.
+- **owner-dashboard.tsx** : tuile "Avis" activee (route=/owner-reviews, routeParams salonId).
+  Plus de placeholder/opacite 50%/comingSoon.
+- **i18n** : +6 cles ownerReviews.* x 5 langues (totalLabel, unrepliedLabel, filterAll,
+  filterUnreplied, filterReplied, noUnreplied). Parite 858 FR, 0 ecart.
+- tsc=0, check-keys=0 ecart. 18 fichiers (dont 1 nouveau). NON commite.

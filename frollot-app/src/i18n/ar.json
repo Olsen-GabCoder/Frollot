@@ -204,6 +204,7 @@
       "hairstylist": "مصفف شعر"
     },
     "taggedSalon": "في {{name}}",
+    "byAuthor": "بواسطة {{name}}",
     "menu": {
       "viewPost": "عرض المنشور",
       "addToCollection": "إضافة إلى مجموعة",
@@ -930,6 +931,18 @@
     "noReviews": "لا توجد تقييمات",
     "ratingRequired": "يرجى اختيار تقدير",
     "successMessage": "تم نشر التقييم بنجاح",
+    "writeSalonReview": "شارك رأيك",
+    "verifiedRating": "{{rating}} موثق ({{count}})",
+    "generalRating": "{{rating}} عام ({{count}})",
+    "verifiedBadge": "زيارة",
+    "alreadySalonReview": "لقد تركت بالفعل تقييمًا لهذا الصالون",
+    "replyButton": "رد",
+    "replyTitle": "الرد على هذا التقييم",
+    "replyPlaceholder": "ردك...",
+    "replySubmit": "إرسال",
+    "replyFrom": "رد من {{salon}}",
+    "replySuccess": "تم نشر الرد",
+    "replyError": "تعذر نشر الرد",
     "rating": {
       "bad": "سيئ",
       "average": "متوسط",
@@ -937,6 +950,14 @@
       "veryGood": "جيد جدًا",
       "excellent": "ممتاز"
     }
+  },
+  "ownerReviews": {
+    "totalLabel": "الإجمالي",
+    "unrepliedLabel": "بدون رد",
+    "filterAll": "الكل",
+    "filterUnreplied": "بدون رد",
+    "filterReplied": "تمت الإجابة",
+    "noUnreplied": "تمت الإجابة على جميع التقييمات"
   },
   "payment": {
     "pay": "دفع",

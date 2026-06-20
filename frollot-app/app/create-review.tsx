@@ -7,7 +7,6 @@ import {
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   I18nManager,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -15,17 +14,21 @@ import { useTranslation } from 'react-i18next';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../src/theme';
 import { reviewsApi } from '../src/api/reviews';
+import { useToast } from '../src/contexts/ToastContext';
 
 export default function CreateReviewScreen() {
   const { salonId, salonName, bookingId, serviceName } = useLocalSearchParams<{
     salonId: string;
     salonName: string;
-    bookingId: string;
-    serviceName: string;
+    bookingId?: string;
+    serviceName?: string;
   }>();
   const { t } = useTranslation();
   const theme = useTheme();
   const { colors, typography: typo } = theme;
+  const { showToast } = useToast();
+
+  const isSalonReview = !bookingId;
 
   const [rating, setRating] = useState(0);
   const [title, setTitle] = useState('');
@@ -38,7 +41,7 @@ export default function CreateReviewScreen() {
       setError(t('review.ratingRequired'));
       return;
     }
-    if (!salonId || !bookingId) {
+    if (!salonId) {
       setError(t('common.states.error'));
       return;
     }
@@ -46,18 +49,27 @@ export default function CreateReviewScreen() {
     setIsSubmitting(true);
     setError(null);
     try {
-      await reviewsApi.createReview({
-        salonId,
-        bookingId,
-        rating,
-        title: title.trim() || undefined,
-        content: content.trim() || undefined,
-      });
-      Alert.alert(t('common.actions.done'), t('review.successMessage'), [
-        { text: t('common.actions.ok'), onPress: () => router.back() },
-      ]);
+      if (isSalonReview) {
+        await reviewsApi.createSalonReview(salonId, {
+          salonId,
+          rating,
+          title: title.trim() || undefined,
+          content: content.trim() || undefined,
+        });
+      } else {
+        await reviewsApi.createReview({
+          salonId,
+          bookingId: bookingId!,
+          rating,
+          title: title.trim() || undefined,
+          content: content.trim() || undefined,
+        });
+      }
+      showToast(t('review.successMessage'), 'success');
+      router.back();
     } catch (e: any) {
-      setError(e?.response?.data?.message || t('common.states.error'));
+      const msg = e?.response?.data?.message || t('common.states.error');
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -73,15 +85,23 @@ export default function CreateReviewScreen() {
           <MaterialIcons name={I18nManager.isRTL ? 'arrow-forward' : 'arrow-back'} size={24} color={colors.onSurface} />
         </TouchableOpacity>
         <Text style={[typo.titleLarge, { color: colors.onSurface, marginStart: 16 }]}>
-          {t('review.writeReview')}
+          {isSalonReview ? t('review.writeSalonReview') : t('review.writeReview')}
         </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Booking info */}
+        {/* Context info */}
         <View style={[styles.card, { backgroundColor: colors.surface }]}>
-          <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{serviceName}</Text>
-          <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 4 }]}>{salonName}</Text>
+          {isSalonReview ? (
+            <Text style={[typo.titleSmall, { color: colors.onSurface }]}>
+              {salonName || t('review.reviewsTitle')}
+            </Text>
+          ) : (
+            <>
+              <Text style={[typo.titleSmall, { color: colors.onSurface }]}>{serviceName}</Text>
+              <Text style={[typo.bodyMedium, { color: colors.onSurfaceVariant, marginTop: 4 }]}>{salonName}</Text>
+            </>
+          )}
         </View>
 
         {/* Rating */}
@@ -133,6 +153,7 @@ export default function CreateReviewScreen() {
           onChangeText={setContent}
           multiline
           textAlignVertical="top"
+          maxLength={2000}
         />
 
         {/* Error */}

@@ -84,6 +84,13 @@ export function PostCard({
                 <Text style={[styles.typeText, { color: colors.secondary }]}>{post.authorUserType === 'salon_owner' ? t('social.authorTypes.salonOwner') : t('social.authorTypes.hairstylist')}</Text>
               </View>
             ) : null}
+            {isSalonPost(post) && post.authorName ? (
+              <TouchableOpacity onPress={onProfilePress}>
+                <Text style={[styles.byAuthor, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
+                  {'\u00B7 ' + t('social.byAuthor', { name: post.authorName })}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
             {salonTags.length > 0 && !isSalonPost(post) && (
               <TouchableOpacity style={styles.salonTagBtn} onPress={() => router.push(`/salon/${salonTags[0].taggedId}`)}>
                 <Text style={[styles.salonTag, { color: colors.tertiary }]} numberOfLines={1}>
@@ -230,6 +237,7 @@ const styles = StyleSheet.create({
   date: { fontFamily: 'Manrope-Regular', fontSize: 12, flexShrink: 0 },
   salonTagBtn: { flexShrink: 1, minWidth: 0 },
   salonTag: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600' },
+  byAuthor: { fontFamily: 'Manrope-Regular', fontSize: 12, flexShrink: 1 },
   iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   textSection: { paddingHorizontal: 16, paddingBottom: 12 },
   body: { fontFamily: 'Manrope-Regular', fontSize: 14, lineHeight: 21.7 },

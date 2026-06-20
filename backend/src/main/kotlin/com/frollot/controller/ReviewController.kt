@@ -1,6 +1,8 @@
 package com.frollot.controller
 
 import com.frollot.dto.CreateReviewRequest
+import com.frollot.dto.CreateSalonReviewRequest
+import com.frollot.dto.ReplyToReviewRequest
 import com.frollot.dto.ReviewResponse
 import com.frollot.dto.SalonReviewStats
 import com.frollot.model.User
@@ -97,6 +99,52 @@ class ReviewController(
             .status(HttpStatus.CREATED)
             .header("Location", "/api/reviews/${review.id}")
             .body(review)
+    }
+
+    // ========== ENDPOINT AVIS-SALON (sans reservation) ==========
+
+    @Operation(
+        summary = "Creer un avis-salon libre",
+        description = "Cree un avis general sur un salon, sans lien avec une reservation. 1 seul par user par salon."
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "201", description = "Avis-salon cree"),
+        ApiResponse(responseCode = "400", description = "Donnees invalides ou deja un avis"),
+        ApiResponse(responseCode = "404", description = "Salon non trouve")
+    ])
+    @PostMapping("/salons/{salonId}/reviews")
+    @PreAuthorize("isAuthenticated()")
+    fun createSalonReview(
+        @PathVariable salonId: String,
+        @Valid @RequestBody request: CreateSalonReviewRequest
+    ): ResponseEntity<ReviewResponse> {
+        val userId = getAuthenticatedUserId()
+        val effectiveRequest = if (request.salonId.isBlank()) request.copy(salonId = salonId) else request
+        val review = reviewService.createSalonReview(effectiveRequest, userId)
+        return ResponseEntity.status(HttpStatus.CREATED).body(review)
+    }
+
+    // ========== ENDPOINT RÉPONSE SALON ==========
+
+    @Operation(
+        summary = "Répondre à un avis",
+        description = "Permet au propriétaire ou manager du salon de répondre à un avis client"
+    )
+    @ApiResponses(value = [
+        ApiResponse(responseCode = "200", description = "Réponse enregistrée"),
+        ApiResponse(responseCode = "403", description = "Permission review.reply requise"),
+        ApiResponse(responseCode = "404", description = "Avis non trouvé")
+    ])
+    @PutMapping("/salons/{salonId}/reviews/{reviewId}/reply")
+    @PreAuthorize("isAuthenticated()")
+    fun replyToReview(
+        @PathVariable salonId: String,
+        @PathVariable reviewId: String,
+        @Valid @RequestBody request: ReplyToReviewRequest
+    ): ResponseEntity<ReviewResponse> {
+        val userId = getAuthenticatedUserId()
+        val review = reviewService.replyToReview(reviewId, salonId, userId, request)
+        return ResponseEntity.ok(review)
     }
 
     // ========== ENDPOINTS DE LECTURE ==========

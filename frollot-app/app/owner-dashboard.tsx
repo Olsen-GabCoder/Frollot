@@ -309,7 +309,7 @@ export default function OwnerDashboardScreen() {
     { icon: 'account-multiple-outline', labelKey: 'staff', route: '/owner-staff', routeParams: { salonId: activeSalonId || '' } },
     ...(can('salon.update_info') ? [{ icon: 'store-edit-outline' as const, labelKey: 'editSalon', route: '/edit-salon', routeParams: { salonId: activeSalonId || '' } }] : []),
     { icon: 'clock-outline', labelKey: 'hours' },
-    { icon: 'star-half-full', labelKey: 'reviews' },
+    { icon: 'star-half-full', labelKey: 'reviews', route: '/owner-reviews', routeParams: { salonId: activeSalonId || '' } },
     { icon: 'credit-card-outline', labelKey: 'payments' },
     { icon: 'human-queue', labelKey: 'queue', route: '/queue-management', routeParams: { salonId: activeSalonId || '' } },
   ];

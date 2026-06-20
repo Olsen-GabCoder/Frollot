@@ -1,6 +1,8 @@
 package com.frollot.service
 
 import com.frollot.dto.CreateReviewRequest
+import com.frollot.dto.CreateSalonReviewRequest
+import com.frollot.dto.ReplyToReviewRequest
 import com.frollot.dto.ReviewResponse
 import com.frollot.dto.SalonReviewStats
 import com.frollot.model.BookingStatus
@@ -13,8 +15,11 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import com.frollot.model.Review as ReviewEntity
+import com.frollot.service.SalonAuthorizationService
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.LocalDateTime
 import java.util.*
 
 /**
@@ -32,7 +37,8 @@ class ReviewService(
     private val reviewRepository: ReviewRepository,
     private val bookingRepository: BookingRepository,
     private val salonRepository: SalonRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val salonAuthorizationService: SalonAuthorizationService
 ) {
 
     // ========== EXCEPTIONS MÉTIER ==========
@@ -134,7 +140,51 @@ class ReviewService(
         updateSalonReviewStats(salon.id!!)
 
         // 12. Retourner la réponse
-        return ReviewResponse.fromEntity(savedReview)
+        return toResponseWithByName(savedReview)
+    }
+
+    // ========== CREATION D'AVIS-SALON (sans reservation) ==========
+
+    /**
+     * Cree un avis-salon libre (sans reservation).
+     * Anti-abus : 1 seul avis-salon par user par salon.
+     */
+    @Transactional
+    fun createSalonReview(request: CreateSalonReviewRequest, clientId: String): ReviewResponse {
+        request.validate()
+
+        val salon = salonRepository.findById(request.salonId)
+            .orElseThrow { SalonNotFoundException(request.salonId) }
+
+        // Anti-abus : un seul avis-salon par user par salon
+        if (reviewRepository.existsBySalonIdAndClientIdAndBookingIsNull(request.salonId, clientId)) {
+            throw InvalidReviewException("Vous avez deja laisse un avis sur ce salon")
+        }
+
+        val client = userRepository.findById(clientId)
+            .orElseThrow { UserNotFoundException(clientId) }
+
+        // Interdire a l'owner de noter son propre salon
+        if (salon.owner?.id == clientId) {
+            throw InvalidReviewException("Vous ne pouvez pas noter votre propre salon")
+        }
+
+        val review = Review(
+            id = UUID.randomUUID().toString(),
+            salon = salon,
+            staff = null,
+            client = client,
+            booking = null,
+            rating = request.rating,
+            title = request.title?.trim(),
+            content = request.content?.trim(),
+            isVerified = false,
+            isVisible = true
+        )
+
+        val savedReview = reviewRepository.save(review)
+        updateSalonReviewStats(salon.id!!)
+        return toResponseWithByName(savedReview)
     }
 
     // ========== LECTURE D'AVIS ==========
@@ -151,7 +201,7 @@ class ReviewService(
 
         return reviewRepository
             .findBySalonIdAndIsVisibleTrueOrderByCreatedAtDesc(salonId, pageable)
-            .map { ReviewResponse.fromEntity(it) }
+            .map { toResponseWithByName(it) }
     }
 
     /**
@@ -166,7 +216,7 @@ class ReviewService(
 
         return reviewRepository
             .findBySalonIdAndIsVisibleTrueOrderByCreatedAtDesc(salonId)
-            .map { ReviewResponse.fromEntity(it) }
+            .map { toResponseWithByName(it) }
     }
 
     /**
@@ -177,7 +227,7 @@ class ReviewService(
         val review = reviewRepository.findById(reviewId)
             .orElseThrow { ReviewNotFoundException(reviewId) }
 
-        return ReviewResponse.fromEntity(review)
+        return toResponseWithByName(review)
     }
 
     /**
@@ -187,7 +237,7 @@ class ReviewService(
     fun getClientReviews(clientId: String): List<ReviewResponse> {
         return reviewRepository
             .findByClientIdOrderByCreatedAtDesc(clientId)
-            .map { ReviewResponse.fromEntity(it) }
+            .map { toResponseWithByName(it) }
     }
 
     /**
@@ -196,6 +246,44 @@ class ReviewService(
     @Transactional(readOnly = true)
     fun hasReviewForBooking(bookingId: String): Boolean {
         return reviewRepository.existsByBookingId(bookingId)
+    }
+
+    // ========== RÉPONSE SALON ==========
+
+    /**
+     * Répondre à un avis (owner/manager du salon).
+     */
+    fun replyToReview(reviewId: String, salonId: String, userId: String, request: ReplyToReviewRequest): ReviewResponse {
+        request.validate()
+
+        val review = reviewRepository.findById(reviewId)
+            .orElseThrow { ReviewNotFoundException(reviewId) }
+
+        // Vérifier que l'avis appartient au salon
+        if (review.salon?.id != salonId) {
+            throw InvalidReviewException("Cet avis n'appartient pas au salon '$salonId'")
+        }
+
+        // Vérifier la permission review.reply
+        salonAuthorizationService.requirePermission(userId, salonId, "review.reply")
+
+        val responder = userRepository.findById(userId)
+            .orElseThrow { UserNotFoundException(userId) }
+
+        review.responseSalon = request.reply.trim()
+        review.responseAt = LocalDateTime.now()
+        review.responseBy = responder
+
+        val saved = reviewRepository.save(review)
+        return toResponseWithByName(saved)
+    }
+
+    /** Résout le nom de l'auteur de la réponse pour l'affichage « par X ». */
+    private fun toResponseWithByName(review: ReviewEntity): ReviewResponse {
+        val byName = review.responseBy?.let { user ->
+            "${user.firstName ?: ""} ${user.lastName ?: ""}".trim().ifBlank { user.email }
+        }
+        return ReviewResponse.fromEntity(review, responseByName = byName)
     }
 
     // ========== STATISTIQUES ==========
@@ -224,11 +312,20 @@ class ReviewService(
             distribution[rating] ?: 0L
         }
 
+        val verifiedAvg = reviewRepository.findVerifiedAverageRatingBySalonId(salonId)
+        val verifiedCnt = reviewRepository.countVerifiedBySalonId(salonId).toInt()
+        val generalAvg = reviewRepository.findGeneralAverageRatingBySalonId(salonId)
+        val generalCnt = reviewRepository.countGeneralBySalonId(salonId).toInt()
+
         return SalonReviewStats.fromSalonAndDistribution(
             salonId = salonId,
             averageRating = averageRating,
             totalReviews = totalReviews,
-            distribution = fullDistribution
+            distribution = fullDistribution,
+            verifiedAverage = verifiedAvg,
+            verifiedCount = verifiedCnt,
+            generalAverage = generalAvg,
+            generalCount = generalCnt
         )
     }
 

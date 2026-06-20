@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, RefreshControl, FlatList, I18nManager } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, RefreshControl, FlatList, I18nManager, Modal, Pressable, TextInput } from 'react-native';
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -11,12 +11,15 @@ import { salonsApi } from '../../src/api/salons';
 import { socialApi } from '../../src/api/social';
 import { queueApi } from '../../src/api/queue';
 import { reviewsApi } from '../../src/api/reviews';
+import { bookingsApi } from '../../src/api/bookings';
 import { Avatar, RatingStars, ServiceImageStack } from '../../src/components/common';
 import { PrimaryButton, OutlineButton } from '../../src/components/ui';
 import { LoadingState, ErrorState } from '../../src/components/lists';
+import { useToast } from '../../src/contexts/ToastContext';
+import { usePermissions } from '../../src/hooks/usePermissions';
 
 import { PostCard } from '../../src/components/social';
-import { Salon, SalonService, StaffMember, Review, SalonReviewStats, QueueStatusResponse, PostResponse, SERVICE_CATEGORY_META } from '../../src/types';
+import { Salon, SalonService, StaffMember, Review, SalonReviewStats, QueueStatusResponse, PostResponse, BookingResponse, BookingStatus, SERVICE_CATEGORY_META } from '../../src/types';
 import { useTheme } from '../../src/theme';
 import { resolveMediaUrl } from '../../src/utils/media';
 import { navigateToProfile } from '../../src/utils/navigateToProfile';
@@ -32,6 +35,7 @@ export default function SalonDetailScreen() {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuthStore();
+  const { can } = usePermissions(id);
 
   const [salon, setSalon] = useState<Salon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,6 +52,12 @@ export default function SalonDetailScreen() {
   const [followersCount, setFollowersCount] = useState(0);
   const [salonPosts, setSalonPosts] = useState<PostResponse[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  // L7: reply to review + write review
+  const { showToast } = useToast();
+  const [eligibleBooking, setEligibleBooking] = useState<BookingResponse | null>(null);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isReplying, setIsReplying] = useState(false);
 
   const [isTogglingFollow, setIsTogglingFollow] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,6 +79,26 @@ export default function SalonDetailScreen() {
       if (revR.status === 'fulfilled') setReviews(revR.value);
       if (statsR.status === 'fulfilled') setReviewStats(statsR.value);
       if (qR.status === 'fulfilled') setQueueStatus(qR.value);
+
+      // Check if current user has a completed booking eligible for review
+      if (user) {
+        try {
+          const bookings = await bookingsApi.getUserBookings(user.id);
+          const completedForSalon = bookings.filter(
+            (b) => b.salonId === id && b.status === BookingStatus.COMPLETED,
+          );
+          // Find one without a review already
+          const reviewedBookingIds = new Set(
+            (revR.status === 'fulfilled' ? revR.value : [])
+              .map((r) => r.bookingId)
+              .filter(Boolean),
+          );
+          const eligible = completedForSalon.find((b) => !reviewedBookingIds.has(b.id));
+          setEligibleBooking(eligible ?? null);
+        } catch {
+          // Non-blocking — user just won't see the write review button
+        }
+      }
     } catch (e: any) { setError(e?.message || t('common.states.error')); } finally { setIsLoading(false); }
   }, [id]);
 
@@ -102,6 +132,11 @@ export default function SalonDetailScreen() {
   };
 
   const isOwner = user?.id === salon?.ownerId;
+
+  // Check if current user already has a salon review (booking=null) on this salon
+  const hasExistingSalonReview = user
+    ? reviews.some((r) => r.clientId === user.id && !r.bookingId)
+    : true; // not logged in = hide button
 
   // Load posts when tab selected
   useEffect(() => {
@@ -143,6 +178,25 @@ export default function SalonDetailScreen() {
 
   const queueSize = queueStatus?.entries?.filter(e => e.status === 'WAITING').length ?? 0;
   const avgRating = reviewStats?.averageRating ?? 0;
+
+  const canReply = can('review.reply');
+
+  const handleReply = async () => {
+    if (!replyingToId || !replyText.trim() || !id) return;
+    setIsReplying(true);
+    try {
+      const updated = await reviewsApi.replyToReview(id, replyingToId, replyText.trim());
+      setReviews(prev => prev.map(r => r.id === replyingToId ? updated : r));
+      setReplyingToId(null);
+      setReplyText('');
+      showToast(t('review.replySuccess'), 'success');
+    } catch (err: any) {
+      console.warn('[salon] replyToReview failed:', err?.message ?? err);
+      showToast(t('review.replyError'), 'error');
+    } finally {
+      setIsReplying(false);
+    }
+  };
   const totalReviews = reviewStats?.totalReviews ?? 0;
 
   return (
@@ -281,18 +335,90 @@ export default function SalonDetailScreen() {
                   <Text style={[s.statsRating, { color: colors.onTertiaryContainer }]}>{avgRating.toFixed(1)}</Text>
                   <RatingStars value={avgRating} size={20} />
                   <Text style={[s.statsCount, { color: colors.onTertiaryContainer }]}>{t('review.totalReviews', { count: totalReviews })}</Text>
+                  {/* Separated ratings */}
+                  {(reviewStats.verifiedCount > 0 || reviewStats.generalCount > 0) && (
+                    <View style={s.statsBreakdown}>
+                      {reviewStats.verifiedCount > 0 && (
+                        <View style={s.statsBreakdownRow}>
+                          <MaterialCommunityIcons name="check-decagram" size={14} color={colors.tertiary} />
+                          <Text style={[s.statsBreakdownText, { color: colors.onTertiaryContainer }]}>
+                            {t('review.verifiedRating', { rating: reviewStats.verifiedAverage.toFixed(1), count: reviewStats.verifiedCount })}
+                          </Text>
+                        </View>
+                      )}
+                      {reviewStats.generalCount > 0 && (
+                        <View style={s.statsBreakdownRow}>
+                          <MaterialCommunityIcons name="account-outline" size={14} color={colors.onTertiaryContainer} />
+                          <Text style={[s.statsBreakdownText, { color: colors.onTertiaryContainer }]}>
+                            {t('review.generalRating', { rating: reviewStats.generalAverage.toFixed(1), count: reviewStats.generalCount })}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
+              )}
+              {/* Avis-reservation button (existing) */}
+              {eligibleBooking && salon && (
+                <TouchableOpacity
+                  style={[s.writeReviewBtn, { backgroundColor: colors.tertiary }]}
+                  onPress={() => router.push(
+                    `/create-review?salonId=${id}&salonName=${encodeURIComponent(salon.name)}&bookingId=${eligibleBooking.id}&serviceName=${encodeURIComponent(eligibleBooking.serviceName)}`
+                  )}
+                >
+                  <MaterialCommunityIcons name="pencil-outline" size={18} color={colors.onTertiary} />
+                  <Text style={[s.writeReviewBtnText, { color: colors.onTertiary }]}>{t('review.writeReview')}</Text>
+                </TouchableOpacity>
+              )}
+              {/* Avis-salon button (new — for any logged-in non-owner without existing salon review) */}
+              {user && !isOwner && !hasExistingSalonReview && salon && (
+                <TouchableOpacity
+                  style={[s.writeReviewBtn, { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.tertiary }]}
+                  onPress={() => router.push(
+                    `/create-review?salonId=${id}&salonName=${encodeURIComponent(salon.name)}`
+                  )}
+                >
+                  <MaterialCommunityIcons name="star-outline" size={18} color={colors.tertiary} />
+                  <Text style={[s.writeReviewBtnText, { color: colors.tertiary }]}>{t('review.writeSalonReview')}</Text>
+                </TouchableOpacity>
               )}
               {reviews.map((rev) => (
                 <View key={rev.id} style={[s.reviewItem, { borderBottomColor: colors.outlineVariant }]}>
                   <TouchableOpacity style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }} onPress={() => navigateToProfile('client', rev.clientId)} activeOpacity={0.7}>
                     <Avatar initials={rev.clientName?.[0] || 'U'} size={40} tone="tertiary" />
                     <View>
-                      <Text style={[s.reviewAuthor, { color: colors.onSurface }]}>{rev.clientName}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Text style={[s.reviewAuthor, { color: colors.onSurface }]}>{rev.clientName}</Text>
+                        {rev.isVerified && (
+                          <View style={[s.verifiedBadge, { backgroundColor: colors.tertiaryContainer }]}>
+                            <MaterialCommunityIcons name="check-decagram" size={11} color={colors.tertiary} />
+                            <Text style={[s.verifiedText, { color: colors.tertiary }]}>{t('review.verifiedBadge')}</Text>
+                          </View>
+                        )}
+                      </View>
                       <RatingStars value={rev.rating} size={14} />
                     </View>
                   </TouchableOpacity>
                   {rev.content && <Text style={[s.reviewContent, { color: colors.onSurface }]}>{rev.content}</Text>}
+
+                  {/* L7: salon reply */}
+                  {rev.responseSalon ? (
+                    <View style={[s.replyBlock, { backgroundColor: colors.surfaceContainerHigh, borderStartColor: colors.tertiary }]}>
+                      <Text style={[s.replyHeader, { color: colors.tertiary }]}>
+                        {t('review.replyFrom', { salon: rev.salonName })}
+                        {rev.responseByName ? (' \u00B7 ' + t('social.byAuthor', { name: rev.responseByName })) : ''}
+                      </Text>
+                      <Text style={[s.replyText, { color: colors.onSurface }]}>{rev.responseSalon}</Text>
+                    </View>
+                  ) : canReply ? (
+                    <TouchableOpacity
+                      style={[s.replyBtn, { borderColor: colors.tertiary }]}
+                      onPress={() => { setReplyingToId(rev.id); setReplyText(''); }}
+                    >
+                      <MaterialCommunityIcons name="reply" size={16} color={colors.tertiary} />
+                      <Text style={[s.replyBtnText, { color: colors.tertiary }]}>{t('review.replyButton')}</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
               ))}
             </>
@@ -360,6 +486,41 @@ export default function SalonDetailScreen() {
           </>
         )}
       </LinearGradient>
+
+      {/* L7: Reply modal */}
+      <Modal visible={!!replyingToId} transparent animationType="fade" onRequestClose={() => setReplyingToId(null)}>
+        <Pressable style={s.replyOverlay} onPress={() => setReplyingToId(null)}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={[s.replyCard, { backgroundColor: colors.surfaceContainerHighest, borderColor: colors.outlineVariant }]}>
+            <Text style={[s.replyCardTitle, { color: colors.onSurface }]}>{t('review.replyTitle')}</Text>
+            <TextInput
+              style={[s.replyInput, { backgroundColor: colors.surface, color: colors.onSurface, borderColor: colors.outlineVariant }]}
+              placeholder={t('review.replyPlaceholder')}
+              placeholderTextColor={colors.onSurfaceVariant}
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+              textAlignVertical="top"
+              maxLength={2000}
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 12 }}>
+              <TouchableOpacity onPress={() => setReplyingToId(null)} style={[s.replyActionBtn, { borderColor: colors.outline }]}>
+                <Text style={[s.replyActionText, { color: colors.onSurfaceVariant }]}>{t('common.actions.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleReply}
+                disabled={isReplying || !replyText.trim()}
+                style={[s.replyActionBtn, { backgroundColor: replyText.trim() ? colors.tertiary : colors.surfaceContainerHigh }]}
+              >
+                {isReplying ? (
+                  <ActivityIndicator size="small" color={colors.onTertiary} />
+                ) : (
+                  <Text style={[s.replyActionText, { color: replyText.trim() ? colors.onTertiary : colors.onSurfaceVariant }]}>{t('review.replySubmit')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -416,9 +577,27 @@ const s = StyleSheet.create({
   statsCard: { alignItems: 'center', padding: 20, marginVertical: 12, borderRadius: 16, gap: 4 },
   statsRating: { fontFamily: 'CormorantGaramond-SemiBold', fontSize: 36, fontWeight: '600' },
   statsCount: { fontFamily: 'Manrope-Regular', fontSize: 12 },
+  statsBreakdown: { flexDirection: 'row', gap: 16, marginTop: 8 },
+  statsBreakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statsBreakdownText: { fontFamily: 'Manrope-Regular', fontSize: 11.5 },
+  verifiedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999 },
+  verifiedText: { fontFamily: 'Manrope-SemiBold', fontSize: 10, fontWeight: '600' },
+  writeReviewBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 999, marginBottom: 12 },
+  writeReviewBtnText: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
   reviewItem: { paddingVertical: 14, borderBottomWidth: 1 },
   reviewAuthor: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
   reviewContent: { fontFamily: 'Manrope-Regular', fontSize: 14, lineHeight: 20 },
+  replyBlock: { marginTop: 10, marginStart: 12, padding: 12, borderRadius: 12, borderStartWidth: 3 },
+  replyHeader: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600', marginBottom: 4 },
+  replyText: { fontFamily: 'Manrope-Regular', fontSize: 13, lineHeight: 19 },
+  replyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1 },
+  replyBtnText: { fontFamily: 'Manrope-SemiBold', fontSize: 12, fontWeight: '600' },
+  replyOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 24 },
+  replyCard: { borderRadius: 20, borderWidth: 1, padding: 20 },
+  replyCardTitle: { fontFamily: 'Manrope-SemiBold', fontSize: 17, fontWeight: '600', marginBottom: 12 },
+  replyInput: { minHeight: 100, borderRadius: 12, padding: 14, fontSize: 14, borderWidth: 1, fontFamily: 'Manrope-Regular' },
+  replyActionBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 999, borderWidth: 1 },
+  replyActionText: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
   // Info
   infoLabel: { fontFamily: 'Manrope-Bold', fontSize: 11, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase' },
   infoValue: { fontFamily: 'Manrope-Regular', fontSize: 14, lineHeight: 20 },

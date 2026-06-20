@@ -204,6 +204,7 @@
       "hairstylist": "Friseur/in"
     },
     "taggedSalon": "bei {{name}}",
+    "byAuthor": "von {{name}}",
     "menu": {
       "viewPost": "Beitrag anzeigen",
       "addToCollection": "Zu einer Sammlung hinzufügen",
@@ -906,6 +907,18 @@
     "noReviews": "Keine Bewertungen",
     "ratingRequired": "Bitte wählen Sie eine Note",
     "successMessage": "Bewertung erfolgreich veröffentlicht",
+    "writeSalonReview": "Meine Meinung abgeben",
+    "verifiedRating": "{{rating}} verifiziert ({{count}})",
+    "generalRating": "{{rating}} allgemein ({{count}})",
+    "verifiedBadge": "Besuch",
+    "alreadySalonReview": "Sie haben bereits eine Bewertung fur diesen Salon abgegeben",
+    "replyButton": "Antworten",
+    "replyTitle": "Auf diese Bewertung antworten",
+    "replyPlaceholder": "Ihre Antwort...",
+    "replySubmit": "Senden",
+    "replyFrom": "Antwort von {{salon}}",
+    "replySuccess": "Antwort veröffentlicht",
+    "replyError": "Antwort konnte nicht veröffentlicht werden",
     "rating": {
       "bad": "Schlecht",
       "average": "Durchschnittlich",
@@ -913,6 +926,14 @@
       "veryGood": "Sehr gut",
       "excellent": "Ausgezeichnet"
     }
+  },
+  "ownerReviews": {
+    "totalLabel": "Gesamt",
+    "unrepliedLabel": "Unbeantwortet",
+    "filterAll": "Alle",
+    "filterUnreplied": "Unbeantwortet",
+    "filterReplied": "Beantwortet",
+    "noUnreplied": "Alle Bewertungen wurden beantwortet"
   },
   "payment": {
     "pay": "Bezahlen",
