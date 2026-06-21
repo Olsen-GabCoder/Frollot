@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 16, gap: 8 },
   searchInput: { flex: 1, height: 48, borderRadius: 12, paddingHorizontal: 16, fontSize: 16, borderWidth: 1 },
   searchBtn: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
+  list: { paddingHorizontal: 16, paddingBottom: 24 },
   salonCard: { flexDirection: 'row', borderRadius: 16, padding: 12, marginBottom: 10 },
   salonThumb: { width: 72, height: 72, borderRadius: 12 },
   salonInfo: { flex: 1, marginStart: 12, justifyContent: 'center' },

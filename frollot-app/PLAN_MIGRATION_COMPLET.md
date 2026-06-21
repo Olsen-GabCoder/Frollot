@@ -5069,6 +5069,51 @@ PROPOSITION DE DECOUPAGE :
   - i18n : 10 cles charts.* ajoutees (5 langues, parite).
   - tsc --noEmit = 0, check-keys = 0 ecart.
 
+  ### DIAGNOSTIC C4 SPECIALITES COIFFEUR (2026-06-21, pure lecture)
+  Diagnostic exhaustif : structure, logique metier, impact reservations, droits, UI, plan.
+  AXE 1 — DEUX NOTIONS : salon_staff_specialties (ServiceCategory enum, FK staff_id, impacte reservation)
+    vs user_specialties (texte libre profil/marketing). C4 = salon_staff_specialties UNIQUEMENT.
+  AXE 2 — canPerformService utilise en 3 points : createBooking (validation), getAvailableSlots (filtre staff),
+    getStaffBySpecialty (choix coiffeur). AUCUNE re-validation sur bookings existants.
+  AXE 3 — IMPACT RDV : SANS DANGER. Declarer des specialites n'affecte que le FUTUR (nouvelles reservations).
+    Les 7 RDV existants de Darla restent intacts meme si elle ne declare que {COUPE}.
+  AXE 4 — DROITS : endpoint PUT /salons/{salonId}/staff/{staffId} existe, requiert permission staff.update
+    (owner-only). Pour C4 : creer PUT /staff/me/specialties (garde isSelf) OU ajouter permission
+    staff.update_own_specialties au role hairstylist.
+  AXE 5 — UI : owner-staff.tsx a un composant chips categories reutilisable (ServiceCategory + SERVICE_CATEGORY_META
+    + cles i18n service.categories.*). Coiffeur accederait via dashboard C2 ou menu profil.
+  AMPLEUR : ~2h. Backend 1 endpoint OWN + frontend 1 ecran/modal + i18n.
+
+  ### LOT C4 — Coiffeur C4 REPRIS apres coupure : inventaire existant + finition + preuve RDV intacts + Darla remise generaliste (2026-06-21)
+  REPRISE apres coupure secteur. Une impl C4 existait deja (tentative anterieure hors boucle) ->
+  INVENTAIRE d'abord, PUIS preuves. Resultat : DEJA FAIT et CORRECT, 0 ligne a corriger (Partie B vide).
+  INVENTAIRE :
+  - Backend StaffMeController.kt : PUT + GET /api/staff/me/specialties. Scope OWN parfait : resout le
+    user AUTHENTIFIE (SecurityContext) -> son salon_staff actif (findByUserId.filter{isActive}.first),
+    AUCUN staffId en parametre => impossible de toucher un collegue. Validation : categorie invalide ->
+    400 (message + valeurs acceptees), liste vide acceptee (= generaliste), dedup via Set. GET expose
+    specialties + allCategories (pre-cochage). COMPLET.
+  - Frontend my-specialties.tsx : pas besoin de useMyStaffMemberships (le backend resout le staffId
+    depuis l'auth, plus propre). Pre-coche via getMySpecialties. Chips des 7 ServiceCategory reutilisant
+    SERVICE_CATEGORY_META + i18n service.categories.*. UX SEMANTIQUE VALORISANTE : badge generaliste
+    (star-circle + "Vous realisez toutes les prestations"), etat specialise = "propose uniquement pour
+    ces categories", note rassurante "Vos rendez-vous deja pris ne sont pas affectes". Save -> PUT ->
+    toast succes ; catch -> toast (pas muet). Tous les hooks avant les early return. COMPLET.
+  - Navigation : entree "Mes specialites" (icone content-cut) dans menu profil, gated isHairstylist
+    (profile.tsx:309-313). OK.
+  - i18n : bloc mySpecialties (10 cles) dans LES 5 langues (fr/en/es/de/ar), parite stricte.
+  PREUVES API (token via refresh_tokens DB -> POST /api/users/refresh ; mysql CLI OK via 127.0.0.1, pas
+  localhost) :
+  - C2 PUT [COUPE,COLORATION] -> 200, GET reconfirme persistance.
+  - C3 PUT [] -> 200 "Generaliste".
+  - C4 PUT [XXX] -> 400 "Categorie invalide".
+  - C5 (CRITIQUE) PUT [COUPE] -> 200, puis GET /staff/{id}/bookings -> 7 RDV TOUJOURS LA et intacts
+    (1 completed BARBE, 2 confirmed COIFFAGE+SOIN, 4 pending COUPE x2/COLORATION/COIFFAGE) malgre la
+    restriction a COUPE => declarer des specialites n'affecte QUE le futur, jamais les RDV existants.
+  - C6 PUT [] -> 200, GET + DB confirment Darla revenue a 0 specialite (generaliste) ; 7 bookings intacts.
+  BASELINES : tsc --noEmit = 0 ; check-keys = 0 ecart (958 cles fr ref, 5 langues) ; gradlew classes
+  BUILD SUCCESSFUL. NON COMMITE (validation humaine).
+
   ### DIAGNOSTIC SERVICES + GALERIE PHOTOS (2026-06-21, pure lecture)
   AXE 1 — STRUCTURE SERVICE :
     Table salon_services : id CHAR(36) PK, salon_id FK, name VARCHAR(255) NOT NULL, description TEXT,

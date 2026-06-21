@@ -307,6 +307,11 @@ export default function ProfileScreen() {
       onPress: () => router.push('/staff-dashboard' as any),
     }] : []),
     ...(isHairstylist ? [{
+      icon: 'content-cut' as const,
+      label: t('mySpecialties.menuLabel'),
+      onPress: () => router.push('/my-specialties' as any),
+    }] : []),
+    ...(isHairstylist ? [{
       icon: 'mail-outline' as const,
       label: t('myInvitations.title'),
       onPress: () => router.push('/my-invitations' as any),
@@ -418,7 +423,6 @@ export default function ProfileScreen() {
           <Text style={[s.logoutLabel, { color: colors.error }]}>{t('settings.logout')}</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 40 }} />
       </ScrollView>
 
       <LogoutConfirmModal visible={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
@@ -510,7 +514,7 @@ export default function ProfileScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 24 },
   actionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 999, minHeight: 40 },
   actionLabel: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600' },
   menuCard: { borderRadius: 16, overflow: 'hidden', marginHorizontal: 16, marginTop: 16, marginBottom: 24 },

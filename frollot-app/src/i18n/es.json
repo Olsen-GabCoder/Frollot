@@ -1142,5 +1142,17 @@
       "cancelReason": "Razon (opcional)",
       "cancelConfirm": "Confirmar cancelacion"
     }
+  },
+  "mySpecialties": {
+    "title": "Mis especialidades",
+    "menuLabel": "Mis especialidades",
+    "description": "Seleccione las categorias de servicios que realiza. Si no selecciona ninguna, se le considera generalista y se le propondra para todos los servicios del salon.",
+    "generalist": "Generalista",
+    "generalistHint": "Realiza todos los servicios del salon",
+    "specialized": "{{count}} especialidad(es)",
+    "specializedHint": "Se le propone solo para estas categorias",
+    "selectCategories": "Categorias de servicios",
+    "saveSuccess": "Especialidades actualizadas",
+    "bookingsNote": "Sus citas existentes no se ven afectadas por este cambio."
   }
 }

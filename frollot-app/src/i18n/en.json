@@ -1142,5 +1142,17 @@
       "cancelReason": "Reason (optional)",
       "cancelConfirm": "Confirm cancellation"
     }
+  },
+  "mySpecialties": {
+    "title": "My specialties",
+    "menuLabel": "My specialties",
+    "description": "Select the service categories you perform. If none are selected, you are considered a generalist and will be offered for all salon services.",
+    "generalist": "Generalist",
+    "generalistHint": "You perform all salon services",
+    "specialized": "{{count}} specialty(ies)",
+    "specializedHint": "You are offered only for these categories",
+    "selectCategories": "Service categories",
+    "saveSuccess": "Specialties updated",
+    "bookingsNote": "Your existing appointments are not affected by this change."
   }
 }

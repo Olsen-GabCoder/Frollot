@@ -1142,5 +1142,17 @@
       "cancelReason": "Grund (optional)",
       "cancelConfirm": "Absage bestatigen"
     }
+  },
+  "mySpecialties": {
+    "title": "Meine Fachgebiete",
+    "menuLabel": "Meine Fachgebiete",
+    "description": "Wahlen Sie die Leistungskategorien aus, die Sie anbieten. Wenn keine ausgewahlt ist, gelten Sie als Generalist und werden fur alle Leistungen des Salons vorgeschlagen.",
+    "generalist": "Generalist",
+    "generalistHint": "Sie fuhren alle Leistungen des Salons aus",
+    "specialized": "{{count}} Fachgebiet(e)",
+    "specializedHint": "Sie werden nur fur diese Kategorien vorgeschlagen",
+    "selectCategories": "Leistungskategorien",
+    "saveSuccess": "Fachgebiete aktualisiert",
+    "bookingsNote": "Ihre bereits gebuchten Termine sind von dieser Anderung nicht betroffen."
   }
 }

@@ -1142,5 +1142,17 @@
       "cancelReason": "Raison (optionnel)",
       "cancelConfirm": "Confirmer l'annulation"
     }
+  },
+  "mySpecialties": {
+    "title": "Mes specialites",
+    "menuLabel": "Mes specialites",
+    "description": "Selectionnez les categories de prestations que vous realisez. Si aucune n'est cochee, vous etes considere comme generaliste et propose pour toutes les prestations du salon.",
+    "generalist": "Generaliste",
+    "generalistHint": "Vous realisez toutes les prestations du salon",
+    "specialized": "{{count}} specialite(s)",
+    "specializedHint": "Vous etes propose uniquement pour ces categories",
+    "selectCategories": "Categories de prestations",
+    "saveSuccess": "Specialites mises a jour",
+    "bookingsNote": "Vos rendez-vous deja pris ne sont pas affectes par ce changement."
   }
 }

@@ -129,4 +129,11 @@ export const salonsApi = {
   // Opening hours
   updateOpeningHours: (salonId: string, data: UpdateOpeningHoursRequest) =>
     api.put(`/api/salons/${salonId}/opening-hours`, data).then((r) => r.data),
+
+  // Staff self-service (scope OWN)
+  getMySpecialties: () =>
+    api.get<{ specialties: string[]; allCategories: string[] }>('/api/staff/me/specialties').then((r) => r.data),
+
+  updateMySpecialties: (specialties: string[]) =>
+    api.put<{ specialties: string[]; message: string }>('/api/staff/me/specialties', { specialties }).then((r) => r.data),
 };

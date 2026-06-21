@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
   filterChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999 },
   filterText: { fontFamily: 'Manrope-SemiBold', fontSize: 13, fontWeight: '600' },
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
+  list: { paddingHorizontal: 16, paddingBottom: 24 },
   card: { borderRadius: 16, padding: 16, marginBottom: 10 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
