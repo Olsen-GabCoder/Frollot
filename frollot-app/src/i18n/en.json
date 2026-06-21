@@ -549,6 +549,31 @@
     "filterReplied": "Replied",
     "noUnreplied": "All reviews have been replied to"
   },
+  "openingHours": {
+    "title": "Opening hours",
+    "open": "Open",
+    "closed": "Closed",
+    "notSet": "Opening hours not set",
+    "addRange": "Add a time slot",
+    "applyToAll": "Apply to all days",
+    "copyFrom": "Copy hours from",
+    "appliedToAll": "Hours applied to all days",
+    "saveSuccess": "Opening hours saved",
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "validation": {
+      "invalidTime": "{{day}}: invalid time format (HH:mm expected)",
+      "closeBeforeOpen": "{{day}}: closing time must be after opening",
+      "overlap": "{{day}}: time slots overlap"
+    }
+  },
   "payment": {
     "pay": "Pay",
     "paymentHistory": "Payment history",
@@ -600,7 +625,8 @@
         "bookings": "Bookings",
         "revenue": "Revenue",
         "rating": "Average rating",
-        "followers": "Followers"
+        "followers": "Followers",
+        "upcoming": "Upcoming"
       },
       "manage": "Manage my salon",
       "tiles": {
@@ -633,10 +659,23 @@
       "chart": {
         "title": "Booking trends",
         "today": "Today",
+        "todayLabel": "Today",
         "7d": "7 days",
-        "28d": "28 days",
-        "empty": "No data yet"
-      }
+        "28d": "30 days",
+        "year": "Year",
+        "empty": "No bookings in this period",
+        "past": "Completed",
+        "upcoming": "Upcoming"
+      },
+      "statusTitle": "Status breakdown",
+      "status": {
+        "pending": "Pending",
+        "confirmed": "Confirmed",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "upcomingTitle": "Upcoming appointments",
+      "upcomingEmpty": "No upcoming appointments"
     },
     "ownerServices": {
       "title": "My services",
@@ -1031,6 +1070,77 @@
       "title": "Access restricted",
       "message": "You don't have access to this section. Contact the salon owner if you think this is an error.",
       "back": "Go back"
+    }
+  },
+  "staffDashboard": {
+    "title": "Dashboard",
+    "menuLabel": "Dashboard",
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "nextAppointment": "Next appointment",
+    "now": "Now",
+    "inMinutes_one": "in {{count}} min",
+    "inMinutes_other": "in {{count}} min",
+    "inHours_one": "in {{count}}h",
+    "inHours_other": "in {{count}}h",
+    "inDays_one": "in {{count}} day",
+    "inDays_other": "in {{count}} days",
+    "kpi": {
+      "today": "Today",
+      "thisWeek": "This week",
+      "upcoming": "Upcoming",
+      "completedMonth": "Completed this month"
+    },
+    "todayTimeline": "Today",
+    "noBookingsToday": "No appointments today",
+    "upcoming": "Coming up",
+    "topServices": "Most frequent services",
+    "times": "times",
+    "viewAgenda": "View full schedule",
+    "charts": {
+      "serviceDistribution": "My service breakdown",
+      "weeklyLoad": "My daily load",
+      "total": "total",
+      "others": "Others",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
+  },
+  "mySchedule": {
+    "title": "My Schedule",
+    "menuLabel": "My Schedule",
+    "memberRole": "Team member",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "appointmentCount_one": "{{count}} appointment",
+    "appointmentCount_other": "{{count}} appointments",
+    "empty": "No appointments",
+    "noMembership": "No salon membership",
+    "noMembershipHint": "You are not linked to any salon yet. Accept an invitation to see your appointments.",
+    "filters": {
+      "all": "All",
+      "upcoming": "Upcoming",
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "completed": "Completed"
+    },
+    "actions": {
+      "confirm": "Confirm",
+      "complete": "Complete",
+      "cancel": "Cancel",
+      "confirmSuccess": "Appointment confirmed",
+      "completeSuccess": "Appointment completed",
+      "cancelSuccess": "Appointment cancelled",
+      "cancelTitle": "Cancel appointment",
+      "cancelReason": "Reason (optional)",
+      "cancelConfirm": "Confirm cancellation"
     }
   }
 }

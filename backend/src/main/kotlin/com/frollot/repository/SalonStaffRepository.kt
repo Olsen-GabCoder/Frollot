@@ -1,7 +1,6 @@
 package com.frollot.repository
 
 import com.frollot.model.SalonStaff
-import com.frollot.model.ServiceCategory
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -42,25 +41,6 @@ interface SalonStaffRepository : JpaRepository<SalonStaff, String> {
         ORDER BY s.createdAt DESC
     """)
     fun findActiveBySalonId(@Param("salonId") salonId: String): List<SalonStaff>
-
-    /**
-     * Récupère les membres du staff d'un salon ayant une spécialité donnée.
-     *
-     * @param salonId Identifiant du salon
-     * @param specialty Catégorie de service recherchée
-     * @return Liste des membres ayant cette spécialité
-     */
-    @Query("""
-        SELECT s FROM SalonStaff s 
-        JOIN s.specialties sp
-        WHERE s.salon.id = :salonId 
-        AND sp = :specialty
-        AND s.isActive = true
-    """)
-    fun findBySalonIdAndSpecialty(
-        @Param("salonId") salonId: String,
-        @Param("specialty") specialty: ServiceCategory
-    ): List<SalonStaff>
 
     /**
      * Vérifie si un utilisateur fait déjà partie du staff d'un salon.

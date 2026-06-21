@@ -663,7 +663,8 @@
         "bookings": "الحجوزات",
         "revenue": "الإيرادات",
         "rating": "التقييم المتوسط",
-        "followers": "المتابعون"
+        "followers": "المتابعون",
+        "upcoming": "القادمة"
       },
       "manage": "إدارة صالوني",
       "tiles": {
@@ -696,10 +697,23 @@
       "chart": {
         "title": "تطور الحجوزات",
         "today": "اليوم",
+        "todayLabel": "اليوم",
         "7d": "٧ أيام",
-        "28d": "٢٨ يومًا",
-        "empty": "لا توجد بيانات بعد"
-      }
+        "28d": "٣٠ يومًا",
+        "year": "سنة",
+        "empty": "لا حجوزات في هذه الفترة",
+        "past": "منجزة",
+        "upcoming": "قادمة"
+      },
+      "statusTitle": "التوزيع حسب الحالة",
+      "status": {
+        "pending": "قيد الانتظار",
+        "confirmed": "مؤكدة",
+        "completed": "منجزة",
+        "cancelled": "ملغاة"
+      },
+      "upcomingTitle": "المواعيد القادمة",
+      "upcomingEmpty": "لا مواعيد قادمة"
     },
     "ownerServices": {
       "title": "خدماتي",
@@ -959,6 +973,31 @@
     "filterReplied": "تمت الإجابة",
     "noUnreplied": "تمت الإجابة على جميع التقييمات"
   },
+  "openingHours": {
+    "title": "ساعات العمل",
+    "open": "مفتوح",
+    "closed": "مغلق",
+    "notSet": "ساعات العمل غير محددة",
+    "addRange": "إضافة فترة",
+    "applyToAll": "تطبيق على جميع الأيام",
+    "copyFrom": "نسخ الأوقات من",
+    "appliedToAll": "تم تطبيق الأوقات على جميع الأيام",
+    "saveSuccess": "تم حفظ ساعات العمل",
+    "days": {
+      "monday": "الإثنين",
+      "tuesday": "الثلاثاء",
+      "wednesday": "الأربعاء",
+      "thursday": "الخميس",
+      "friday": "الجمعة",
+      "saturday": "السبت",
+      "sunday": "الأحد"
+    },
+    "validation": {
+      "invalidTime": "{{day}}: تنسيق الوقت غير صالح (HH:mm متوقع)",
+      "closeBeforeOpen": "{{day}}: وقت الإغلاق يجب أن يكون بعد وقت الفتح",
+      "overlap": "{{day}}: الفترات الزمنية متداخلة"
+    }
+  },
   "payment": {
     "pay": "دفع",
     "paymentHistory": "سجل المدفوعات",
@@ -1055,6 +1094,77 @@
       "title": "وصول مقيد",
       "message": "ليس لديك صلاحية الوصول إلى هذا القسم. تواصل مع مالك الصالون إذا كنت تعتقد أن هذا خطأ.",
       "back": "رجوع"
+    }
+  },
+  "staffDashboard": {
+    "title": "لوحة القيادة",
+    "menuLabel": "لوحة القيادة",
+    "greetingMorning": "صباح الخير",
+    "greetingAfternoon": "مساء الخير",
+    "greetingEvening": "مساء الخير",
+    "nextAppointment": "الموعد التالي",
+    "now": "الآن",
+    "inMinutes_one": "خلال {{count}} د",
+    "inMinutes_other": "خلال {{count}} د",
+    "inHours_one": "خلال {{count}} س",
+    "inHours_other": "خلال {{count}} س",
+    "inDays_one": "خلال {{count}} يوم",
+    "inDays_other": "خلال {{count}} أيام",
+    "kpi": {
+      "today": "اليوم",
+      "thisWeek": "هذا الأسبوع",
+      "upcoming": "القادمة",
+      "completedMonth": "مكتملة هذا الشهر"
+    },
+    "todayTimeline": "اليوم",
+    "noBookingsToday": "لا توجد مواعيد اليوم",
+    "upcoming": "الأيام القادمة",
+    "topServices": "الخدمات المتكررة",
+    "times": "مرات",
+    "viewAgenda": "عرض كل المواعيد",
+    "charts": {
+      "serviceDistribution": "توزيع خدماتي",
+      "weeklyLoad": "حجم العمل اليومي",
+      "total": "إجمالي",
+      "others": "أخرى",
+      "mon": "إثن",
+      "tue": "ثلا",
+      "wed": "أرب",
+      "thu": "خمي",
+      "fri": "جمع",
+      "sat": "سبت",
+      "sun": "أحد"
+    }
+  },
+  "mySchedule": {
+    "title": "جدول مواعيدي",
+    "menuLabel": "جدول مواعيدي",
+    "memberRole": "عضو الفريق",
+    "today": "اليوم",
+    "tomorrow": "غدا",
+    "yesterday": "أمس",
+    "appointmentCount_one": "{{count}} موعد",
+    "appointmentCount_other": "{{count}} مواعيد",
+    "empty": "لا توجد مواعيد",
+    "noMembership": "لا يوجد ارتباط بصالون",
+    "noMembershipHint": "لست مرتبطا بأي صالون حاليا. اقبل دعوة لعرض مواعيدك.",
+    "filters": {
+      "all": "الكل",
+      "upcoming": "القادمة",
+      "pending": "معلقة",
+      "confirmed": "مؤكدة",
+      "completed": "مكتملة"
+    },
+    "actions": {
+      "confirm": "تأكيد",
+      "complete": "إتمام",
+      "cancel": "إلغاء",
+      "confirmSuccess": "تم تأكيد الموعد",
+      "completeSuccess": "تم إتمام الموعد",
+      "cancelSuccess": "تم إلغاء الموعد",
+      "cancelTitle": "إلغاء الموعد",
+      "cancelReason": "السبب (اختياري)",
+      "cancelConfirm": "تأكيد الإلغاء"
     }
   }
 }

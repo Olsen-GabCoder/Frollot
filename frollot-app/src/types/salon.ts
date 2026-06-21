@@ -1,5 +1,12 @@
 import { VerificationType } from './user';
 
+export interface TimeRange {
+  open: string;
+  close: string;
+}
+
+export type OpeningHours = Record<string, TimeRange[] | null>;
+
 export interface Salon {
   id: string;
   name: string;
@@ -20,10 +27,15 @@ export interface Salon {
   websiteUrl?: string;
   isFollowedByCurrentUser?: boolean;
   followersCount?: number;
-  // Salon.kt: ratingAverage (BigDecimal) & totalReviews (Int) — colonnes DB,
-  // pas encore exposées dans SalonResponse DTO mais anticipées par l'écran Home.
   averageRating?: number;
   reviewCount?: number;
+  openingHours?: OpeningHours;
+  timezone?: string;
+}
+
+export interface UpdateOpeningHoursRequest {
+  openingHours?: OpeningHours;
+  timezone?: string;
 }
 
 export interface CreateSalonRequest {

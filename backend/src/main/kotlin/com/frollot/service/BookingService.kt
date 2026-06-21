@@ -113,6 +113,16 @@ class BookingService(
         val durationMinutes = service.durationMinutes
         val endDatetime = request.bookingDatetime.plusMinutes(durationMinutes.toLong())
 
+        // 6b. Vérification des horaires d'ouverture
+        val bookingDate = request.bookingDatetime.toLocalDate()
+        val openingRanges = resolveOpeningRangesForDate(salon, bookingDate)
+        val bookingTime = request.bookingDatetime.toLocalTime()
+        if (!isWithinOpeningHours(openingRanges, bookingTime, durationMinutes)) {
+            throw InvalidBookingException(
+                "Le salon est fermé à cet horaire. La prestation (${durationMinutes} min) doit tenir entièrement dans une plage d'ouverture."
+            )
+        }
+
         // 7. Vérification de la disponibilité du créneau
 
         // 7a. Vérifier que le client n'a pas déjà une réservation au même moment
@@ -430,8 +440,9 @@ class BookingService(
                 .orElseThrow { SalonStaffService.StaffNotFoundException(request.staffId) }
             listOf(staff)
         } else {
-            // Tous les coiffeurs actifs du salon pouvant faire ce service
-            salonStaffRepository.findBySalonIdAndSpecialty(request.salonId, service.category)
+            // Tous les coiffeurs actifs du salon pouvant faire ce service (generalistes inclus, owner exclu)
+            salonStaffRepository.findBySalonId(request.salonId)
+                .filter { it.isActive && it.role != "owner" && it.canPerformService(service.category) }
         }
 
         if (staffList.isEmpty()) {
@@ -443,41 +454,50 @@ class BookingService(
             )
         }
 
-        // 4. Paramètres de génération de créneaux
-        val targetDate = request.date.toLocalDate()
-        val openingTime = LocalTime.of(9, 0) // 9h
-        val closingTime = LocalTime.of(19, 0) // 19h
+        // 4. Résolution des plages horaires du salon pour la date demandée
+        val salon = salonRepository.findById(request.salonId).get()
+        val targetDate = request.date
+        val openingRanges = resolveOpeningRangesForDate(salon, targetDate)
         val slotInterval = 30 // minutes entre chaque créneau
 
         val slots = mutableListOf<TimeSlot>()
 
-        // 5. Génération des créneaux pour chaque coiffeur
+        // Si aucune plage (fermé / non renseigné) -> aucun créneau
+        if (openingRanges.isEmpty()) {
+            return AvailableSlotsResponse(
+                date = request.date,
+                salonId = request.salonId,
+                serviceId = request.serviceId,
+                slots = emptyList()
+            )
+        }
+
+        // 5. Génération des créneaux DANS chaque plage, pour chaque coiffeur
         for (staff in staffList) {
-            var currentTime = LocalDateTime.of(targetDate, openingTime)
-            val endOfDay = LocalDateTime.of(targetDate, closingTime)
+            for ((rangeOpen, rangeClose) in openingRanges) {
+                var currentTime = LocalDateTime.of(targetDate, rangeOpen)
+                val rangeEnd = LocalDateTime.of(targetDate, rangeClose)
 
-            while (currentTime.plusMinutes(service.durationMinutes.toLong()).isBefore(endOfDay) ||
-                currentTime.plusMinutes(service.durationMinutes.toLong()).isEqual(endOfDay)
-            ) {
-                val slotEnd = currentTime.plusMinutes(service.durationMinutes.toLong())
+                while (currentTime.plusMinutes(service.durationMinutes.toLong()) <= rangeEnd) {
+                    val slotEnd = currentTime.plusMinutes(service.durationMinutes.toLong())
 
-                // Vérifier la disponibilité
-                val isAvailable = bookingRepository.hasStaffConflict(
-                    staff.id!!,
-                    currentTime,
-                    slotEnd
-                ) == 0L
+                    val isAvailable = bookingRepository.hasStaffConflict(
+                        staff.id!!,
+                        currentTime,
+                        slotEnd
+                    ) == 0L
 
-                slots.add(
-                    TimeSlot(
-                        datetime = currentTime,
-                        staffId = staff.id,
-                        staffName = "${staff.user?.firstName} ${staff.user?.lastName}",
-                        available = isAvailable
+                    slots.add(
+                        TimeSlot(
+                            datetime = currentTime,
+                            staffId = staff.id,
+                            staffName = "${staff.user?.firstName} ${staff.user?.lastName}",
+                            available = isAvailable
+                        )
                     )
-                )
 
-                currentTime = currentTime.plusMinutes(slotInterval.toLong())
+                    currentTime = currentTime.plusMinutes(slotInterval.toLong())
+                }
             }
         }
 
@@ -491,6 +511,43 @@ class BookingService(
             serviceId = request.serviceId,
             slots = availableSlots
         )
+    }
+
+    // ========== RESOLUTION HORAIRES ==========
+
+    /**
+     * Resout les plages horaires effectives d'un salon pour une date donnee.
+     * Lot 2 : recurrent seulement (jour de la semaine -> plages du salon).
+     * Lot 3 : inserer ici la logique d'exception datee AVANT le recurrent.
+     */
+    fun resolveOpeningRangesForDate(salon: Salon, date: LocalDate): List<Pair<LocalTime, LocalTime>> {
+        // --- Lot 3 : exception datee ---
+        // if (salon has exception for date) return exception ranges (or empty if closed)
+        // --- fin Lot 3 ---
+
+        // Recurrent : jour de la semaine -> plages depuis openingHours
+        val oh = salon.openingHours ?: return emptyList()
+        val dayName = date.dayOfWeek.name.lowercase() // "monday", "tuesday", ...
+        val ranges = oh[dayName] ?: return emptyList()
+        if (ranges.isEmpty()) return emptyList()
+
+        return ranges.mapNotNull { entry ->
+            val open = entry["open"] ?: return@mapNotNull null
+            val close = entry["close"] ?: return@mapNotNull null
+            try {
+                Pair(LocalTime.parse(open), LocalTime.parse(close))
+            } catch (_: Exception) {
+                null
+            }
+        }.sortedBy { it.first }
+    }
+
+    /**
+     * Verifie qu'un creneau (start + duration) tombe entierement dans une plage ouverte.
+     */
+    fun isWithinOpeningHours(ranges: List<Pair<LocalTime, LocalTime>>, start: LocalTime, durationMinutes: Int): Boolean {
+        val end = start.plusMinutes(durationMinutes.toLong())
+        return ranges.any { (open, close) -> start >= open && end <= close }
     }
 
     // ========== STATISTIQUES ==========

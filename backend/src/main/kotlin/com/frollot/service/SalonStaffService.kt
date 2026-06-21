@@ -169,8 +169,9 @@ class SalonStaffService(
             throw SalonServiceService.SalonNotFoundException(salonId)
         }
 
-        val staffList = salonStaffRepository.findBySalonIdAndSpecialty(salonId, specialty)
-        return StaffResponse.fromEntities(staffList)
+        val allActive = salonStaffRepository.findBySalonId(salonId)
+            .filter { it.isActive && it.role != "owner" && it.canPerformService(specialty) }
+        return StaffResponse.fromEntities(allActive)
     }
 
     /**

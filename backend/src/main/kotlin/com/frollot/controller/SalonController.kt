@@ -4,8 +4,10 @@
 package com.frollot.controller
 
 import com.frollot.dto.CreateSalonRequest
+import com.frollot.dto.OpeningHoursResponse
 import com.frollot.dto.PageResponse
 import com.frollot.dto.SalonResponse
+import com.frollot.dto.UpdateOpeningHoursRequest
 import com.frollot.dto.UpdateSalonRequest
 import jakarta.validation.Valid
 import com.frollot.model.FollowingType
@@ -242,6 +244,8 @@ class SalonController(
                 reviewCount = salonEntity.reviewCount,
                 isFollowedByCurrentUser = if (currentUserId != null) isFollowed else null,
                 followersCount = followersCount,
+                openingHours = salonEntity.openingHours,
+                timezone = salonEntity.timezone,
                 createdAt = salonEntity.createdAt
             )
             
@@ -403,6 +407,34 @@ class SalonController(
             ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(mapOf("error" to (e.message ?: "Acces refuse")))
         } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(mapOf("error" to (e.message ?: "Donnees invalides")))
+        }
+    }
+
+    // ========== HORAIRES D'OUVERTURE ==========
+
+    @Operation(
+        summary = "Modifier les horaires d'ouverture",
+        description = "Met a jour les horaires recurrents (semaine type) et/ou le fuseau horaire du salon. Requiert salon.update_info."
+    )
+    @PutMapping("/{salonId}/opening-hours")
+    @PreAuthorize("isAuthenticated()")
+    fun updateOpeningHours(
+        @PathVariable salonId: String,
+        @Valid @RequestBody request: UpdateOpeningHoursRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val userId = getAuthenticatedUserId()
+            val result = salonService.updateOpeningHours(salonId, request, userId)
+            ResponseEntity.ok(result)
+        } catch (e: NoSuchElementException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(mapOf("error" to (e.message ?: "Salon non trouve")))
+        } catch (e: com.frollot.service.SalonAuthorizationService.PermissionDeniedException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(mapOf("error" to (e.message ?: "Acces refuse")))
+        } catch (e: IllegalArgumentException) {
             ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(mapOf("error" to (e.message ?: "Donnees invalides")))
         }

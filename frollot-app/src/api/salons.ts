@@ -14,6 +14,7 @@ import {
   InvitableStylist,
   InvitationResponse,
   MyPermissionsResponse,
+  UpdateOpeningHoursRequest,
 } from '../types';
 
 export const salonsApi = {
@@ -124,4 +125,8 @@ export const salonsApi = {
   // Permissions
   getMyPermissions: (salonId: string) =>
     api.get<MyPermissionsResponse>(`/api/salons/${salonId}/my-permissions`).then((r) => r.data),
+
+  // Opening hours
+  updateOpeningHours: (salonId: string, data: UpdateOpeningHoursRequest) =>
+    api.put(`/api/salons/${salonId}/opening-hours`, data).then((r) => r.data),
 };

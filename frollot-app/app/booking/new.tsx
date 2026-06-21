@@ -447,13 +447,13 @@ export default function BookingScreen() {
       {/* Bottom bar — Date step */}
       {step === 'date' && selectedDate && selectedTime && (
         <View style={[s.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.outlineVariant }]}>
-          <View>
+          <View style={s.bottomInfo}>
             <Text style={[s.bottomDate, { color: colors.onSurfaceVariant }]}>
               {formatDayShort(selectedDate)}. {selectedDate.getDate()} {formatMonthName(selectedDate)} · {selectedTime}
             </Text>
             <Text style={[s.bottomPrice, { color: colors.onSurface }]}>{selectedService?.price} €</Text>
           </View>
-          <PrimaryButton icon="arrow-right" full onPress={goToSummary} style={s.continueBtn}>
+          <PrimaryButton icon="arrow-right" onPress={goToSummary} style={{ ...s.continueBtn, flex: 1 }}>
             {t('booking.continue')}
           </PrimaryButton>
         </View>
@@ -462,13 +462,13 @@ export default function BookingScreen() {
       {/* Bottom bar — Summary step */}
       {step === 'summary' && (
         <View style={[s.bottomBar, { backgroundColor: colors.surface, borderTopColor: colors.outlineVariant }]}>
-          <View>
+          <View style={s.bottomInfo}>
             <Text style={[s.bottomDate, { color: colors.onSurfaceVariant }]}>
               {selectedDate && selectedTime && `${formatDayShort(selectedDate)}. ${selectedDate.getDate()} ${formatMonthName(selectedDate)} · ${selectedTime}`}
             </Text>
             <Text style={[s.bottomPrice, { color: colors.onSurface }]}>{selectedService?.price} €</Text>
           </View>
-          <PrimaryButton icon="check" full onPress={handleBook} loading={isBooking} style={s.continueBtn}>
+          <PrimaryButton icon="check" onPress={handleBook} loading={isBooking} style={{ ...s.continueBtn, flex: 1 }}>
             {t('common.actions.confirm')}
           </PrimaryButton>
         </View>
@@ -532,7 +532,7 @@ const s = StyleSheet.create({
   summaryCard: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 20 },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   summaryLabel: { fontFamily: 'Manrope-Regular', fontSize: 12, width: 70 },
-  summaryValue: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600', flex: 1 },
+  summaryValue: { fontFamily: 'Manrope-SemiBold', fontSize: 14, fontWeight: '600', flex: 1, flexShrink: 1 },
   summaryDivider: { height: 1, marginVertical: 2 },
   // Error
   errorCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, marginBottom: 16 },
@@ -546,6 +546,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 20, paddingVertical: 14, paddingBottom: 18,
     flexDirection: 'row', alignItems: 'center', gap: 14,
   },
+  bottomInfo: { flexShrink: 1 },
   bottomDate: { fontFamily: 'Manrope-Regular', fontSize: 12 },
   bottomPrice: { fontFamily: 'Manrope-SemiBold', fontSize: 16, fontWeight: '600' },
   continueBtn: { shadowColor: 'rgb(39,26,44)', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 2 }, // design-fixed

@@ -2,7 +2,9 @@ package com.frollot.model
 
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.UpdateTimestamp
+import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -75,6 +77,14 @@ data class Salon(
 
     @Column(name = "website_url", length = 500)
     var websiteUrl: String? = null,
+
+    // Horaires d'ouverture (semaine type, multi-plages par jour)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "opening_hours", columnDefinition = "JSON")
+    var openingHours: Map<String, List<Map<String, String>>>? = null,
+
+    @Column(name = "timezone", length = 64, nullable = false)
+    var timezone: String = "Africa/Libreville",
 
     // Phase H.2 - Vérification Salons/Coiffeurs
     @Column(name = "is_verified", nullable = false)

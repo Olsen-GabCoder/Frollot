@@ -54,7 +54,15 @@ export const useAuthStore = create<AuthState>((set, get) => {
       );
     }
     await tokenManager.setTokens(response.accessToken, response.refreshToken);
-    const user = authResponseToUser(response);
+    // Charger le profil complet via GET /me (AuthResponse ne contient que les
+    // champs basiques — city, coverImageUrl, instagramHandle etc. en sont absents).
+    let user: User;
+    try {
+      user = await usersApi.getCurrentUser();
+    } catch {
+      // Fallback sur les champs basiques de l'AuthResponse si /me échoue
+      user = authResponseToUser(response);
+    }
     set({ user, isAuthenticated: true, pendingTwoFactorToken: null });
   };
 

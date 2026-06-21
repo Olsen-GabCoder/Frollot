@@ -44,4 +44,7 @@ export const bookingsApi = {
 
   getDailyBookings: (salonId: string, from: string, to: string) =>
     api.get<BookingSummary[]>(`/api/salons/${salonId}/bookings/daily`, { params: { from, to } }).then((r) => r.data),
+
+  getStaffBookings: (staffId: string) =>
+    api.get<BookingResponse[]>(`/api/staff/${staffId}/bookings`).then((r) => r.data),
 };

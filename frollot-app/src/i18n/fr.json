@@ -549,6 +549,31 @@
     "filterReplied": "Repondus",
     "noUnreplied": "Tous les avis ont recu une reponse"
   },
+  "openingHours": {
+    "title": "Horaires",
+    "open": "Ouvert",
+    "closed": "Ferme",
+    "notSet": "Horaires non renseignes",
+    "addRange": "Ajouter une plage",
+    "applyToAll": "Appliquer a tous les jours",
+    "copyFrom": "Copier les horaires de",
+    "appliedToAll": "Horaires appliques a tous les jours",
+    "saveSuccess": "Horaires enregistres",
+    "days": {
+      "monday": "Lundi",
+      "tuesday": "Mardi",
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi",
+      "sunday": "Dimanche"
+    },
+    "validation": {
+      "invalidTime": "{{day}} : format horaire invalide (HH:mm attendu)",
+      "closeBeforeOpen": "{{day}} : la fermeture doit etre apres l'ouverture",
+      "overlap": "{{day}} : les plages horaires se chevauchent"
+    }
+  },
   "payment": {
     "pay": "Payer",
     "paymentHistory": "Historique des paiements",
@@ -600,7 +625,8 @@
         "bookings": "Réservations",
         "revenue": "Revenus",
         "rating": "Note moyenne",
-        "followers": "Abonnés"
+        "followers": "Abonnés",
+        "upcoming": "À venir"
       },
       "manage": "Gérer mon salon",
       "tiles": {
@@ -633,10 +659,23 @@
       "chart": {
         "title": "Évolution des réservations",
         "today": "Aujourd'hui",
+        "todayLabel": "Auj.",
         "7d": "7 jours",
-        "28d": "28 jours",
-        "empty": "Pas encore de données"
-      }
+        "28d": "30 jours",
+        "year": "Année",
+        "empty": "Aucune réservation sur cette période",
+        "past": "Réalisé",
+        "upcoming": "À venir"
+      },
+      "statusTitle": "Répartition par statut",
+      "status": {
+        "pending": "En attente",
+        "confirmed": "Confirmées",
+        "completed": "Réalisées",
+        "cancelled": "Annulées"
+      },
+      "upcomingTitle": "Prochains rendez-vous",
+      "upcomingEmpty": "Aucun rendez-vous à venir"
     },
     "ownerServices": {
       "title": "Mes prestations",
@@ -1031,6 +1070,77 @@
       "title": "Acces reserve",
       "message": "Vous n'avez pas acces a cet espace. Contactez le proprietaire du salon si vous pensez qu'il s'agit d'une erreur.",
       "back": "Retour"
+    }
+  },
+  "staffDashboard": {
+    "title": "Tableau de bord",
+    "menuLabel": "Tableau de bord",
+    "greetingMorning": "Bonjour",
+    "greetingAfternoon": "Bon apres-midi",
+    "greetingEvening": "Bonsoir",
+    "nextAppointment": "Prochain rendez-vous",
+    "now": "Maintenant",
+    "inMinutes_one": "dans {{count}} min",
+    "inMinutes_other": "dans {{count}} min",
+    "inHours_one": "dans {{count}}h",
+    "inHours_other": "dans {{count}}h",
+    "inDays_one": "dans {{count}} jour",
+    "inDays_other": "dans {{count}} jours",
+    "kpi": {
+      "today": "Aujourd'hui",
+      "thisWeek": "Cette semaine",
+      "upcoming": "A venir",
+      "completedMonth": "Realises ce mois"
+    },
+    "todayTimeline": "Journee",
+    "noBookingsToday": "Pas de rendez-vous aujourd'hui",
+    "upcoming": "Prochains jours",
+    "topServices": "Prestations frequentes",
+    "times": "fois",
+    "viewAgenda": "Voir tout mon agenda",
+    "charts": {
+      "serviceDistribution": "Repartition de mes prestations",
+      "weeklyLoad": "Ma charge par jour",
+      "total": "total",
+      "others": "Autres",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam",
+      "sun": "Dim"
+    }
+  },
+  "mySchedule": {
+    "title": "Mon agenda",
+    "menuLabel": "Mon agenda",
+    "memberRole": "Membre de l'equipe",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "yesterday": "Hier",
+    "appointmentCount_one": "{{count}} RDV",
+    "appointmentCount_other": "{{count}} RDV",
+    "empty": "Aucun rendez-vous",
+    "noMembership": "Aucun rattachement salon",
+    "noMembershipHint": "Vous n'etes rattache a aucun salon pour le moment. Acceptez une invitation pour voir vos rendez-vous.",
+    "filters": {
+      "all": "Tous",
+      "upcoming": "A venir",
+      "pending": "En attente",
+      "confirmed": "Confirmes",
+      "completed": "Realises"
+    },
+    "actions": {
+      "confirm": "Confirmer",
+      "complete": "Terminer",
+      "cancel": "Annuler",
+      "confirmSuccess": "Rendez-vous confirme",
+      "completeSuccess": "Rendez-vous termine",
+      "cancelSuccess": "Rendez-vous annule",
+      "cancelTitle": "Annuler le rendez-vous",
+      "cancelReason": "Raison (optionnel)",
+      "cancelConfirm": "Confirmer l'annulation"
     }
   }
 }

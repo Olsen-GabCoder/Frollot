@@ -4761,3 +4761,431 @@ Construction (frontend seul — endpoints backend existants) :
 - **i18n** : +6 cles ownerReviews.* x 5 langues (totalLabel, unrepliedLabel, filterAll,
   filterUnreplied, filterReplied, noUnreplied). Parite 858 FR, 0 ecart.
 - tsc=0, check-keys=0 ecart. 18 fichiers (dont 1 nouveau). NON commite.
+
+### DIAGNOSTIC HORAIRES + SYSTEME RESERVATION (2026-06-20)
+
+AXE 1 — HORAIRES (opening_hours) :
+- **Colonne** : `opening_hours JSON NULL` EXISTE dans la table salons (migration DDL existante).
+  Valeur actuelle = NULL (aucune donnee).
+- **Entite Salon.kt** : la colonne N'EST PAS MAPPEE (aucun champ openingHours). A ajouter.
+- **Affichage** : aucun affichage horaires dans salon/[id].tsx (onglet info = adresse + description
+  seulement). La tuile "Horaires" du dashboard owner = placeholder comingSoon (L311, pas de route).
+
+AXE 2 — SYSTEME DE RESERVATION :
+- **Entite Booking** : porte bookingDatetime (timestamp precis) + durationMinutes (depuis le service).
+  Methode getEndDatetime() = start + duration. PAS de colonne end_time en base (calcule).
+- **SalonService** : porte durationMinutes (default 30 min). La duree est copiee dans le booking
+  a la creation (L113 BookingService).
+- **CREATION createBooking** (BookingService.kt:61-154) — validations EXISTANTES :
+  1. Salon existe (L65)
+  2. Client existe + type client (L69-74)
+  3. Service existe + appartient au salon (L77-83)
+  4. Staff optionnel : existe, actif, meme salon, peut faire le service (L86-105)
+  5. Date dans le futur (L108-110)
+  6. Duree depuis le service (L113)
+  7a. **CHEVAUCHEMENT CLIENT** : hasClientConflict query (L119-126) — empeche le meme client d'avoir
+     2 reservations au meme moment
+  7b. **CHEVAUCHEMENT STAFF** : hasStaffConflict query (L129-138) — si un coiffeur est specifie,
+     verifie qu'il n'a pas de reservation qui chevauche
+  >>> PAS de validation horaires : aucune verification que le creneau tombe dans les horaires
+     d'ouverture du salon. Un client peut reserver a 3h du matin si le creneau est libre. <<<
+- **SYSTEME DE CRENEAUX** (BookingService.kt:417-494) : getAvailableSlots EXISTE et genere des slots.
+  MAIS les plages horaires sont HARDCODEES :
+    openingTime = 9h, closingTime = 19h, slotInterval = 30min (L448-450).
+  La generation : boucle de 9h a 19h par pas de 30min, pour chaque coiffeur eligible, verifie
+  hasStaffConflict pour chaque slot. Filtre les slots passes + indisponibles.
+  >>> C'est LE point de branchement : remplacer le hardcode 9h-19h par les opening_hours du salon
+     = contrainte LEGERE si les horaires sont stockes dans un format exploitable. <<<
+- **Cote app** (booking/new.tsx) : le client voit une grille de creneaux proposes par le backend
+  (L102-109 : bookingsApi.getAvailableSlots). Il choisit un slot -> le datetime est envoye au
+  backend. Le client ne saisit PAS d'heure libre — il choisit parmi les creneaux proposes.
+- **Horaires SALON vs COIFFEUR** : aujourd'hui, les creneaux sont generes PAR COIFFEUR (boucle
+  sur staffList L455), mais la plage horaire (9h-19h) est au niveau SALON (globale, hardcodee).
+  Un coiffeur n'a pas d'horaires propres. La pause dejeuner n'est PAS geree (continu 9h-19h).
+- **Bookings en base** : 2 reservations (1 pending, 1 completed). Impact migration negligeable.
+
+VERDICTS :
+1. **La contrainte horaires est un AJOUT LEGER** : le systeme de creneaux existe deja, la
+   generation de slots est hardcodee 9h-19h. Il suffit de remplacer par les opening_hours du salon
+   (qui supportent multi-plages par jour = pause dejeuner). La validation a la creation peut
+   verifier que le creneau tombe dans une plage ouverte. Le client choisit parmi les creneaux
+   proposes (pas de saisie libre) -> la contrainte est NATURELLE.
+2. **Pas besoin de 2 lots** : horaires informatifs + contrainte = UN SEUL lot. L'effort est :
+   - Backend : mapper opening_hours dans Salon.kt, CRUD endpoints, remplacer le hardcode 9h-19h
+     dans getAvailableSlots par lecture des plages, validation dans createBooking.
+   - Frontend : ecran edition horaires owner (multi-plages/jour, jour ferme), affichage page salon,
+     activer la tuile dashboard.
+3. **Horaires au niveau SALON** (pas par coiffeur) — coherent avec l'existant. Les horaires par
+   coiffeur seraient un chantier a part entiere (planning individuel, tables supplementaires) et
+   ne sont pas necessaires pour le MVP.
+4. **Format opening_hours propose** : JSON type { "monday": [{"open":"09:00","close":"12:00"},
+   {"open":"14:00","close":"19:00"}], "tuesday": [...], ... "sunday": null }. Multi-plages par
+   jour (pause dejeuner). Jour null ou absent = ferme.
+
+### HORAIRES LOT 1 : FONDATION + RECURRENTS (2026-06-20)
+
+Construction :
+- **Migration V051** : ADD COLUMN timezone VARCHAR(64) NOT NULL DEFAULT 'Africa/Libreville' sur salons.
+  (opening_hours JSON existait deja.)
+- **Salon.kt** : +openingHours (@JdbcTypeCode JSON, Map<String, List<Map<String,String>>>?) +timezone.
+- **OpeningHoursDto.kt** (nouveau) : TimeRange{open,close}, UpdateOpeningHoursRequest (openingHours,
+  timezone), OpeningHoursResponse. Validation stricte : HH:mm, close>open, pas de chevauchement,
+  jours valides, timezone IANA.
+- **SalonService** : +updateOpeningHours (requirePermission salon.update_info, validation, conversion
+  DTO->entite, retourne OpeningHoursResponse).
+- **SalonController** : PUT /api/salons/{salonId}/opening-hours + GET salon expose openingHours+timezone.
+  Fix SalonController.getSalonById qui construisait SalonResponse manuellement sans les nouveaux champs.
+- **SalonResponse** : +openingHours, +timezone.
+- **curl** : PUT valide 200 (multi-plages, dimanche ferme) | GET expose openingHours+timezone |
+  close<open 400 | overlap 400 | non-membre 403.
+- **Frontend** :
+  - Types TS : TimeRange, OpeningHours, Salon +openingHours/timezone, UpdateOpeningHoursRequest.
+  - salonsApi.updateOpeningHours(salonId, data).
+  - edit-opening-hours.tsx (nouveau) : 7 jours, toggle ouvert/ferme, multi-plages par jour (inputs
+    HH:mm), bouton +ajouter plage, copie rapide "appliquer a tous" via Modal, validation UI, toast.
+    Garde can('salon.update_info') + AccessDenied.
+  - salon/[id].tsx onglet info : affichage horaires semaine (ou "Horaires non renseignes" si null).
+  - owner-dashboard.tsx : tuile "Horaires" activee (route=/edit-opening-hours, routeParams salonId).
+  - i18n : +19 cles openingHours.* (title, open, closed, notSet, addRange, applyToAll, copyFrom,
+    appliedToAll, saveSuccess, 7 jours, 3 validations) x 5 langues. Parite 877 FR, 0 ecart.
+- NE TOUCHE PAS getAvailableSlots ni createBooking (Lot 2).
+- tsc=0, check-keys=0 ecart. 14 fichiers modifies + 3 nouveaux. NON commite.
+- **Fix UI** : champs heure de droite debordaient hors carte. Cause : pas de minWidth:0 sur les
+  inputs flex:1 (RN ne retrecit pas en dessous du contenu intrinseque) + rangeSep sans flexShrink:0.
+  Fix : timeInput +minWidth:0 ; rangeSep +flexShrink:0 +marginHorizontal:2. Tient pour 1 et 2 plages.
+
+### HORAIRES LOT 2 : CONTRAINTE RESERVATION (2026-06-20)
+
+Construction (backend surtout — BookingService.kt) :
+- **resolveOpeningRangesForDate(salon, date)** : fonction de resolution centrale. Lot 2 = recurrent
+  seulement (jour de la semaine -> plages openingHours). Point d'extension documente pour Lot 3
+  (exceptions datees : "if salon has exception for date -> return exception ranges"). Retourne
+  List<Pair<LocalTime, LocalTime>> triees. Salon sans horaires = liste vide = ferme.
+- **isWithinOpeningHours(ranges, start, durationMinutes)** : verifie qu'un creneau (start + duration)
+  tient entierement dans une plage ouverte (end <= close).
+- **getAvailableSlots** : remplace le hardcode 9h-19h par resolveOpeningRangesForDate. Generation des
+  creneaux DANS chaque plage (saute les pauses). Un creneau n'est propose que si start + duration <=
+  close de la plage. Conserve slotInterval=30, hasStaffConflict par coiffeur, filtre passes.
+  Fermé/non renseigné = retour vide immediat.
+- **createBooking** : +validation step 6b apres calcul duree, avant checks conflit. Appelle
+  isWithinOpeningHours -> si hors plage, rejet 400 "Le salon est ferme a cet horaire. La prestation
+  (N min) doit tenir entierement dans une plage d'ouverture."
+- **curl prouve** :
+  - getAvailableSlots LUNDI (09-12 + 14-19) : 16 creneaux 30min (09:00-11:30 + 14:00-18:30),
+    RIEN entre 12h-14h (pause respectee). Service 60min : dernier matin = 11:00 (11:30 absent).
+  - getAvailableSlots DIMANCHE (ferme) : 0 creneau.
+  - createBooking lundi 13:00 (pause) : 400 "salon ferme".
+  - createBooking dimanche : 400 "salon ferme".
+  - createBooking 11:30 + 60min (deborde 12h) : 400 "prestation doit tenir dans plage".
+  - NOTE : createBooking DANS plage retourne 500 (bug pre-existant dans BookingResponse.fromEntity,
+    hors perimetre de ce lot — la validation horaires a PASSE, le rejet serait 400 sinon).
+- **Frontend** : PAS de changement necessaire. booking/new.tsx affiche deja "Aucun creneau disponible
+  pour cette date" quand la liste est vide (L360). Message adequat pour jours fermes.
+- **i18n** : 0 nouvelles cles (message existant booking.noSlots suffit).
+- tsc=0, check-keys=0 ecart (877 FR). BUILD SUCCESSFUL. NON commite.
+
+### FIX STAFF GENERALISTES (2026-06-20)
+
+Bug : `findBySalonIdAndSpecialty` (SalonStaffRepository.kt:53-58) faisait un `JOIN s.specialties sp`
+qui excluait les staff SANS specialites (salon_staff_specialties = 0 lignes). Or
+`canPerformService()` traite correctement le cas : `specialties.isEmpty() -> true` (generaliste).
+Incoherence query/code = 0 creneaux pour tout le monde.
+Fix : `LEFT JOIN s.specialties sp ... AND (sp = :specialty OR s.specialties IS EMPTY)` — inclut
+les staff qui matchent la specialite OU qui n'ont aucune specialite (generalistes, peuvent tout
+faire). Coherent avec `canPerformService`. Impact : getAvailableSlots + getStaffBySpecialty.
+Prouve curl : 96 creneaux (6 staff generalistes x 16 slots/staff) sur un lundi, 0 dimanche (ferme).
+
+### Fix available-slots : date LocalDate (2026-06-20)
+Cause prouvee du 500 systematique depuis l'app : mismatch format date. L'app (booking/new.tsx:101)
+envoie `date:"2026-06-29"` (LocalDate via toISOString().split('T')[0]), le DTO backend
+(AvailableSlotsRequest.date) attendait LocalDateTime. Jackson echouait a deserialiser AVANT le
+controller -> HttpMessageNotReadableException -> 500 global (le try-catch debug dans le controller ne
+capturait rien). Le bug affectait TOUS les appels (avec ou sans staffId) — l'hypothese initiale
+lazy-loading etait invalidee.
+Fix applique :
+1. BookingDto.kt : AvailableSlotsRequest.date LocalDateTime -> LocalDate ; AvailableSlotsResponse.date
+   idem (import java.time.LocalDate ajoute)
+2. BookingService.kt : request.date.toLocalDate() -> request.date (deja LocalDate)
+3. BookingController.kt : try-catch debug retire (ResponseEntity<Any> -> ResponseEntity<AvailableSlotsResponse>)
+4. SalonStaffRepository.kt : findBySalonIdAndSpecialty supprimee (requete native, 0 appelant confirme,
+   import ServiceCategory retire) — les appelants utilisent findBySalonId + filtre Kotlin
+   (canPerformService, generalistes inclus, owner exclu = fix legitime conserve)
+Verification curl (4 appels) :
+- date "2026-06-29" AVEC staffId Darla -> 200 (16 creneaux) [ETAIT 500]
+- date "2026-06-29" SANS staffId -> 200 (96 creneaux, 6 staffs)
+- dimanche "2026-06-28" -> 200 + 0 creneau (ferme, pas 500)
+- GET /staff/specialties/COUPE -> 200 (6 staffs, owner exclu, generalistes inclus)
+Build backend OK, tsc --noEmit OK. Non commite.
+
+### Diagnostic ecran stats owner (2026-06-20) — preparation L8
+AXE 1 — ECRAN ACTUEL (owner-dashboard.tsx, 770L) : TOUT est branche sur de VRAIES donnees.
+  - totalBookings : API GET /bookings/statistics -> bookingStats.totalBookings (REEL, 4 en base)
+  - revenue : bookingStats.revenue -> MISMATCH NOM : backend renvoie `totalRevenue`, TS lit `revenue`
+    -> toujours undefined -> affiche "—". De plus totalRevenue=0 car filtrage = COMPLETED+PAID (1 seule
+    resa completed mais payment_status=unpaid).
+  - rating : API GET /reviews/stats -> REEL (mais 0 reviews)
+  - followers : API GET /salons/{id} -> followersCount -> REEL
+  - graphe evolution : API GET /bookings/daily -> REEL mais tous les jours = count:0 car
+    findBySalonAndDatetimeRange exclut cancelled/no_show ET les 4 bookings sont tous FUTURS (>= 24 juin)
+    -> hors de la fenetre 28j passee (24 mai - 20 juin) -> 0 partout.
+  - pending bookings : API GET /salons/{id}/bookings -> filtre local status=PENDING -> REEL (3 pending)
+  - top services : meme liste bookings -> filtre CONFIRMED+IN_PROGRESS+COMPLETED -> 1 seule completed
+    -> montre 1 service. REEL.
+AXE 2 — ENDPOINTS STATS BACKEND : 3 existent.
+  (a) GET /bookings/statistics : total, pending, confirmed, completed, cancelled, totalRevenue (COMPLETED
+      +PAID), averagePrice (COMPLETED). Fonctionne, prouve curl.
+  (b) GET /bookings/daily?from=&to= : serie temporelle count+revenue par jour. Exclut cancelled/no_show.
+      Revenue = COMPLETED+PAID seulement. Fonctionne, prouve curl.
+  (c) GET /salons/{id}/bookings : liste complete (toutes les resas). Fonctionne.
+AXE 3 — POURQUOI LA RESA N'APPARAIT PAS DANS LES STATS :
+  C'est NORMAL (pas un bug) pour 3 raisons cumulees :
+  (i) Revenue totalRevenue = somme des COMPLETED + PAID. La resa recente est status=pending,
+      payment_status=unpaid -> exclue du CA. Correct metier.
+  (ii) Graphe daily : fenetre = 28 jours PASSES. Les 4 resas ont booking_datetime >= 24 juin (futur)
+       -> aucune dans la fenetre -> count=0 chaque jour. Correct si on montre l'historique.
+  (iii) MISMATCH NOM DE CHAMP : backend envoie `totalRevenue`, le type TS BookingStatistics attend
+        `revenue` -> la valeur n'arrive jamais cote app. C'est un BUG (mineur, car la valeur serait
+        0 de toute facon avec les donnees actuelles, mais bloquant quand il y aura du vrai CA).
+  De plus le type TS manque pendingBookings et confirmedBookings (presents dans le JSON backend).
+AXE 4 — MATIERE DISPONIBLE POUR TABLEAU DE BORD L8 :
+  - REVENUS : calculable (priceFinal sur bookings COMPLETED+PAID). Matiere en base, endpoint existe.
+  - RESERVATIONS par statut : calculable (countBySalonIdAndStatus). Endpoint existe.
+  - TOP SERVICES : calculable cote app (deja fait, filtre local sur allBookings). Pas d'endpoint dedie
+    mais faisable en agrégeant la liste. Un endpoint backend GROUP BY service_id serait plus propre pour
+    de gros volumes.
+  - TENDANCES : serie daily existe deja (bookings/daily). Manque : ventilation par statut dans la serie,
+    comparaison N-1 (semaine precedente), tendance en pourcentage.
+VERDICT D'AMPLEUR L8 :
+  - Backend : TRES PEU a creer. Les 3 endpoints existent. A faire : (a) fix mismatch nom de champ
+    totalRevenue vs revenue (cote TS ou cote backend), (b) optionnel : endpoint top-services agrege,
+    (c) optionnel : ventilation daily par statut.
+  - Frontend : C'EST LE GROS DU TRAVAIL. L'ecran existe et est fonctionnel mais pas premium. A faire :
+    refonte visuelle complete (design editorial, graphes plus riches, KPIs visuels, animations),
+    correction du mismatch de champs TS, ajout de la fenetre « a venir » en plus de l'historique.
+  -> L8 = 80% FRONTEND premium + 20% ajustements backend (mismatch champs + endpoints optionnels).
+
+### L8 : Tableau de bord owner premium (2026-06-20)
+Fix donnees : BookingStatistics TS aligne sur JSON backend (totalRevenue au lieu de revenue,
+pendingBookings + confirmedBookings + salonId + averagePrice ajoutes). Revenue affiche correctement
+(meme si 0 car aucun booking COMPLETED+PAID).
+Refonte owner-dashboard.tsx (770L -> ~460L utiles, architecture plus propre) :
+  - KPIs (4 cartes) : reservations, CA (totalRevenue, FCFA, garde payment.view_salon), note moyenne,
+    a venir (nb bookings futurs). Chaque carte avec icone dans cercle tinte accent.
+  - Selecteur periode : 7j / 30j / Annee (chips). Pilote le graphe. Fenetre = passe + futur.
+  - Graphe SVG (react-native-svg, pas de lib externe) : courbe lissee passe (trait plein prune +
+    gradient) vs futur (pointille champagne + gradient dore) separes par ligne verticale "Auj.",
+    legende "Realise / A venir". Repond a la frustration "ma resa n'apparait pas" -> les resas futures
+    sont visibles dans la partie doree du graphe.
+  - Repartition par statut : barres horizontales (pending/confirmed/completed/cancelled) avec compteurs.
+  - Reservations en attente : cartes avec actions confirmer/refuser (inchange fonctionnellement).
+  - Prochains rendez-vous : 5 prochains bookings futurs, dot couleur statut, service + client + date.
+  - Top services : classement numerote + barre + pourcentage.
+  - Grille gestion (tuiles) : inchangee.
+Design : Cormorant Garamond titres, Manrope UI, sections en cartes surface arrondies r16, tokens
+couleur du design system, KPI avec cercle d'icone tinte.
+i18n : 13 nouvelles cles ajoutees aux 5 langues (fr/en/es/de/ar) — parite. Cles : metrics.upcoming,
+chart.todayLabel/past/upcoming/year, statusTitle, status.{pending,confirmed,completed,cancelled},
+upcomingTitle, upcomingEmpty.
+tsc --noEmit = 0. Non commite.
+
+### Diagnostic parcours COIFFEUR (2026-06-20)
+AXE 1 — CE QUE VOIT LE COIFFEUR AUJOURD'HUI :
+  Aucun ecran dedie « dashboard coiffeur » ou « agenda ». Aucun fichier staff-dashboard, my-schedule,
+  my-bookings dans app/. Le hairstylist voit le meme onglet Profil que les autres users, avec des
+  ajouts conditionnels : invitations, specialites, experience, certifications (profile.tsx:304-351).
+  Le menu profil propose : Invitations, Favoris, Archives, Collections, Portfolios, Parametres.
+  PAS de lien vers « Mes RDV » ou « Mon agenda ».
+AXE 2 — BACKEND :
+  (2a) L'endpoint existe : GET /api/staff/{staffId}/bookings (BookingController:251). Le service
+  getBookingsByStaff (BookingService:264) verifie isSelf || isOwner, retourne les bookings tries par
+  datetime ASC. Fonctionne (prouve curl : Darla a 2 RDV pending). MAIS il manque cote app : aucun appel
+  dans src/api/bookings.ts vers cet endpoint.
+  (2b) Transitions de statut : updateBookingStatus (PATCH /api/bookings/{id}/status) avec scope OWN pour
+  hairstylist — ne peut modifier QUE les bookings ou staff.user.id == userId. Permissions :
+  booking.manage_status + booking.cancel. Le hairstylist PEUT confirmer/completer/annuler SES RDV.
+AXE 3 — PERMISSIONS HAIRSTYLIST (5 en base) :
+  booking.view_own, booking.manage_status, booking.cancel, queue.call_next, social.post_as_salon.
+  NE PEUT PAS : voir TOUS les RDV du salon (booking.view_all = owner/manager only), voir les stats
+  (booking.view_statistics = owner/manager), voir le CA (payment.view_salon = owner only), modifier
+  les services ou le salon.
+AXE 4 — PROFIL PRO :
+  CoiffeurProfileResponse : bio, specialties (user_specialties table, vocabulaire libre), yearsExperience,
+  certifications, instagramHandle, portfolios, badges, recentPosts. Gere depuis le profil (profile.tsx).
+  Les specialites salon_staff_specialties (ServiceCategory enum) = categories de services reservables
+  (canPerformService), gerees par l'owner via owner-staff. Sont DISTINCTES des specialites profil
+  (vocabulaire libre).
+AXE 5 — DONNEES DE TEST :
+  Darla (dhshopentreprise@gmail.com, staffId a2d99c45): 2 bookings pending (24/06 + 29/06), avatar OK.
+  Read Documents (readdocuments64@gmail.com, staffId bd70fa3d): 0 booking assigne, avatar OK.
+  Test Coiffeur (staff-hair-001): 1 booking completed.
+  Les 3 vrais comptes ont des refresh tokens valides, pas de 2FA.
+PROPOSITION DE DECOUPAGE :
+  LOT C1 — Ecran « Mon agenda » (frontend pur, ~2h) :
+    - Nouvel ecran app/my-schedule.tsx (ou staff-bookings.tsx)
+    - API layer : ajouter getStaffBookings(staffId) dans bookings.ts
+    - Le coiffeur doit d'abord trouver son staffId (via findBySalonIdAndUserId depuis ses salons)
+    - Affiche SES RDV : liste filtrable par statut, vue jour/semaine calendrier
+    - Actions : confirmer, completer, annuler (SES RDV uniquement, scope OWN)
+    - Lien depuis le menu profil hairstylist
+    - i18n 5 langues
+    Backend : 0 — l'endpoint GET /staff/{staffId}/bookings EXISTE et marche.
+  LOT C2 — Dashboard coiffeur (frontend, ~3h) :
+    - Ecran app/staff-dashboard.tsx : KPIs (RDV aujourd'hui, cette semaine, a venir, completes)
+    - Vue journee (timeline/agenda visuel)
+    - Notifications de nouveaux RDV assignes
+    - Lien depuis le menu profil hairstylist (remplace ou complete le lien agenda)
+    Backend : un endpoint « mes KPIs staff » serait utile mais calculable cote app.
+  LOT C3 SUPPRIME — mono-salon confirme (garanti par InvitationService, un coiffeur = un seul salon). Code multi-salon nettoye.
+  LOT C4 — Gestion des specialites staff par le coiffeur lui-meme (~1h) :
+    - Aujourd'hui seul l'owner gere les specialites salon_staff_specialties
+    - Permettre au coiffeur de declarer ses categories de services
+    Backend : endpoint PUT /staff/{staffId}/specialties (permission booking.view_own ?).
+  VERDICT : LOT C1 est le MINIMUM VITAL (l'endpoint backend existe, c'est du pur frontend).
+  C2 est le premium. C3 et C4 sont des polissages.
+
+  ### LOT C1 — FAIT (2026-06-21)
+  Coiffeur C1 : ecran Mon agenda (RDV assignes, resolution staffId multi-salon, actions scope OWN).
+  - Resolution staffId CENTRALISEE et MULTI-SALON : hook useMyStaffMemberships (getMySalons + getSalonStaff, filtre userId+isActive, retourne [{salonId,salonName,staffId}]).
+  - API : getStaffBookings(staffId) dans bookings.ts (GET /staff/{staffId}/bookings).
+  - Ecran app/my-schedule.tsx : premium (Cormorant titres, Manrope UI, tokens design system).
+    Sections : header + banner salon (sélecteur cycle si multi) + filtres pills (tous/a venir/en attente/confirmes/realises) + RDV groupes par jour (Aujourd'hui/Demain/dates, passes estompes) + cartes (avatar client, nom, prestation, heure debut-fin, duree, prix, badge statut couleur semantique, notes client).
+    Actions scope OWN : confirmer (pending->confirmed), terminer (confirmed->completed), annuler (->cancelled avec motif via Modal). Toast succes/erreur.
+    Etats : loading, vide, erreur retry, pas de rattachement.
+  - Navigation : entree "Mon agenda" (icone calendar-today) dans le menu profil hairstylist (profile.tsx).
+  - i18n 5 langues (25 cles x 5 = 889->914 cles FR, parite 0 ecart).
+  - Backend : 0 touche. Endpoint GET /staff/{staffId}/bookings existant, confirme par SQL (Darla 2 RDV pending).
+  - tsc --noEmit = 0, check-keys = 0 ecart.
+
+  ### LOT C2+ — FAIT (2026-06-21)
+  Coiffeur C2+ FINI : donut prestations + barres charge/jour ; code mort multi-salon nettoye ; C3 caduc (mono-salon).
+  - Donut SVG (react-native-svg) « Repartition de mes prestations » : remplace la liste top services.
+    groupBy serviceName -> count -> %. Top 4 segments + Autres. Trou central (total). Legende sous le donut.
+    Degradation : 0 RDV = section masquee ; 1 seul type = Circle plein lisible.
+  - Barres SVG « Ma charge par jour » : 7 barres (lun->dim), jour(s) max mis en evidence (tertiary).
+    Degradation : 0 RDV = section masquee.
+  - Code mort multi-salon nettoye : selecteur cycle + chevron retire de staff-dashboard.tsx ET my-schedule.tsx.
+    Affichage du salon unique conserve (icone + nom). Hook useMyStaffMemberships INTACT (liste, consomme [0]).
+  - C3 acte caduc dans le plan (mono-salon garanti par InvitationService).
+  - i18n : 10 cles charts.* ajoutees (5 langues, parite).
+  - tsc --noEmit = 0, check-keys = 0 ecart.
+
+  ### DIAGNOSTIC SERVICES + GALERIE PHOTOS (2026-06-21, pure lecture)
+  AXE 1 — STRUCTURE SERVICE :
+    Table salon_services : id CHAR(36) PK, salon_id FK, name VARCHAR(255) NOT NULL, description TEXT,
+    category ENUM(COUPE/COLORATION/SOIN/BARBE/COIFFAGE/TECHNIQUE/AUTRE), duration_minutes INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL, is_available TINYINT(1) default 1, image_urls TEXT (CSV de chemins),
+    created_at/updated_at TIMESTAMP.
+    Entite Kotlin SalonService.kt : imageUrls = String? (CSV comma-separated).
+    DTO CreateServiceRequest : salonId, name (3-150), description, durationMinutes (1-480),
+    price (0-10000), category, imageUrls List<String>? (max 5 — @Size(max=5)).
+    Endpoint : POST /api/salons/{salonId}/services (+ PUT /{serviceId}, DELETE, batch, search, stats).
+  AXE 2 — GALERIE 5 PHOTOS :
+    (2a) Stockage : PAS de table dediee. Champ image_urls TEXT dans salon_services. Format = CSV de
+         chemins relatifs (ex. /uploads/uuid.jpg,/uploads/uuid2.jpg,...). Parsing : split(",").filter(isNotBlank).
+         Limite 5 = validation DTO (@Size(max=5)) MAIS pas de contrainte DB.
+    (2b) Upload : VRAI FICHIER depose sur le serveur.
+         - App : mediaApi.uploadImage(uri, fileName) -> POST /api/media/upload (multipart/form-data).
+         - Backend : MediaService.saveFile() -> dossier backend/uploads/ (UUID.ext), retourne /uploads/uuid.jpg.
+         - create-service.tsx : pour chaque image locale, appelle mediaApi.uploadImage AVANT le POST service,
+           puis envoie la liste de paths au backend dans imageUrls[].
+         - UpdateServiceRequest.applyTo() : imageUrls?.let { service.imageUrls = it.joinToString(",") }.
+    (2c) Affichage :
+         - Composant ServiceImageStack (src/components/common/) : stack 3D si multi, single, ou icone categorie fallback.
+         - Utilise resolveMediaUrl(path) qui prefixe /uploads/... avec API_BASE_URL (localhost:8090 en dev).
+         - Ecrans : salon/[id].tsx (onglet prestations), owner-services.tsx (liste owner), create-service.tsx (edit prefill).
+    (2d) Pas de photo principale/ordre explicite. L'ordre = l'ordre du CSV. La premiere est la plus visible dans le stack.
+  AXE 3 — ETAT ECLAT PRESTIGE (salon abbd7b70-...) :
+    5 services total :
+      POUBELLE (4) :
+        - Batch-MGR-1781770103   | COUPE | 1000 FCFA | 30min | pas de photos | 0 bookings -> SUPPRIMABLE
+        - Batch-OWNER-1781770103 | COUPE | 1000 FCFA | 30min | pas de photos | 1 booking  -> PROTEGE (FK)
+        - Create-MGR-1781770103  | COUPE | 1000 FCFA | 30min | pas de photos | 0 bookings -> SUPPRIMABLE
+        - Create-OWNER-1781770103| COUPE | 1000 FCFA | 30min | pas de photos | 0 bookings -> SUPPRIMABLE
+      SEMI-POUBELLE (1) :
+        - Updated Service Name   | COUPE | 15 FCFA   | 60min | 5 photos OK   | 3 bookings -> PROTEGE (FK)
+    VERDICT : 2 services proteges par bookings (FK fk_booking_service), 3 libres.
+  AXE 4 — MEDIA :
+    Fichiers dans backend/uploads/ (disque local, ~38 Mo, fichiers UUID.jpg).
+    Servis par WebConfig : /uploads/** -> file:uploads/.
+    resolveMediaUrl() prefixe /uploads/... avec http://localhost:8090.
+  APPROCHE SEED (a valider, NON executee) :
+    (i) PHOTOS : on NE PEUT PAS simplement stocker des URLs Unsplash/Pexels dans image_urls car le
+        mecanisme resolveMediaUrl attend des chemins /uploads/... et le backend sert les fichiers
+        localement. DEUX OPTIONS :
+        A) TELECHARGER les images (curl/wget) dans backend/uploads/ avec des noms UUID.jpg, puis
+           stocker les chemins /uploads/uuid.jpg dans image_urls. APPROCHE PROPRE — les images sont
+           locales, le mecanisme d'affichage existant fonctionne tel quel.
+        B) Stocker des URLs absolues externes (https://images.unsplash.com/...) dans image_urls.
+           resolveMediaUrl les retournerait telles quelles (case 4 : absolute URL). CA MARCHERAIT
+           car resolveMediaUrl ne touche pas aux URLs absolues. PLUS SIMPLE, pas de fichier a deposer.
+           MAIS : depend de la connectivite internet, les URLs Unsplash peuvent expirer/changer.
+        >>> RECOMMANDATION : option B (URLs externes Unsplash) pour le seed dev/demo, c'est immediat
+            et resolveMediaUrl les passe telles quelles. Pour la prod, option A.
+    (ii) ASSAINISSEMENT :
+        - 3 services libres (0 booking) : SUPPRIMER via DELETE /api/salons/{salonId}/services/{id}.
+        - 2 services proteges (bookings existants) : RENOMMER + corriger prix/duree/categorie via
+          PUT /api/salons/{salonId}/services/{id}. Ex: "Updated Service Name" -> "Coupe Homme",
+          "Batch-OWNER-1781770103" -> "Tresses Africaines". Ajouter photos.
+        - Puis CREER les services manquants (coloration, soin, brushing, barbe...) avec photos.
+
+  ### ASSAINISSEMENT + CATALOGUE ECLAT PRESTIGE — FAIT (2026-06-21)
+  Operations executees via API (refresh token owner, pas de login direct) :
+    SUPPRIME (3, 0 booking chacun) :
+      - Batch-MGR-1781770103 (efa79ec0) — HTTP 204
+      - Create-MGR-1781770103 (38015151) — HTTP 204
+      - Create-OWNER-1781770103 (d6e12f06) — HTTP 204
+    RENOMME (2, IDs conserves, bookings intacts) :
+      - "Updated Service Name" (43528c04, 3 bookings) -> "Coupe Femme" | COUPE | 7000 FCFA | 45min | 5 photos
+      - "Batch-OWNER-1781770103" (f1324c67, 1 booking) -> "Tresses Africaines" | COIFFAGE | 10000 FCFA | 3h | 5 photos
+    CREE (8 nouveaux) :
+      - Coupe Homme | COUPE | 4000 FCFA | 30min | 5 photos
+      - Coloration Complete | COLORATION | 10000 FCFA | 2h | 5 photos
+      - Soin Capillaire Profond | SOIN | 8000 FCFA | 1h | 5 photos
+      - Brushing & Mise en Plis | COIFFAGE | 6000 FCFA | 45min | 5 photos
+      - Taille de Barbe | BARBE | 2500 FCFA | 20min | 5 photos
+      - Defrisage | TECHNIQUE | 9000 FCFA | 1h30 | 5 photos
+      - Locks & Entretien | COIFFAGE | 8000 FCFA | 1h30 | 5 photos
+      - Tissage & Extensions | TECHNIQUE | 10000 FCFA | 2h30 | 5 photos
+  CATALOGUE FINAL : 10 prestations, 6 categories, 50 photos (URLs Unsplash absolues verifiees HTTP 200).
+  Prix max DTO = 10000 (validation @DecimalMax) — respecte. Aucun nom-poubelle restant.
+  Photos = URLs absolues Unsplash, resolveMediaUrl les passe telles quelles (case 4).
+
+  ### SEED RESERVATIONS DURABLES — FAIT (2026-06-21)
+  Reservations creees via API (refresh token clients, pas login direct) + 1 SQL (passe).
+  Calendrier : Jun 21 = dimanche. Lun 09-12+14-19, Mar-Ven 09-19, Sam 10-17, Dim ferme.
+  canPerformService : specialties vides = generaliste -> tous les coiffeurs acceptent tout.
+  API refuse dates passees -> 1 booking completed insere en SQL.
+
+  DARLA (staffId a2d99c45, 7 bookings) :
+    | Date       | Heure | Service                  | Client       | Statut    | Methode |
+    | 2026-06-20 | 10:00 | Taille de Barbe (20min)  | Olsen        | completed | SQL     |
+    | 2026-06-24 | 13:00 | Coupe Femme (60min)      | Olsen        | pending   | existant|
+    | 2026-06-25 | 09:30 | Coloration Complete (2h)  | Olsen        | pending   | API     |
+    | 2026-06-26 | 14:00 | Brushing (45min)         | Test NoStaff | confirmed | API     |
+    | 2026-06-27 | 10:00 | Soin Profond (1h)        | Olsen        | confirmed | API     |
+    | 2026-06-29 | 08:00 | Tresses (30min)          | Arch         | pending   | existant|
+    | 2026-06-30 | 11:00 | Coupe Homme (30min)      | Test NoStaff | pending   | API     |
+  AUTRES COIFFEURS :
+    Read Documents (bd70fa3d) : 2 bookings (1 pending Coupe Homme Jeu 25, 1 confirmed Barbe Ven 26)
+    Test Coiffeur (staff-hair-001) : 1 pending Defrisage Ven 26 15:00
+    (+ bookings preexistants test-staff-hair-001 et test-staff-mgr-001)
+  VERIFICATIONS : aucun chevauchement Darla (verifie SQL), creneaux dans horaires, statuts minuscules,
+  services du catalogue assaini. Transitions confirmed via owner (PATCH /bookings/{id}/status).
+
+  ### LOT C2 — FAIT (2026-06-21)
+  Coiffeur C2 : dashboard premium (prochain RDV, KPIs perso scope OWN, timeline du jour, apercu a venir).
+  - ARTICULATION : dashboard C2 = point d'entree principal (menu profil "Tableau de bord" icone dashboard).
+    Agenda C1 (my-schedule) = vue detail, accessible via bouton "Voir tout mon agenda" dans C2.
+  - Ecran app/staff-dashboard.tsx : premium (Cormorant titres, Manrope UI, tokens design system).
+    Sections : header (salut heure du jour + prenom + date longue) + banner salon (sélecteur si multi) +
+    carte prochain RDV (primaryContainer, avatar client, nom, prestation, heure, "dans X min/h/j") +
+    4 KPIs perso scope OWN (aujourd'hui/cette semaine/a venir/realises ce mois, cartes accent + icones) +
+    timeline du jour (dot + ligne, heure debut-fin, avatar client, prestation, badge statut couleur, passes estompes) +
+    apercu prochains jours (3 RDV futurs non-aujourd'hui) +
+    prestations frequentes (top 3 avec rang) +
+    bouton CTA "Voir tout mon agenda" -> my-schedule.
+    Etats : loading, vide (pas de rattachement, pas de RDV today), erreur toast.
+  - Navigation : entree "Tableau de bord" (icone dashboard) remplace "Mon agenda" dans profile.tsx.
+  - i18n 5 langues (23 cles x 5 = 914->937 cles FR, parite 0 ecart).
+  - Backend : 0 touche. Donnees de getStaffBookings, calculs cote app.
+  - tsc --noEmit = 0, check-keys = 0 ecart.

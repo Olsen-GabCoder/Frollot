@@ -29,5 +29,7 @@ data class SalonResponse(
     val reviewCount: Int = 0,
     val isFollowedByCurrentUser: Boolean? = null,
     val followersCount: Long? = null,
+    val openingHours: Map<String, List<Map<String, String>>>? = null,
+    val timezone: String = "Africa/Libreville",
     val createdAt: LocalDateTime?
 )

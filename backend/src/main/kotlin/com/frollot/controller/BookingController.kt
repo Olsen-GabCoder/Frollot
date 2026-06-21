@@ -385,9 +385,7 @@ class BookingController(
         @PathVariable salonId: String,
         @Valid @RequestBody request: AvailableSlotsRequest
     ): ResponseEntity<AvailableSlotsResponse> {
-        // S'assurer que le salonId dans le chemin correspond à celui de la requête
         val validatedRequest = request.copy(salonId = salonId)
-
         val slots = bookingService.getAvailableSlots(validatedRequest)
         return ResponseEntity.ok(slots)
     }

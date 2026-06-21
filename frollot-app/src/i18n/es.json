@@ -651,7 +651,8 @@
         "bookings": "Reservas",
         "revenue": "Ingresos",
         "rating": "Nota media",
-        "followers": "Seguidores"
+        "followers": "Seguidores",
+        "upcoming": "Próximas"
       },
       "manage": "Gestionar mi salón",
       "tiles": {
@@ -684,10 +685,23 @@
       "chart": {
         "title": "Evolución de las reservas",
         "today": "Hoy",
+        "todayLabel": "Hoy",
         "7d": "7 días",
-        "28d": "28 días",
-        "empty": "Aún no hay datos"
-      }
+        "28d": "30 días",
+        "year": "Año",
+        "empty": "Sin reservas en este período",
+        "past": "Realizadas",
+        "upcoming": "Próximas"
+      },
+      "statusTitle": "Distribución por estado",
+      "status": {
+        "pending": "Pendientes",
+        "confirmed": "Confirmadas",
+        "completed": "Realizadas",
+        "cancelled": "Canceladas"
+      },
+      "upcomingTitle": "Próximas citas",
+      "upcomingEmpty": "Sin citas próximas"
     },
     "ownerServices": {
       "title": "Mis servicios",
@@ -935,6 +949,31 @@
     "filterReplied": "Respondidos",
     "noUnreplied": "Todas las resenas han sido respondidas"
   },
+  "openingHours": {
+    "title": "Horarios",
+    "open": "Abierto",
+    "closed": "Cerrado",
+    "notSet": "Horarios no definidos",
+    "addRange": "Agregar franja",
+    "applyToAll": "Aplicar a todos los dias",
+    "copyFrom": "Copiar horarios de",
+    "appliedToAll": "Horarios aplicados a todos los dias",
+    "saveSuccess": "Horarios guardados",
+    "days": {
+      "monday": "Lunes",
+      "tuesday": "Martes",
+      "wednesday": "Miercoles",
+      "thursday": "Jueves",
+      "friday": "Viernes",
+      "saturday": "Sabado",
+      "sunday": "Domingo"
+    },
+    "validation": {
+      "invalidTime": "{{day}}: formato de hora invalido (HH:mm esperado)",
+      "closeBeforeOpen": "{{day}}: la hora de cierre debe ser posterior a la apertura",
+      "overlap": "{{day}}: las franjas horarias se superponen"
+    }
+  },
   "payment": {
     "pay": "Pagar",
     "paymentHistory": "Historial de pagos",
@@ -1031,6 +1070,77 @@
       "title": "Acceso restringido",
       "message": "No tienes acceso a esta seccion. Contacta con el propietario del salon si crees que es un error.",
       "back": "Volver"
+    }
+  },
+  "staffDashboard": {
+    "title": "Panel de control",
+    "menuLabel": "Panel de control",
+    "greetingMorning": "Buenos dias",
+    "greetingAfternoon": "Buenas tardes",
+    "greetingEvening": "Buenas noches",
+    "nextAppointment": "Proxima cita",
+    "now": "Ahora",
+    "inMinutes_one": "en {{count}} min",
+    "inMinutes_other": "en {{count}} min",
+    "inHours_one": "en {{count}}h",
+    "inHours_other": "en {{count}}h",
+    "inDays_one": "en {{count}} dia",
+    "inDays_other": "en {{count}} dias",
+    "kpi": {
+      "today": "Hoy",
+      "thisWeek": "Esta semana",
+      "upcoming": "Proximos",
+      "completedMonth": "Realizados este mes"
+    },
+    "todayTimeline": "Hoy",
+    "noBookingsToday": "Sin citas hoy",
+    "upcoming": "Proximos dias",
+    "topServices": "Servicios frecuentes",
+    "times": "veces",
+    "viewAgenda": "Ver toda mi agenda",
+    "charts": {
+      "serviceDistribution": "Distribucion de mis servicios",
+      "weeklyLoad": "Mi carga por dia",
+      "total": "total",
+      "others": "Otros",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mie",
+      "thu": "Jue",
+      "fri": "Vie",
+      "sat": "Sab",
+      "sun": "Dom"
+    }
+  },
+  "mySchedule": {
+    "title": "Mi agenda",
+    "menuLabel": "Mi agenda",
+    "memberRole": "Miembro del equipo",
+    "today": "Hoy",
+    "tomorrow": "Manana",
+    "yesterday": "Ayer",
+    "appointmentCount_one": "{{count}} cita",
+    "appointmentCount_other": "{{count}} citas",
+    "empty": "Sin citas",
+    "noMembership": "Sin vinculacion a un salon",
+    "noMembershipHint": "No estas vinculado a ningun salon. Acepta una invitacion para ver tus citas.",
+    "filters": {
+      "all": "Todos",
+      "upcoming": "Proximos",
+      "pending": "Pendientes",
+      "confirmed": "Confirmados",
+      "completed": "Realizados"
+    },
+    "actions": {
+      "confirm": "Confirmar",
+      "complete": "Completar",
+      "cancel": "Cancelar",
+      "confirmSuccess": "Cita confirmada",
+      "completeSuccess": "Cita completada",
+      "cancelSuccess": "Cita cancelada",
+      "cancelTitle": "Cancelar la cita",
+      "cancelReason": "Razon (opcional)",
+      "cancelConfirm": "Confirmar cancelacion"
     }
   }
 }

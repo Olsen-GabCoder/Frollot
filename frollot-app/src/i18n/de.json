@@ -651,7 +651,8 @@
         "bookings": "Buchungen",
         "revenue": "Einnahmen",
         "rating": "Durchschnittsbewertung",
-        "followers": "Follower"
+        "followers": "Follower",
+        "upcoming": "Bevorstehend"
       },
       "manage": "Salon verwalten",
       "tiles": {
@@ -684,10 +685,23 @@
       "chart": {
         "title": "Buchungsentwicklung",
         "today": "Heute",
+        "todayLabel": "Heute",
         "7d": "7 Tage",
-        "28d": "28 Tage",
-        "empty": "Noch keine Daten"
-      }
+        "28d": "30 Tage",
+        "year": "Jahr",
+        "empty": "Keine Buchungen in diesem Zeitraum",
+        "past": "Abgeschlossen",
+        "upcoming": "Bevorstehend"
+      },
+      "statusTitle": "Aufteilung nach Status",
+      "status": {
+        "pending": "Ausstehend",
+        "confirmed": "Bestätigt",
+        "completed": "Abgeschlossen",
+        "cancelled": "Storniert"
+      },
+      "upcomingTitle": "Nächste Termine",
+      "upcomingEmpty": "Keine bevorstehenden Termine"
     },
     "ownerServices": {
       "title": "Meine Leistungen",
@@ -935,6 +949,31 @@
     "filterReplied": "Beantwortet",
     "noUnreplied": "Alle Bewertungen wurden beantwortet"
   },
+  "openingHours": {
+    "title": "Offnungszeiten",
+    "open": "Geoffnet",
+    "closed": "Geschlossen",
+    "notSet": "Offnungszeiten nicht angegeben",
+    "addRange": "Zeitfenster hinzufugen",
+    "applyToAll": "Auf alle Tage anwenden",
+    "copyFrom": "Zeiten kopieren von",
+    "appliedToAll": "Zeiten auf alle Tage angewendet",
+    "saveSuccess": "Offnungszeiten gespeichert",
+    "days": {
+      "monday": "Montag",
+      "tuesday": "Dienstag",
+      "wednesday": "Mittwoch",
+      "thursday": "Donnerstag",
+      "friday": "Freitag",
+      "saturday": "Samstag",
+      "sunday": "Sonntag"
+    },
+    "validation": {
+      "invalidTime": "{{day}}: ungultiges Zeitformat (HH:mm erwartet)",
+      "closeBeforeOpen": "{{day}}: Schlusszeit muss nach der Offnungszeit liegen",
+      "overlap": "{{day}}: Zeitfenster uberschneiden sich"
+    }
+  },
   "payment": {
     "pay": "Bezahlen",
     "paymentHistory": "Zahlungsverlauf",
@@ -1031,6 +1070,77 @@
       "title": "Zugriff eingeschrankt",
       "message": "Sie haben keinen Zugriff auf diesen Bereich. Kontaktieren Sie den Saloninhaber, wenn Sie glauben, dass es sich um einen Fehler handelt.",
       "back": "Zuruck"
+    }
+  },
+  "staffDashboard": {
+    "title": "Dashboard",
+    "menuLabel": "Dashboard",
+    "greetingMorning": "Guten Morgen",
+    "greetingAfternoon": "Guten Tag",
+    "greetingEvening": "Guten Abend",
+    "nextAppointment": "Nachster Termin",
+    "now": "Jetzt",
+    "inMinutes_one": "in {{count}} Min.",
+    "inMinutes_other": "in {{count}} Min.",
+    "inHours_one": "in {{count}} Std.",
+    "inHours_other": "in {{count}} Std.",
+    "inDays_one": "in {{count}} Tag",
+    "inDays_other": "in {{count}} Tagen",
+    "kpi": {
+      "today": "Heute",
+      "thisWeek": "Diese Woche",
+      "upcoming": "Anstehend",
+      "completedMonth": "Abgeschlossen diesen Monat"
+    },
+    "todayTimeline": "Heute",
+    "noBookingsToday": "Keine Termine heute",
+    "upcoming": "Nachste Tage",
+    "topServices": "Haufige Dienstleistungen",
+    "times": "mal",
+    "viewAgenda": "Gesamten Kalender anzeigen",
+    "charts": {
+      "serviceDistribution": "Verteilung meiner Leistungen",
+      "weeklyLoad": "Meine Auslastung pro Tag",
+      "total": "gesamt",
+      "others": "Sonstige",
+      "mon": "Mo",
+      "tue": "Di",
+      "wed": "Mi",
+      "thu": "Do",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "So"
+    }
+  },
+  "mySchedule": {
+    "title": "Mein Kalender",
+    "menuLabel": "Mein Kalender",
+    "memberRole": "Teammitglied",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "yesterday": "Gestern",
+    "appointmentCount_one": "{{count}} Termin",
+    "appointmentCount_other": "{{count}} Termine",
+    "empty": "Keine Termine",
+    "noMembership": "Keine Salonzugehorigkeit",
+    "noMembershipHint": "Sie sind keinem Salon zugeordnet. Nehmen Sie eine Einladung an, um Ihre Termine zu sehen.",
+    "filters": {
+      "all": "Alle",
+      "upcoming": "Anstehend",
+      "pending": "Ausstehend",
+      "confirmed": "Bestatigt",
+      "completed": "Abgeschlossen"
+    },
+    "actions": {
+      "confirm": "Bestatigen",
+      "complete": "Abschliessen",
+      "cancel": "Absagen",
+      "confirmSuccess": "Termin bestatigt",
+      "completeSuccess": "Termin abgeschlossen",
+      "cancelSuccess": "Termin abgesagt",
+      "cancelTitle": "Termin absagen",
+      "cancelReason": "Grund (optional)",
+      "cancelConfirm": "Absage bestatigen"
     }
   }
 }

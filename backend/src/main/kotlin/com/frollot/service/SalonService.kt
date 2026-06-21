@@ -4,7 +4,9 @@
 package com.frollot.service
 
 import com.frollot.dto.CreateSalonRequest
+import com.frollot.dto.OpeningHoursResponse
 import com.frollot.dto.SalonResponse
+import com.frollot.dto.UpdateOpeningHoursRequest
 import com.frollot.dto.UpdateSalonRequest
 import com.frollot.model.Salon
 import com.frollot.model.ServiceCategory
@@ -168,6 +170,40 @@ class SalonService(
         return toSalonResponse(updatedSalon)
     }
 
+    @Transactional
+    fun updateOpeningHours(salonId: String, request: UpdateOpeningHoursRequest, userId: String): OpeningHoursResponse {
+        val salon = salonRepository.findById(salonId)
+            .orElseThrow { NoSuchElementException("Salon avec l'ID $salonId introuvable") }
+
+        salonAuthorizationService.requirePermission(userId, salonId, "salon.update_info")
+
+        UpdateOpeningHoursRequest.validate(request)
+
+        // Convert DTO TimeRange list to Map for JSON storage
+        if (request.openingHours != null) {
+            val converted = mutableMapOf<String, List<Map<String, String>>>()
+            for ((day, ranges) in request.openingHours) {
+                if (ranges != null && ranges.isNotEmpty()) {
+                    converted[day] = ranges.map { mapOf("open" to it.open, "close" to it.close) }
+                }
+                // day absent from map = closed
+            }
+            salon.openingHours = converted.ifEmpty { null }
+        }
+        if (request.timezone != null) {
+            salon.timezone = request.timezone
+        }
+
+        salonRepository.save(salon)
+
+        return OpeningHoursResponse(
+            openingHours = salon.openingHours?.mapValues { (_, ranges) ->
+                ranges.map { com.frollot.dto.TimeRange(it["open"]!!, it["close"]!!) }
+            },
+            timezone = salon.timezone
+        )
+    }
+
     /**
      * Méthode utilitaire pour convertir une entité Salon en SalonResponse.
      * Évite la duplication de code.
@@ -198,6 +234,8 @@ class SalonService(
             reviewCount = salon.totalReviews,
             isFollowedByCurrentUser = isFollowedByCurrentUser,
             followersCount = followersCount,
+            openingHours = salon.openingHours,
+            timezone = salon.timezone,
             createdAt = salon.createdAt
         )
     }

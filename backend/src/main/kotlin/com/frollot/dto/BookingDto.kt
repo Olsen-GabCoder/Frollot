@@ -4,6 +4,7 @@ import com.frollot.model.Booking
 import com.frollot.model.BookingStatus
 import com.frollot.model.PaymentStatus
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 // ============================================
@@ -65,7 +66,7 @@ data class AvailableSlotsRequest(
     val salonId: String,
     val serviceId: String,
     val staffId: String? = null,
-    val date: LocalDateTime
+    val date: LocalDate
 )
 
 // ============================================
@@ -87,6 +88,8 @@ data class BookingResponse(
     val clientPhone: String?,
     val staffId: String?,
     val staffName: String?,
+    val staffAvatarUrl: String?,
+    val clientAvatarUrl: String?,
     val serviceId: String,
     val serviceName: String,
     val serviceCategory: String,
@@ -135,6 +138,8 @@ data class BookingResponse(
                     "${user.firstName ?: ""} ${user.lastName ?: ""}".trim()
                         .ifBlank { user.email }
                 },
+                staffAvatarUrl = booking.staff?.user?.avatarUrl,
+                clientAvatarUrl = client.avatarUrl,
                 serviceId = service.id!!,
                 serviceName = service.name,
                 serviceCategory = service.category.getDisplayName(),
@@ -245,7 +250,7 @@ data class TimeSlot(
  * @property slots Liste des créneaux disponibles
  */
 data class AvailableSlotsResponse(
-    val date: LocalDateTime,
+    val date: LocalDate,
     val salonId: String,
     val serviceId: String,
     val slots: List<TimeSlot>

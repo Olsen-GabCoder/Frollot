@@ -453,6 +453,26 @@ export default function SalonDetailScreen() {
 
           {selectedTab === 'info' && (
             <View style={{ gap: 12 }}>
+              {/* Opening hours */}
+              <Text style={[s.infoLabel, { color: colors.secondary }]}>{t('openingHours.title')}</Text>
+              {salon.openingHours && Object.keys(salon.openingHours).length > 0 ? (
+                (['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] as const).map((day) => {
+                  const ranges = salon.openingHours?.[day];
+                  return (
+                    <View key={day} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={[s.infoValue, { color: colors.onSurface, flex: 1 }]}>{t(`openingHours.days.${day}`)}</Text>
+                      <Text style={[s.infoValue, { color: ranges && ranges.length > 0 ? colors.onSurface : colors.onSurfaceVariant }]}>
+                        {ranges && ranges.length > 0
+                          ? ranges.map((r) => `${r.open} - ${r.close}`).join(', ')
+                          : t('openingHours.closed')}
+                      </Text>
+                    </View>
+                  );
+                })
+              ) : (
+                <Text style={[s.infoValue, { color: colors.onSurfaceVariant }]}>{t('openingHours.notSet')}</Text>
+              )}
+
               <Text style={[s.infoLabel, { color: colors.secondary }]}>{t('salon.address')}</Text>
               <Text style={[s.infoValue, { color: colors.onSurface }]}>{salon.address}, {salon.postalCode} {salon.city}</Text>
               {salon.description && <>

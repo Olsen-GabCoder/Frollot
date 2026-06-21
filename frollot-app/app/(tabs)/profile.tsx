@@ -302,6 +302,11 @@ export default function ProfileScreen() {
       onPress: () => router.push('/owner-dashboard'),
     }] : []),
     ...(isHairstylist ? [{
+      icon: 'dashboard' as const,
+      label: t('staffDashboard.menuLabel'),
+      onPress: () => router.push('/staff-dashboard' as any),
+    }] : []),
+    ...(isHairstylist ? [{
       icon: 'mail-outline' as const,
       label: t('myInvitations.title'),
       onPress: () => router.push('/my-invitations' as any),

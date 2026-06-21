@@ -1,22 +1,16 @@
 export enum BookingStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  NO_SHOW = 'NO_SHOW',
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+  NO_SHOW = 'no_show',
 }
 
 export enum PaymentStatus {
-  PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
-  SUCCEEDED = 'SUCCEEDED',
-  FAILED = 'FAILED',
-  CANCELED = 'CANCELED',
-  PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED',
-  UNPAID = 'UNPAID',
-  PAID = 'PAID',
-  REFUNDED = 'REFUNDED',
+  UNPAID = 'unpaid',
+  PAID = 'paid',
+  REFUNDED = 'refunded',
 }
 
 export interface BookingResponse {
@@ -29,6 +23,8 @@ export interface BookingResponse {
   clientPhone?: string;
   staffId?: string;
   staffName?: string;
+  staffAvatarUrl?: string;
+  clientAvatarUrl?: string;
   serviceId: string;
   serviceName: string;
   serviceCategory: string;
@@ -108,12 +104,14 @@ export interface UpdateBookingPaymentRequest {
 }
 
 export interface BookingStatistics {
+  salonId: string;
   totalBookings: number;
+  pendingBookings: number;
+  confirmedBookings: number;
   completedBookings: number;
   cancelledBookings: number;
-  noShowBookings: number;
-  revenue: number;
-  averageRating?: number;
+  totalRevenue: number;
+  averagePrice: number;
 }
 
 export interface BookingSummary {
